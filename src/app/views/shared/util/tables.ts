@@ -146,8 +146,8 @@ export const HeadersTablesMecanico = {
     { field: 'duracion', header: 'Duración', sort: true},
     { field: 'estado', header: 'Estado',},
     { field: 'mecanicos', header: 'Mecanicos', sort: true},
-    { field: 'trab_externo', header: 'Trabajo Externo'},
-    { field: 'req_repuesto', header: 'Requiere Repuesto'},
+    { field: 'requiereServicioExterno', header: 'Trabajo Externo'},
+    { field: 'requiereRepuesto', header: 'Requiere Repuesto'},
     { field: 'observaciones', header: 'Observaciones',sort: true},
     { field: 'actions', header: 'Acciones'}
   ],

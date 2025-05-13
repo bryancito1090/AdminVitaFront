@@ -8,13 +8,14 @@ import { ButtonModule } from 'primeng/button';
 import { TableModule, Table } from 'primeng/table';
 import { HeadersTablesMecanico } from '../../shared/util/tables';
 import { DropdownModule } from 'primeng/dropdown';
-import { EstadosVehiculo, genericT } from '../../shared/util/genericData';
+import { EstadosVehiculo, EstadoTarea, genericT } from '../../shared/util/genericData';
 import { SelectModule } from 'primeng/select';
 import { CommonModule } from '@angular/common';
 import { InputTextModule } from 'primeng/inputtext';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { FormsModule } from '@angular/forms';
 import { CrudTareaMecanicaComponent } from "./crud-tarea-mecanica/crud-tarea-mecanica.component";
+import { TareasService } from '../../services/tareas.service';
 
 @Component({
   selector: 'app-orden-trabajo-mecanica',
@@ -53,13 +54,14 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
   selectedEstadoFilter!: genericT;
   estadosFilter!: genericT[];
   
-  agregar_tarea_card: boolean = false;
+  agregar_tarea_card: boolean = true;
   
   constructor(
     private route: ActivatedRoute, 
     private router: Router,
     private toastr: ToastrService,
     private ordenTrabajoService: OrdenTrabajoService,
+    private tareaService: TareasService,
   ) {}
 
   ngOnInit() {
@@ -74,15 +76,26 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
     }
     this.getOrdenTrabajo(); 
     this.cols = HeadersTablesMecanico.Tareas;
-    this.estadosFilter = EstadosVehiculo;
+    this.estadosFilter = EstadoTarea;
   }
   getOrdenTrabajo() {
     this.ordenTrabajoService.getOrdenTrabajoCodigo(this.codigo!).subscribe(
       (response) => {
         this.OrdenTrabajo = response;
         this.loadingGeneral = true; 
+        this.getTareaOT();
       }
     );
+  }
+  getTareaOT() {
+    this.tareaService.getTareasByOT(this.codigo!).subscribe({
+      next: (response) => {
+        this.TareasOT = response;
+        this.loadingTable = false;
+        console.log(this.TareasOT);
+        
+      },
+    });
   }
   getSeverityEstado(status: number) {
     switch (status) {
@@ -96,5 +109,11 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
   GetEstado(id: number)  {
     const item = this.estadosFilter.find(x => x.code === id);  
     return item?.name;
+  }
+  unirStrings(array: any): string {
+    if (!array) return 'Ninguno';
+    const str = array.join(', '); 
+    
+    return str;
   }
 }

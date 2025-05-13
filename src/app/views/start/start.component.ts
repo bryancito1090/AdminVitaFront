@@ -15,7 +15,7 @@ import { Router } from '@angular/router';
               <h1 class="text-6xl font-bold text-white tracking-wide" style="font-size: 100px;">VITA</h1>
               <p class="text-slate-100">¡Nos alegra tenerte aquí! Comienza tu experiencia con VITA.</p>
             </div>
-            <div class="flex flex-row items-center justify-center gap-4 w-full">
+            <div class="flex flex-col md:flex-row items-center justify-center gap-4 w-full">
               <div 
                 class="contenedor-form self-center bg-slate-400 p-4 rounded-lg shadow-md transition-all duration-300 cursor-pointer hover:shadow-xl hover:bg-gray-100 focus:outline-none focus:ring-2 focus:bg-gray-100 focus:ring-gray-500"
                 tabindex="0"
