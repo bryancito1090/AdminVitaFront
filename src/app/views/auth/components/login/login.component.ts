@@ -8,7 +8,7 @@ import { PasswordModule } from 'primeng/password';
 import { RippleModule } from 'primeng/ripple';
 import { Router } from '@angular/router';
 import { NgIf, NgClass } from '@angular/common';
-import { AuthService } from '../service/auth.service';
+import { AuthService } from '../../service/auth.service';
 import { ProgressSpinner } from 'primeng/progressspinner';
 
 @Component({

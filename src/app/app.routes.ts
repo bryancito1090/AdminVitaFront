@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { LoginComponent } from './views/auth/login/login.component';
+import { LoginComponent } from './views/auth/components/login/login.component';
 import { AppLayout } from './layout/component/app.layout';
 import { HomeComponent } from './views/dashboard/home/home.component';
 import { OrdenTrabajoComponent } from './views/dashboard/orden-trabajo/orden-trabajo.component';
