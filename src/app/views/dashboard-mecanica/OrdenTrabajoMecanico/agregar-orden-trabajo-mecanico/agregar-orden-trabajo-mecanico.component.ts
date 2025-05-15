@@ -14,6 +14,12 @@ import { Dialog } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { Cliente } from '../../../../../domain/request/Cliente.model';
+import { TipoVehiculoService } from '../../../services/tipo-vehiculo.service';
+import { DropdownModule } from 'primeng/dropdown';
+import { CalendarModule } from 'primeng/calendar';
+import { AddVehicleNoInstitucional } from '../../../../../domain/request/Vehiculo.model';
+import { VehiculoService } from '../../../services/vehiculo.service';
+import { ArchivosService } from '../../../services/archivos.service';
 
 @Component({
   selector: 'app-agregar-orden-trabajo-mecanico',
@@ -23,7 +29,10 @@ import { Cliente } from '../../../../../domain/request/Cliente.model';
     ReactiveFormsModule,
     Dialog,
     ButtonModule, 
-    InputTextModule],
+    InputTextModule,
+    DropdownModule,
+    CalendarModule
+    ],
   templateUrl: './agregar-orden-trabajo-mecanico.component.html',
   styleUrl: './agregar-orden-trabajo-mecanico.component.scss'
 })
@@ -90,7 +99,10 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit{
   mostrarTipoDocumento: boolean = true;
 
   mostrarPopupPropietario: boolean = false;
-  visibleVehiculo = false;
+  visibleVehiculo: boolean = false;
+
+  // Property to store vehicle types
+  tipoVehiculo: any[] = [];
   tipoDocumento: string = 'cedula';
 
 // Datos para el formulario
@@ -133,6 +145,31 @@ datosEmpresa = {
     margin: 0,
     overflow: 'visible'
   };
+  documentoVehiculo: string = '';
+  clienteVehiculoActual: any = null;
+  mostrarInfoClienteVehiculo: boolean = false;
+  cargandoClienteVehiculo: boolean = false;
+  errorClienteVehiculo: string = '';
+
+  nuevoVehiculo: AddVehicleNoInstitucional = {
+   idTipoVehiculo: 0,
+  marca: '',
+  modelo: '',
+  version: null,            // Ahora es opcional
+  placa: '',
+  anio: 0,
+  color: '',
+  numeroChasis: null,       // Ahora es opcional
+  numeroVehiculo: null,     // Ahora es opcional
+  estado: 1,
+  ultimoAnioMatriculacion: null, // Ahora es opcional
+  ultimoAnioRTV: null,      // Ahora es opcional
+  idCliente: 0,
+  idLicencias: [],
+  archivos: []
+};
+listaAnios: number[] = [];
+cargandoRegistroVehiculo: boolean = false;
   constructor(
     private router: Router,
     private validacionService: ValidacionService,
@@ -140,14 +177,27 @@ datosEmpresa = {
     private mecanicoService: MecanicoService,
     private ordenTrabajoService: OrdenTrabajoService,
     private adjuntoService : AdjuntoService,
-    private clienteService: ClienteService
+    private clienteService: ClienteService,
+    private tipoVehiculoService: TipoVehiculoService,
+    private vehiculoService: VehiculoService,
+    private archivoService : ArchivosService
   ) {}
 
   ngOnInit() {
     this.obtenerNombreUsuario();
     this.cargarSupervisores();
+    this.GetTipoVehiculo();
+    this.generarListaAnios();
   }
+  generarListaAnios(): void {
+  const anioActual = new Date().getFullYear();
+  const anioInicio = anioActual - 30; // 30 años atrás
   
+  this.listaAnios = [];
+  for (let i = anioActual; i >= anioInicio; i--) {
+    this.listaAnios.push(i);
+  }
+}
   cargarSupervisores() {
     this.cargandoMecanicos = true;
     this.mecanicoService.getSupervisores().subscribe({
@@ -232,45 +282,55 @@ datosEmpresa = {
     this.activeTab = 'informacion'; // Reiniciamos a la primera pestaña
   }
   
-  validarVehiculo() {
-    if (!this.placa || this.placa.trim() === '') {
-      this.toastr.warning('Por favor ingrese una placa válida', 'Advertencia');
-      return;
-    }
-    
-    this.cargandoVehiculo = true;
-    this.mostrarInfoVehiculo = false;
-    
-    this.validacionService.validarVehiculoXPlaca(this.placa)
-      .subscribe({
-        next: (respuesta) => {
-          this.vehiculoActual = respuesta;
-          this.mostrarInfoVehiculo = true;
-          this.cargandoVehiculo = false;
-          
-          // Asignar idVehiculo a ordenData
-          this.ordenData.idVehiculo = this.vehiculoActual.idVehiculo;
-          
-          if (this.vehiculoActual.estado === 0) {
-            this.toastr.success('Vehículo encontrado - Estado: Operativo', 'Éxito');
-          } else if (this.vehiculoActual.estado === 1) {
-            this.toastr.info('Vehículo encontrado - Estado: En Mantenimiento', 'Información');
-          } else if (this.vehiculoActual.estado === 2) {
-            this.toastr.warning('Vehículo encontrado - Estado: De Baja', 'Precaución');
-          }
-        },
-        error: (error) => {
-          console.error('Error al validar el vehículo:', error);
-          this.cargandoVehiculo = false;
-          
-          if (error.status === 404) {
-            this.toastr.warning('Vehículo no encontrado', 'No existe');
-          } else {
-            this.toastr.error('Error al validar el vehículo', 'Error');
-          }
-        }
-      });
+validarVehiculo() {
+  if (!this.placa || this.placa.trim() === '') {
+    this.toastr.warning('Por favor ingrese una placa válida', 'Advertencia');
+    return;
   }
+  
+  this.cargandoVehiculo = true;
+  this.mostrarInfoVehiculo = false;
+  
+  // Limpiar previews de imágenes existentes
+  this.limpiarPrevisualizaciones();
+  
+  this.validacionService.validarVehiculoXPlaca(this.placa)
+    .subscribe({
+      next: (respuesta) => {
+        console.log('Respuesta de validación de vehículo:', respuesta);
+        this.vehiculoActual = respuesta;
+        this.mostrarInfoVehiculo = true;
+        
+        // Asignar idVehiculo a ordenData
+        this.ordenData.idVehiculo = this.vehiculoActual.idVehiculo;
+        
+        // Cargar las imágenes del vehículo si tiene un ID válido
+        if (this.vehiculoActual.idVehiculo) {
+          this.cargarImagenesVehiculo(this.vehiculoActual.idVehiculo);
+        }
+        
+        this.cargandoVehiculo = false;
+        
+        if (this.vehiculoActual.estado === 0) {
+          this.toastr.success('Vehículo encontrado - Estado: Operativo', 'Éxito');
+        } else if (this.vehiculoActual.estado === 1) {
+          this.toastr.info('Vehículo encontrado - Estado: En Mantenimiento', 'Información');
+        } else if (this.vehiculoActual.estado === 2) {
+          this.toastr.warning('Vehículo encontrado - Estado: De Baja', 'Precaución');
+        }
+      },
+      error: (error) => {
+        console.error('Error al validar el vehículo:', error);
+        this.cargandoVehiculo = false;
+        
+        if (error.status === 404) {
+          this.toastr.warning('Vehículo no encontrado', 'No existe');
+        } else {
+          this.toastr.error('Error al validar el vehículo', 'Error');
+        }
+      }
+    });
+}
   crearNuevoVehiculo() {
     this.router.navigate(['/panel/mecanica/nuevo-vehiculo']);
   }
@@ -847,11 +907,249 @@ validarCampo(tipo: string, campo: string, valor: any): void {
 showDialog() {
   this.visible = true;
 }
-  mostrarPopupVehiculo(): void {
-    this.visibleVehiculo = true;
+  GetTipoVehiculo(): void {
+    this.tipoVehiculoService.getTiposVehiculo().subscribe({
+      next: (data) => {
+        this.tipoVehiculo = data;
+      },
+      error: (error) => {
+        console.error('Error al cargar los tipos de vehículo:', error);
+        this.toastr.error('No se pudieron cargar los tipos de vehículo', 'Error');
+      }
+    });
   }
-
+abrirPopupVehiculo() {
+  this.visibleVehiculo = true;
+  // Reiniciar las variables
+  this.documentoVehiculo = '';
+  this.clienteVehiculoActual = null;
+  this.mostrarInfoClienteVehiculo = false;
+  this.errorClienteVehiculo = '';
+  
+  // Reiniciar el objeto del nuevo vehículo
+  this.nuevoVehiculo = {
+    idTipoVehiculo: 0,
+    marca: '',
+    modelo: '',
+    version: '',
+    placa: '',
+    anio: 0,
+    color: '',
+    numeroChasis: '',
+    numeroVehiculo: '', 
+    estado: 1,  
+    ultimoAnioMatriculacion: 0, 
+    ultimoAnioRTV: 0, 
+    idCliente: 0,
+    idLicencias: [],
+    archivos: []
+  };
+}
   cerrarPopupVehiculo(): void {
     this.visibleVehiculo = false;
   }
+validarClienteVehiculo() {
+  if (!this.documentoVehiculo || this.documentoVehiculo.trim() === '') {
+    this.toastr.warning('Por favor ingrese un documento válido', 'Advertencia');
+    return;
+  }
+  
+  this.cargandoClienteVehiculo = true;
+  this.mostrarInfoClienteVehiculo = false;
+  this.errorClienteVehiculo = '';
+  
+  // Usar exactamente el mismo servicio y método que usas en validarCliente()
+  this.validacionService.validarClienteXDoc(this.documentoVehiculo)
+    .subscribe({
+      next: (respuesta) => {
+        this.clienteVehiculoActual = respuesta;
+        this.mostrarInfoClienteVehiculo = true;
+        this.cargandoClienteVehiculo = false;
+        
+        // También puedes asignar el cliente al vehículo aquí si lo necesitas
+        // this.nuevoVehiculo.idCliente = this.clienteVehiculoActual.idPersona;
+        
+        if (this.clienteVehiculoActual.esClienteActivo) {
+          this.toastr.success('Cliente encontrado', 'Éxito');
+        } else {
+          this.toastr.info('El cliente existe pero no está activo', 'Información');
+        }
+      },
+      error: (error) => {
+        console.error('Error al validar el cliente:', error);
+        this.cargandoClienteVehiculo = false;
+        this.clienteVehiculoActual = null;
+        
+        if (error.status === 404) {
+          this.errorClienteVehiculo = 'Cliente no encontrado';
+          this.toastr.warning('Cliente no encontrado', 'No existe');
+        } else {
+          this.errorClienteVehiculo = 'Error al validar el cliente';
+          this.toastr.error('Error al validar el cliente', 'Error');
+        }
+      }
+    });
+}
+registrarVehiculo() {
+  // Validar campos obligatorios
+  if (!this.clienteVehiculoActual) {
+    this.toastr.warning('Debe validar un cliente primero', 'Advertencia');
+    return;
+  }
+
+  if (!this.nuevoVehiculo.marca || !this.nuevoVehiculo.modelo || !this.nuevoVehiculo.color || 
+      !this.nuevoVehiculo.anio || !this.nuevoVehiculo.idTipoVehiculo) {
+    this.toastr.warning('Complete todos los campos obligatorios', 'Advertencia');
+    return;
+  }
+
+  // Extraer solo los campos necesarios para la petición, omitiendo idVehiculo
+  const vehiculoParaEnviar = {
+    idTipoVehiculo: this.nuevoVehiculo.idTipoVehiculo,
+    marca: this.nuevoVehiculo.marca,
+    modelo: this.nuevoVehiculo.modelo,
+    version: this.nuevoVehiculo.version,
+    placa: this.nuevoVehiculo.placa,
+    anio: this.nuevoVehiculo.anio,
+    color: this.nuevoVehiculo.color,
+    numeroChasis: this.nuevoVehiculo.numeroChasis,
+    numeroVehiculo: null,  // Usa null en vez de string vacío
+    estado: this.nuevoVehiculo.estado,
+    idCliente: this.clienteVehiculoActual.idPersona,
+    idLicencias: this.nuevoVehiculo.idLicencias || null,
+    archivos: this.nuevoVehiculo.archivos || null,
+    ultimoAnioMatriculacion: this.nuevoVehiculo.ultimoAnioMatriculacion || 0, // Add this property
+    ultimoAnioRTV: this.nuevoVehiculo.ultimoAnioRTV || 0 // Add this property
+  };
+  
+  // Conversión segura para años (usando null si no hay valor)
+  if (this.nuevoVehiculo.ultimoAnioMatriculacion !== null) {
+    vehiculoParaEnviar.ultimoAnioMatriculacion = Number(this.nuevoVehiculo.ultimoAnioMatriculacion) || 0;
+  }
+  
+  if (this.nuevoVehiculo.ultimoAnioRTV !== null) {
+    vehiculoParaEnviar.ultimoAnioRTV = Number(this.nuevoVehiculo.ultimoAnioRTV) || 0;
+  }
+  
+  this.cargandoRegistroVehiculo = true;
+  console.log('Datos del vehículo a registrar:', vehiculoParaEnviar);
+  
+  this.vehiculoService.postVehicleNoInstitucional(vehiculoParaEnviar)
+    .subscribe({
+      next: (respuesta) => {
+        console.log('Respuesta del servidor:', respuesta);
+        this.cargandoRegistroVehiculo = false;
+        
+        if (respuesta === 'Vehículo registrado correctamente.' || 
+            (typeof respuesta === 'object' && respuesta.success)) {
+          this.toastr.success('Vehículo registrado correctamente', 'Éxito');
+          this.visibleVehiculo = false;
+          this.resetearFormulario();
+          
+          // Si deseas usar la placa del vehículo recién creado
+          if (respuesta.placa) {
+            this.placa = respuesta.placa;
+            this.validarVehiculo();
+          }
+        } else {
+          this.toastr.warning(typeof respuesta === 'string' ? respuesta : 'Respuesta inesperada del servidor', 'Advertencia');
+        }
+      },
+      error: (error) => {
+        console.error('Error al registrar vehículo:', error);
+        this.cargandoRegistroVehiculo = false;
+        
+        if (error.error && typeof error.error === 'string') {
+          this.toastr.error(error.error, 'Error');
+        } else {
+          this.toastr.error('Error al registrar el vehículo', 'Error');
+        }
+      }
+    });
+}
+limpiarPrevisualizaciones(): void {
+  this.previewFrontal = null;
+  this.previewLateralIzquierda = null;
+  this.previewLateralDerecha = null;
+  this.previewTrasera = null;
+  
+  // También limpiar los archivos
+  this.imagenFrontal = null;
+  this.imagenLateralIzquierda = null;
+  this.imagenLateralDerecha = null;
+  this.imagenTrasera = null;
+}
+
+// Método para cargar imágenes del vehículo
+cargarImagenesVehiculo(idVehiculo: number) {
+  this.adjuntoService.getAdjuntosByVehiculo(idVehiculo)
+    .subscribe({
+      next: (adjuntos) => {
+        console.log('Adjuntos del vehículo:', adjuntos);
+        if (adjuntos && adjuntos.length > 0) {
+          // Procesar cada adjunto
+          adjuntos.forEach(adjunto => {
+            if (adjunto.ruta) {
+              // Obtener el nombre del archivo desde la ruta
+              const fileName = adjunto.ruta.split('/').pop() || '';
+              
+              // Llamar al servicio para obtener el archivo físico
+              this.archivoService.getArchivo(fileName)
+                .subscribe({
+                  next: (blob) => {
+                    // Crear una URL para el blob
+                    const objectURL = URL.createObjectURL(blob);
+                    
+                    // Asignar la imagen según el nombre o tipo
+                    this.asignarImagenSegunTipo(adjunto, objectURL);
+                  },
+                  error: (error) => {
+                    console.error(`Error al obtener el archivo ${fileName}:`, error);
+                  }
+                });
+            }
+          });
+          
+          // Informar al usuario
+          this.toastr.info(`Se han encontrado ${adjuntos.length} imágenes del vehículo`, 'Imágenes cargadas');
+        }
+      },
+      error: (error) => {
+        console.error('Error al obtener adjuntos del vehículo:', error);
+        this.toastr.warning('No se pudieron cargar las imágenes del vehículo', 'Advertencia');
+      }
+    });
+}
+
+// Método para asignar la imagen a su ubicación correspondiente
+asignarImagenSegunTipo(adjunto: any, objectURL: string): void {
+  const nombreLowerCase = adjunto.nombre.toLowerCase();
+  
+  if (nombreLowerCase.includes('frontal')) {
+    this.previewFrontal = objectURL;
+  } else if (nombreLowerCase.includes('lateral') && nombreLowerCase.includes('izq')) {
+    this.previewLateralIzquierda = objectURL;
+  } else if (nombreLowerCase.includes('lateral') && !nombreLowerCase.includes('izq')) {
+    this.previewLateralDerecha = objectURL;
+  } else if (nombreLowerCase.includes('trasera') || nombreLowerCase.includes('posterior')) {
+    this.previewTrasera = objectURL;
+  } else {
+    // Si no se puede determinar el tipo por el nombre, asignar a la primera vista previa disponible
+    if (!this.previewFrontal) {
+      this.previewFrontal = objectURL;
+    } else if (!this.previewLateralIzquierda) {
+      this.previewLateralIzquierda = objectURL;
+    } else if (!this.previewLateralDerecha) {
+      this.previewLateralDerecha = objectURL;
+    } else if (!this.previewTrasera) {
+      this.previewTrasera = objectURL;
+    }
+  }
+}
+
+// Método auxiliar para obtener el nombre del archivo de una ruta
+obtenerNombreArchivo(ruta: string): string {
+  if (!ruta) return '';
+  return ruta.split('/').pop() || '';
+}
 }

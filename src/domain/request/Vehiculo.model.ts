@@ -24,3 +24,20 @@ export interface UpdateOptionsVehicle {
     idPropietario?: number;
 }
   
+export interface AddVehicleNoInstitucional {
+  idTipoVehiculo: number;
+  marca: string;
+  modelo: string;
+  version?: string | null;       // Opcional
+  placa: string;
+  anio: number;
+  color: string;
+  numeroChasis?: string | null;  // Opcional
+  numeroVehiculo?: string | null; // Opcional
+  estado?: number | null;        // Opcional, con valor predeterminado 1  
+  ultimoAnioMatriculacion?: number | null; // Opcional
+  ultimoAnioRTV?: number | null; // Opcional
+  idCliente: number;
+  idLicencias: [];             // Null para no institucionales
+  archivos: [];                // Null para no institucionales
+}

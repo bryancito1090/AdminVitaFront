@@ -1153,3 +1153,324 @@
     flex-direction: column;
   }
 }
+
+//popup vehiculos
+/* Estilos específicos para el diálogo de vehículo */
+:host ::ng-deep .vehiculo-dialog {
+  .p-dialog {
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh !important;
+    border-radius: 6px;
+    overflow: hidden !important; /* Mantener hidden en el diálogo principal */
+    
+    .p-dialog-header {
+      /* Si estás usando el header de PrimeNG, asegúrate de que esté fijo */
+      flex-shrink: 0;
+    }
+    
+    .p-dialog-content {
+      padding: 0 !important;
+      margin: 0 !important;
+      overflow: hidden !important; /* Crucial: hidden para evitar doble scroll */
+      display: flex;
+      flex-direction: column;
+      max-height: none !important; /* Quitar restricción de altura aquí */
+      
+      /* Estructura flex para permitir contenido scrollable entre header y footer fijos */
+      display: flex;
+      flex-direction: column;
+      height: 100%; /* Asegurar que ocupe todo el espacio disponible */
+    }
+    
+    .p-dialog-footer {
+      /* Si estás usando el footer de PrimeNG, asegúrate de que esté fijo */
+      flex-shrink: 0;
+    }
+  }
+}
+
+/* Header del diálogo - fijo en la parte superior */
+.popup-header {
+  background-color: #1f295b;
+  color: #ffffff;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  flex-shrink: 0; /* Evita que el header se encoja - crucial para mantenerlo fijo */
+  position: sticky; /* Añadido para reforzar que se mantenga fijo */
+  top: 0; /* Se mantiene en la parte superior */
+  z-index: 2; /* Asegura que esté por encima del contenido scrollable */
+  
+  .popup-title {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 500;
+  }
+  
+  .close-button {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 1.2rem;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .pi {
+      font-size: 16px;
+    }
+  }
+}
+
+/* Contenido del diálogo - Con scroll */
+.popup-content {
+  padding: 20px;
+  flex-grow: 1; /* Permite que crezca y ocupe el espacio disponible */
+  overflow-y: auto !important; /* Este es el único contenedor que tendrá scroll vertical */
+  height: 100%; /* Asegura que ocupe todo el espacio disponible entre header y footer */
+  
+  .section-title {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e0e0e0;
+    color: #1f295b;
+    font-weight: 500;
+    
+    .pi {
+      margin-right: 8px;
+      font-size: 1.1rem;
+    }
+    
+    span {
+      font-size: 1.1rem;
+    }
+  }
+  
+  form {
+    margin-bottom: 16px;
+  }
+}
+
+/* Botones en la parte inferior - fijos en parte inferior */
+.buttons-container {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  background-color: #f5f5f5;
+  border-top: 1px solid #e0e0e0;
+  width: 100%;
+  flex-shrink: 0; /* Evita que el footer se encoja - crucial para mantenerlo fijo */
+  position: sticky; /* Añadido para reforzar que se mantenga fijo */
+  bottom: 0; /* Se mantiene en la parte inferior */
+  z-index: 2; /* Asegura que esté por encima del contenido scrollable */
+}
+
+/* Resto de los estilos (sin cambios) */
+.btn {
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  transition: all 0.2s ease;
+  
+  .pi {
+    font-size: 14px;
+  }
+  
+  &.btn-cancel {
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    color: #333333;
+    
+    &:hover {
+      background-color: #eaeaea;
+    }
+  }
+  
+  &.btn-submit {
+    background-color: #1f295b;
+    color: white;
+    
+    &:hover {
+      background-color: #2b3870;
+    }
+    
+    &:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+  }
+}
+
+/* Form styling */
+.form-group {
+  margin-bottom: 16px;
+  position: relative;
+  width: 100%;
+  
+  &.required .form-label::after {
+    content: "*";
+    color: #f44336;
+    margin-left: 4px;
+  }
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  
+  .form-group {
+    flex: 1;
+    min-width: 200px;
+  }
+}
+
+.form-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: #333333;
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  
+  &:focus {
+    outline: none;
+    border-color: #1f295b;
+    box-shadow: 0 0 0 2px rgba(31, 41, 91, 0.2);
+  }
+  
+  &.ng-invalid.ng-touched {
+    border-color: #f44336;
+  }
+}
+
+/* Client validation section */
+.client-validation-section {
+  margin-bottom: 24px;
+  
+  .cedula-validation-container {
+    display: flex;
+    gap: 8px;
+    
+    .form-input {
+      flex: 1;
+    }
+    
+    .btn-validate {
+      background-color: #1f295b;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 0 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      
+      &:hover {
+        background-color: #2b3870;
+      }
+      
+      .pi {
+        font-size: 14px;
+      }
+    }
+  }
+}
+
+.client-info {
+  margin-top: 16px;
+}
+
+/* PrimeNG Components styling */
+:host ::ng-deep {
+  .full-width-dropdown {
+    width: 100%;
+    
+    .p-dropdown {
+      width: 100%;
+      
+      .p-dropdown-label {
+        padding: 10px 12px;
+      }
+    }
+  }
+  
+  .p-dropdown {
+    width: 100%;
+    
+    .p-dropdown-trigger {
+      color: #333333;
+    }
+    
+    &:not(.p-disabled).p-focus {
+      border-color: #1f295b;
+      box-shadow: 0 0 0 2px rgba(31, 41, 91, 0.2);
+    }
+  }
+  
+  .p-calendar {
+    width: 100%;
+    
+    .p-inputtext {
+      width: 100%;
+      padding: 10px 12px;
+    }
+    
+    &:not(.p-disabled).p-focus {
+      .p-inputtext {
+        border-color: #1f295b;
+        box-shadow: 0 0 0 2px rgba(31, 41, 91, 0.2);
+      }
+    }
+  }
+}
+
+/* Personalización del scrollbar - solo para el contenido */
+.popup-content::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.popup-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.popup-content::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.popup-content::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

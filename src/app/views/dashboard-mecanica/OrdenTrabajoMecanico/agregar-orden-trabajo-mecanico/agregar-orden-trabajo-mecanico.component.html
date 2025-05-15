@@ -78,7 +78,7 @@
     
     <!-- Botón para nuevo vehículo (siempre visible) -->
     <div class="actions" style="margin-top: 15px;">
-      <button class="action-btn" (click)="mostrarPopupVehiculo()">Nuevo Vehículo</button>
+      <button class="action-btn" (click)="abrirPopupVehiculo()">Nuevo Vehículo</button>
     </div>
   </div>
 </div>
@@ -705,74 +705,172 @@
   </div>
 </p-dialog>
 <!-- Modal para nuevo vehiculo -->
+
 <p-dialog [(visible)]="visibleVehiculo" 
 [modal]="true" 
 [draggable]="false" 
 [resizable]="false"
-[style]="{ width: '650px', padding: '0', margin: '0', maxHeight: '90vh' }"
-styleClass="vehiculo-dialog light-theme" 
+[style]="{ width: '750px', padding: '0', margin: '0', maxHeight: '90vh' }"
+styleClass="vehiculo-dialog" 
 [showHeader]="false" 
 [closable]="false" 
 [baseZIndex]="1000">
   
 <!-- Header personalizado -->
-<div class="popup-header light">
-  <h2 class="popup-title">Registrar Nuevo Vehículo</h2>
-  <button type="button" class="close-button" (click)="cerrarPopupVehiculo()">✕</button>
+<div class="popup-header">
+  <h2 class="popup-title">Registrar Vehículo</h2>
+  <button type="button" class="close-button" (click)="cerrarPopupVehiculo()">
+    <i class="pi pi-times"></i>
+  </button>
 </div>
 
 <!-- Content -->
-<div class="popup-content light">
-  <form >
-    <div class="form-group">
-      <label for="placa" class="form-label">Número de Placa:</label>
-      <input type="text" id="placa" class="form-input"  name="placa">
+<div class="popup-content">
+  <form>
+    <!-- Sección de cliente -->
+    <div class="section-title">
+      <i class="pi pi-user"></i>
+      <span>Información del Cliente</span>
     </div>
     
-    <div class="form-row">
+<!-- En el diálogo de vehículo -->
+    <div class="client-validation-section">
       <div class="form-group required">
-        <label for="marca" class="form-label">Marca<span class="required-indicator"></span></label>
-        <input type="text" id="marca" class="form-input"  name="marca" required>
+        <label for="documentoVehiculo" class="form-label">Número de Cédula<span class="required-indicator"></span></label>
+        <div class="cedula-validation-container">
+          <!-- Cambiamos el id para evitar conflictos con otros inputs -->
+          <input type="text" id="documentoVehiculo" name="documentoVehiculo" class="form-input" 
+                placeholder="Ej: 1712345678" [(ngModel)]="documentoVehiculo">
+          <button type="button" class="btn-validate" (click)="validarClienteVehiculo()" [disabled]="cargandoClienteVehiculo">
+            <i class="pi pi-search"></i>
+            <span *ngIf="!cargandoClienteVehiculo">Validar</span>
+            <span *ngIf="cargandoClienteVehiculo">Cargando...</span>
+          </button>
+        </div>
       </div>
       
-      <div class="form-group required">
-        <label for="modelo" class="form-label">Modelo<span class="required-indicator"></span></label>
-        <input type="text" id="modelo" class="form-input"  name="modelo" required>
+      <!-- Sección de información del cliente validado (condicional) -->
+      <div class="info-section" *ngIf="mostrarInfoClienteVehiculo && clienteVehiculoActual">
+        <div class="info-item">
+          <p><strong>Nombre completo:</strong> {{clienteVehiculoActual.nombreCompleto}}</p>
+          <p><strong>Documento:</strong> {{clienteVehiculoActual.documento}}</p>
+          <p><strong>Estado:</strong> 
+            <span *ngIf="clienteVehiculoActual.esClienteActivo" style="color: green;">Activo</span>
+            <span *ngIf="!clienteVehiculoActual.esClienteActivo" style="color: orange;">Inactivo</span>
+          </p>
+        </div>
       </div>
+
+      <!-- Mensaje de error cuando no se encuentra el cliente -->
+      <div class="alert alert-danger" *ngIf="errorClienteVehiculo">
+        {{ errorClienteVehiculo }}
+      </div>
+    </div>
+    <!-- Sección de información del vehículo -->
+    <div class="section-title">
+      <i class="pi pi-car"></i>
+      <span>Información del Vehículo</span>
     </div>
     
-    <div class="form-row">
-      <div class="form-group">
-        <label for="version" class="form-label">Versión</label>
-        <input type="text" id="version" class="form-input"  name="version">
-      </div>
-      
-      <div class="form-group required">
-        <label for="ano" class="form-label">Año<span class="required-indicator"></span></label>
-        <input type="number" id="ano" class="form-input"  name="ano" required>
-      </div>
-    </div>
-    
-    <div class="form-row">
-      <div class="form-group">
-        <label for="chasis" class="form-label">Número de Chasis</label>
-        <input type="text" id="chasis" class="form-input"  name="chasis">
-      </div>
-      
-      <div class="form-group required">
-        <label for="color" class="form-label">Color<span class="required-indicator"></span></label>
-        <input type="text" id="color" class="form-input"  name="color" required>
-      </div>
-    </div>
-    
-    <div class="form-group">
-      <label for="tipoVehiculo" class="form-label">Tipo de Vehículo</label>
-    </div>
-  </form>
+    <!-- Actualización de los campos del formulario de vehículo -->
+<div class="form-row">
+  <div class="form-group">
+    <label for="placa" class="form-label">Número de Placa</label>
+    <input type="text" id="placa" class="form-input" placeholder="Ej: ABC-1234" 
+           [(ngModel)]="nuevoVehiculo.placa" name="vehiculoPlaca">
+  </div>
 </div>
 
-<div class="buttons-container light">
-  <button type="button" class="btn btn-cancel light" (click)="cerrarPopupVehiculo()">Cancelar</button>
-  <button type="button" class="btn btn-submit light" >Registrar</button>
+<div class="form-row">
+  <div class="form-group required">
+    <label for="marca" class="form-label">Marca<span class="required-indicator"></span></label>
+    <input type="text" id="marca" class="form-input" required placeholder="Ej: Toyota" 
+           [(ngModel)]="nuevoVehiculo.marca" name="vehiculoMarca">
+  </div>
+  
+  <div class="form-group required">
+    <label for="modelo" class="form-label">Modelo<span class="required-indicator"></span></label>
+    <input type="text" id="modelo" class="form-input" required placeholder="Ej: Corolla" 
+           [(ngModel)]="nuevoVehiculo.modelo" name="vehiculoModelo">
+  </div>
 </div>
-</p-dialog>
+
+<div class="form-row">
+  <div class="form-group">
+    <label for="version" class="form-label">Versión</label>
+    <input type="text" id="version" class="form-input" placeholder="Ej: XLI" 
+           [(ngModel)]="nuevoVehiculo.version" name="vehiculoVersion">
+  </div>
+  
+  <div class="form-group required">
+    <label for="anio" class="form-label">Año<span class="required-indicator"></span></label>
+    <input type="number" id="anio" class="form-input" required placeholder="Ej: 2023" 
+           [(ngModel)]="nuevoVehiculo.anio" name="vehiculoAnio">
+  </div>
+</div>
+
+<div class="form-row">
+  <div class="form-group">
+    <label for="chasis" class="form-label">Número de Chasis</label>
+    <input type="text" id="chasis" class="form-input" placeholder="Ej: JH4DA9380PS016458" 
+           [(ngModel)]="nuevoVehiculo.numeroChasis" name="vehiculoChasis">
+  </div>
+  
+  <div class="form-group required">
+    <label for="color" class="form-label">Color<span class="required-indicator"></span></label>
+    <input type="text" id="color" class="form-input" required placeholder="Ej: Azul" 
+           [(ngModel)]="nuevoVehiculo.color" name="vehiculoColor">
+  </div>
+</div>
+
+<div class="form-row">
+  <div class="form-group required">
+    <label for="tipoVehiculo" class="form-label">Tipo de Vehículo<span class="required-indicator"></span></label>
+    <p-dropdown id="tipoVehiculo" [options]="tipoVehiculo" 
+               optionLabel="detalle" optionValue="idTipoVehiculo" placeholder="Seleccione un tipo" 
+               styleClass="full-width-dropdown"
+               [(ngModel)]="nuevoVehiculo.idTipoVehiculo" name="vehiculoTipo"></p-dropdown>
+  </div>
+</div>
+
+<!-- Sección de información adicional -->
+<div class="section-title">
+  <i class="pi pi-file"></i>
+  <span>Información Adicional</span>
+</div>
+
+<div class="form-row">
+  <div class="form-group">
+    <label for="ultimoAnioMatriculacion" class="form-label">Último Año matriculacion</label>
+    <select id="ultimoAnioMatriculacion" 
+          class="form-control" 
+          [(ngModel)]="nuevoVehiculo.ultimoAnioMatriculacion" 
+          name="vehiculoUltimoAnioMatriculacion">
+    <option [ngValue]="0">Seleccione año</option>
+    <option *ngFor="let anio of listaAnios" [ngValue]="anio">{{ anio }}</option>
+  </select>
+  </div>
+  <div class="form-group">
+  <label for="ultimoAnioRTV" class="form-label">Último Año RTV</label>
+  <select id="ultimoAnioRTV" 
+          class="form-control" 
+          [(ngModel)]="nuevoVehiculo.ultimoAnioRTV" 
+          name="vehiculoUltimoAnioRTV">
+    <option [ngValue]="0">Seleccione año</option>
+    <option *ngFor="let anio of listaAnios" [ngValue]="anio">{{ anio }}</option>
+  </select>
+</div>
+</div>
+
+<!-- Actualiza el botón para registrar el vehículo -->
+<div class="buttons-container">
+  <button type="button" class="btn btn-cancel" (click)="cerrarPopupVehiculo()">
+    <i class="pi pi-times"></i>
+    Cancelar
+  </button>
+  <button type="button" class="btn btn-submit" (click)="registrarVehiculo()" [disabled]="cargandoRegistroVehiculo">
+    <i class="pi pi-save"></i>
+    <span *ngIf="!cargandoRegistroVehiculo">Registrar</span>
+    <span *ngIf="cargandoRegistroVehiculo">Registrando...</span>
+  </button>
+</div>
