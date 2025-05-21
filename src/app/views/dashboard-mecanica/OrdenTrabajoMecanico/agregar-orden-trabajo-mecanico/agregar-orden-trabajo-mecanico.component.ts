@@ -20,6 +20,8 @@ import { CalendarModule } from 'primeng/calendar';
 import { AddVehicleNoInstitucional } from '../../../../../domain/request/Vehiculo.model';
 import { VehiculoService } from '../../../services/vehiculo.service';
 import { ArchivosService } from '../../../services/archivos.service';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService } from 'primeng/api';
 
 @Component({
   selector: 'app-agregar-orden-trabajo-mecanico',
@@ -31,8 +33,10 @@ import { ArchivosService } from '../../../services/archivos.service';
     ButtonModule, 
     InputTextModule,
     DropdownModule,
-    CalendarModule
+    CalendarModule,
+    ConfirmDialogModule
     ],
+  providers: [ConfirmationService],
   templateUrl: './agregar-orden-trabajo-mecanico.component.html',
   styleUrl: './agregar-orden-trabajo-mecanico.component.scss'
 })
@@ -170,6 +174,10 @@ datosEmpresa = {
 };
 listaAnios: number[] = [];
 cargandoRegistroVehiculo: boolean = false;
+idAdjuntoFrontal: number | null = null;
+idAdjuntoLateralIzquierda: number | null = null;
+idAdjuntoLateralDerecha: number | null = null;
+idAdjuntoTrasera: number | null = null;
   constructor(
     private router: Router,
     private validacionService: ValidacionService,
@@ -180,7 +188,8 @@ cargandoRegistroVehiculo: boolean = false;
     private clienteService: ClienteService,
     private tipoVehiculoService: TipoVehiculoService,
     private vehiculoService: VehiculoService,
-    private archivoService : ArchivosService
+    private archivoService : ArchivosService,
+    private confirmationService: ConfirmationService
   ) {}
 
   ngOnInit() {
@@ -511,7 +520,93 @@ validarVehiculo() {
     };
     reader.readAsDataURL(file);
   }
-  eliminarImagen(tipo: string): void {
+eliminarImagen(tipo: string): void {
+  let idAdjunto: number | null = null;
+  let tipoImagen = '';
+  
+  // Determinar qué imagen y ID se están eliminando
+  switch (tipo) {
+    case 'frontal':
+      idAdjunto = this.idAdjuntoFrontal;
+      tipoImagen = 'frontal';
+      break;
+    case 'lateralIzquierda':
+      idAdjunto = this.idAdjuntoLateralIzquierda;
+      tipoImagen = 'lateral izquierda';
+      break;
+    case 'lateralDerecha':
+      idAdjunto = this.idAdjuntoLateralDerecha;
+      tipoImagen = 'lateral derecha';
+      break;
+    case 'trasera':
+      idAdjunto = this.idAdjuntoTrasera;
+      tipoImagen = 'trasera';
+      break;
+  }
+  
+  // Si hay un ID de adjunto, mostrar confirmación
+  if (idAdjunto) {
+    this.confirmationService.confirm({
+      message: `Esta acción no se puede deshacer. ¿Desea eliminar la imagen ${tipoImagen}?`,
+      header: 'Confirmación para eliminar imagen',
+      icon: 'pi pi-exclamation-circle',
+      acceptLabel: 'Sí, eliminar imagen',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.toastr.info('Procesando su solicitud...', 'Eliminando imagen');
+        
+        // Llamar al servicio para eliminar el adjunto
+        this.adjuntoService.eliminarAdjuntoCompleto(idAdjunto).subscribe({
+          next: (respuesta) => {
+            // Si la eliminación fue exitosa
+            if (respuesta) {
+              this.toastr.success(`Imagen ${tipoImagen} eliminada correctamente`, 'Éxito');
+              
+              // Limpiar la vista previa y el ID según el tipo
+              switch (tipo) {
+                case 'frontal':
+                  this.previewFrontal = null;
+                  this.idAdjuntoFrontal = null;
+                  this.imagenFrontal = null;
+                  break;
+                case 'lateralIzquierda':
+                  this.previewLateralIzquierda = null;
+                  this.idAdjuntoLateralIzquierda = null;
+                  this.imagenLateralIzquierda = null;
+                  break;
+                case 'lateralDerecha':
+                  this.previewLateralDerecha = null;
+                  this.idAdjuntoLateralDerecha = null;
+                  this.imagenLateralDerecha = null;
+                  break;
+                case 'trasera':
+                  this.previewTrasera = null;
+                  this.idAdjuntoTrasera = null;
+                  this.imagenTrasera = null;
+                  break;
+              }
+            } else {
+              this.toastr.error(`No se pudo eliminar la imagen ${tipoImagen}`, 'Error');
+            }
+          },
+          error: (error) => {
+            console.error('Error al eliminar el adjunto:', error);
+            
+            if (error.status === 400) {
+              this.toastr.error(`No se puede eliminar esta imagen. Verifique que no esté en uso`, 'Error');
+            } else if (error.status === 401 || error.status === 403) {
+              this.toastr.error('No tiene permisos para realizar esta acción', 'Error de autorización');
+            } else if (error.status === 404) {
+              this.toastr.error('No se encontró la imagen especificada', 'Error');
+            } else {
+              this.toastr.error(`Error al eliminar la imagen ${tipoImagen}: ` + (error.error?.mensaje || error.message), 'Error');
+            }
+          }
+        });
+      }
+    });
+  } else {
+    // Si no hay ID de adjunto (imagen local), solo eliminar la vista previa
     switch (tipo) {
       case 'frontal':
         this.imagenFrontal = null;
@@ -531,58 +626,103 @@ validarVehiculo() {
         break;
     }
   }
-  hayImagenesParaSubir(): boolean {
-    return !!(this.imagenFrontal || this.imagenLateralIzquierda || this.imagenLateralDerecha || this.imagenTrasera);
+}
+ hayImagenesParaSubir(): boolean {
+  return !!(
+    (this.imagenFrontal && !this.idAdjuntoFrontal) || 
+    (this.imagenLateralIzquierda && !this.idAdjuntoLateralIzquierda) || 
+    (this.imagenLateralDerecha && !this.idAdjuntoLateralDerecha) || 
+    (this.imagenTrasera && !this.idAdjuntoTrasera)
+  );
+}
+async subirImagenes(): Promise<boolean> {
+  if (!this.vehiculoActual) {
+    return true;
   }
-  async subirImagenes(): Promise<boolean> {
-    if (!this.vehiculoActual || !this.hayImagenesParaSubir()) {
-      return true;
-    }
-    
-    // Array de tuples [File, string] para mantener el tipo de imagen
-    const imagenesConTipo: [File, string][] = [];
-    if (this.imagenFrontal) imagenesConTipo.push([this.imagenFrontal, 'frontal']);
-    if (this.imagenLateralIzquierda) imagenesConTipo.push([this.imagenLateralIzquierda, 'lateralIzquierda']);
-    if (this.imagenLateralDerecha) imagenesConTipo.push([this.imagenLateralDerecha, 'lateralDerecha']);
-    if (this.imagenTrasera) imagenesConTipo.push([this.imagenTrasera, 'trasera']);
-    
-    this.cargandoImagenes = true;
-    this.imagenesSubidas = 0;
-    this.totalImagenes = imagenesConTipo.length;
-    
-    try {
-      for (const [imagen, tipo] of imagenesConTipo) {
-        // Renombrar el archivo para incluir el tipo de imagen
-        const tipoImagen = tipo.charAt(0).toUpperCase() + tipo.slice(1);
-        const extensionArchivo = imagen.name.split('.').pop();
-        const nuevoNombreArchivo = `${this.vehiculoActual.placa || 'vehiculo'}_${tipoImagen}.${extensionArchivo}`;
-        
-        // Crear un nuevo archivo con el nombre modificado
-        const imagenRenombrada = new File(
-          [imagen], 
-          nuevoNombreArchivo, 
-          { type: imagen.type }
-        );
-        
-        await lastValueFrom(this.adjuntoService.createAdjunto(imagenRenombrada, this.vehiculoActual.idVehiculo));
-        this.imagenesSubidas++;
+  
+  // Array de tuples [File, string] para mantener el tipo de imagen, solo las nuevas
+  const imagenesConTipo: [File, string][] = [];
+  
+  // Solo incluir las imágenes que no tienen ya un ID de adjunto (son nuevas)
+  if (this.imagenFrontal && !this.idAdjuntoFrontal) {
+    imagenesConTipo.push([this.imagenFrontal, 'frontal']);
+  }
+  if (this.imagenLateralIzquierda && !this.idAdjuntoLateralIzquierda) {
+    imagenesConTipo.push([this.imagenLateralIzquierda, 'lateralIzquierda']);
+  }
+  if (this.imagenLateralDerecha && !this.idAdjuntoLateralDerecha) {
+    imagenesConTipo.push([this.imagenLateralDerecha, 'lateralDerecha']);
+  }
+  if (this.imagenTrasera && !this.idAdjuntoTrasera) {
+    imagenesConTipo.push([this.imagenTrasera, 'trasera']);
+  }
+  
+  // Si no hay imágenes nuevas para subir, retornar éxito
+  if (imagenesConTipo.length === 0) {
+    return true;
+  }
+  
+  this.cargandoImagenes = true;
+  this.imagenesSubidas = 0;
+  this.totalImagenes = imagenesConTipo.length;
+  
+  try {
+    for (const [imagen, tipo] of imagenesConTipo) {
+      // Renombrar el archivo para incluir el tipo de imagen
+      const tipoImagen = tipo.charAt(0).toUpperCase() + tipo.slice(1);
+      const extensionArchivo = imagen.name.split('.').pop();
+      const nuevoNombreArchivo = `${this.vehiculoActual.placa || 'vehiculo'}_${tipoImagen}.${extensionArchivo}`;
+      
+      // Crear un nuevo archivo con el nombre modificado
+      const imagenRenombrada = new File(
+        [imagen], 
+        nuevoNombreArchivo, 
+        { type: imagen.type }
+      );
+      
+      // Subir la imagen y obtener la respuesta
+      const respuesta = await lastValueFrom(this.adjuntoService.createAdjunto(imagenRenombrada, this.vehiculoActual.idVehiculo));
+      
+      // Si la respuesta contiene el ID del adjunto, actualizarlo en el componente
+      if (respuesta && respuesta.idAdjunto) {
+        switch (tipo) {
+          case 'frontal':
+            this.idAdjuntoFrontal = respuesta.idAdjunto;
+            break;
+          case 'lateralIzquierda':
+            this.idAdjuntoLateralIzquierda = respuesta.idAdjunto;
+            break;
+          case 'lateralDerecha':
+            this.idAdjuntoLateralDerecha = respuesta.idAdjunto;
+            break;
+          case 'trasera':
+            this.idAdjuntoTrasera = respuesta.idAdjunto;
+            break;
+        }
       }
       
-      this.toastr.success(`Se subieron ${this.imagenesSubidas} imágenes exitosamente`, 'Éxito');
-      this.cargandoImagenes = false;
-      return true;
-    } catch (error) {
-      console.error('Error al subir imágenes:', error);
-      this.cargandoImagenes = false;
-      if (this.imagenesSubidas > 0) {
-        this.toastr.warning(`Se subieron ${this.imagenesSubidas} de ${this.totalImagenes} imágenes`, 'Advertencia');
-        return true; // Consideramos éxito parcial
-      } else {
-        this.toastr.error('No se pudieron subir las imágenes', 'Error');
-        return false;
-      }
+      this.imagenesSubidas++;
+    }
+    
+    if (this.imagenesSubidas > 0) {
+      this.toastr.success(`Se subieron ${this.imagenesSubidas} imágenes nuevas exitosamente`, 'Éxito');
+    }
+    
+    this.cargandoImagenes = false;
+    return true;
+  } catch (error) {
+    console.error('Error al subir imágenes:', error);
+    this.cargandoImagenes = false;
+    
+    if (this.imagenesSubidas > 0) {
+      this.toastr.warning(`Se subieron ${this.imagenesSubidas} de ${this.totalImagenes} imágenes nuevas`, 'Advertencia');
+      return true; // Consideramos éxito parcial
+    } else {
+      this.toastr.error('No se pudieron subir las imágenes nuevas', 'Error');
+      return false;
     }
   }
+}
   isMobileDevice(): boolean {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   }
@@ -1078,6 +1218,12 @@ limpiarPrevisualizaciones(): void {
   this.imagenLateralIzquierda = null;
   this.imagenLateralDerecha = null;
   this.imagenTrasera = null;
+  
+  // Limpiar IDs de adjuntos
+  this.idAdjuntoFrontal = null;
+  this.idAdjuntoLateralIzquierda = null;
+  this.idAdjuntoLateralDerecha = null;
+  this.idAdjuntoTrasera = null;
 }
 
 // Método para cargar imágenes del vehículo
@@ -1127,22 +1273,30 @@ asignarImagenSegunTipo(adjunto: any, objectURL: string): void {
   
   if (nombreLowerCase.includes('frontal')) {
     this.previewFrontal = objectURL;
+    this.idAdjuntoFrontal = adjunto.idAdjunto;
   } else if (nombreLowerCase.includes('lateral') && nombreLowerCase.includes('izq')) {
     this.previewLateralIzquierda = objectURL;
+    this.idAdjuntoLateralIzquierda = adjunto.idAdjunto;
   } else if (nombreLowerCase.includes('lateral') && !nombreLowerCase.includes('izq')) {
     this.previewLateralDerecha = objectURL;
+    this.idAdjuntoLateralDerecha = adjunto.idAdjunto;
   } else if (nombreLowerCase.includes('trasera') || nombreLowerCase.includes('posterior')) {
     this.previewTrasera = objectURL;
+    this.idAdjuntoTrasera = adjunto.idAdjunto;
   } else {
     // Si no se puede determinar el tipo por el nombre, asignar a la primera vista previa disponible
     if (!this.previewFrontal) {
       this.previewFrontal = objectURL;
+      this.idAdjuntoFrontal = adjunto.idAdjunto;
     } else if (!this.previewLateralIzquierda) {
       this.previewLateralIzquierda = objectURL;
+      this.idAdjuntoLateralIzquierda = adjunto.idAdjunto;
     } else if (!this.previewLateralDerecha) {
       this.previewLateralDerecha = objectURL;
+      this.idAdjuntoLateralDerecha = adjunto.idAdjunto;
     } else if (!this.previewTrasera) {
       this.previewTrasera = objectURL;
+      this.idAdjuntoTrasera = adjunto.idAdjunto;
     }
   }
 }
@@ -1151,5 +1305,29 @@ asignarImagenSegunTipo(adjunto: any, objectURL: string): void {
 obtenerNombreArchivo(ruta: string): string {
   if (!ruta) return '';
   return ruta.split('/').pop() || '';
+}
+retirarVehiculo() {
+  this.confirmationService.confirm({
+    message: '¿Está seguro que desea retirar este vehículo? Se limpiarán todos los datos asociados.',
+    header: 'Confirmación para retirar vehículo',
+    icon: 'pi pi-exclamation-triangle',
+    acceptLabel: 'Sí, retirar vehículo',
+    rejectLabel: 'Cancelar',
+    accept: () => {
+      // Limpiar datos del vehículo
+      this.vehiculoActual = null;
+      this.mostrarInfoVehiculo = false;
+      this.placa = '';
+      
+      // Limpiar imágenes
+      this.limpiarPrevisualizaciones();
+      
+      // Limpiar ID de vehículo en ordenData
+      this.ordenData.idVehiculo = 0;
+      
+      // Notificar al usuario
+      this.toastr.info('Se ha retirado el vehículo', 'Información');
+    }
+  });
 }
 }

@@ -12,21 +12,8 @@ export class ReporteService {
 
   constructor(private http:HttpClient) { }
   
-  getReporteOrdenes(fechaInicio?: Date | string, fechaFin?: Date | string): Observable<any> {
-    let params = new HttpParams();
-    if (fechaInicio) {
-      const fechaInicioStr = fechaInicio instanceof Date 
-        ? fechaInicio.toISOString().split('T')[0] 
-        : fechaInicio;
-      params = params.set('fechaInicio', fechaInicioStr);
-    }
-    if (fechaFin) {
-      const fechaFinStr = fechaFin instanceof Date 
-        ? fechaFin.toISOString().split('T')[0] 
-        : fechaFin;
-      params = params.set('fechaFin', fechaFinStr);
-    }
-    return this.http.get<any>(`${this.apiUrl}/Ordenes`, { params });
+   getReporteOrdenes(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/Ordenes`);
   }
   getReporteKardex(fechaInicio?: Date | string, fechaFin?: Date | string): Observable<any> {
     let params = new HttpParams();

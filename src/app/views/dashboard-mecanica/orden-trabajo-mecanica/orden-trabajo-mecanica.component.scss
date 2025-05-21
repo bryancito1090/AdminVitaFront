@@ -2,3 +2,92 @@ p-card {
     margin: 1rem;
     padding: 0;
 }
+.custom-dialog {
+    width: 75vw;
+    max-width: 700px;
+}
+
+@media (max-width: 768px) {
+    .custom-dialog {
+        width: 100vw !important;
+        height: 100vh !important;
+    }
+}
+/* Estilos específicos para el p-calendar en tu aplicación */
+
+:host ::ng-deep .p-calendar {
+  width: 100%;
+}
+
+:host ::ng-deep .p-calendar .p-inputtext {
+  width: 100%;
+  padding-right: 2.5rem; /* Espacio para el ícono */
+}
+
+:host ::ng-deep .p-calendar-w-btn .p-inputtext {
+  border-top-right-radius: 6px !important;
+  border-bottom-right-radius: 6px !important;
+}
+
+:host ::ng-deep .p-calendar .p-datepicker-trigger {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  background: transparent;
+  border: none;
+  color: #6c757d;
+}
+
+:host ::ng-deep .p-calendar .p-datepicker-trigger:hover {
+  background: rgba(0,0,0,0.05);
+  color: #495057;
+}
+
+/* Para la alternativa con input separado */
+:host ::ng-deep .calendar-overlay {
+  position: absolute;
+  left: -10000px;
+  top: -10000px;
+}
+
+:host ::ng-deep .p-inputgroup .p-inputgroup-addon {
+  background: #f8f9fa;
+  border-color: #ced4da;
+  color: #495057;
+  border-left: none;
+  cursor: pointer;
+}
+
+:host ::ng-deep .p-inputgroup .p-inputgroup-addon:hover {
+  background: #e9ecef;
+}
+
+/* Estilos para FloatLabel específicos */
+:host ::ng-deep .p-float-label > label {
+  left: 0.75rem;
+}
+
+:host ::ng-deep .p-inputtext[readonly]:not(.p-disabled) {
+  background-color: #fff;
+  color: #495057;
+  cursor: default;
+}
+
+/* Estilos para corregir el panel del calendario */
+:host ::ng-deep .p-datepicker table {
+  font-size: 0.875rem;
+  margin: 0.5rem 0;
+}
+
+:host ::ng-deep .p-datepicker:not(.p-disabled) table td span:not(.p-highlight):not(.p-disabled):hover {
+  background: #e9ecef;
+}
+
+:host ::ng-deep .p-datepicker .p-datepicker-header {
+  padding: 0.5rem;
+}
+
+:host ::ng-deep .p-datepicker .p-datepicker-buttonbar {
+  padding: 0.5rem;
+}

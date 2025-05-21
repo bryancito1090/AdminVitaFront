@@ -1,122 +1,92 @@
 <div class="dashboard-container">
     <!-- Cuadrante 1: Reporte de Órdenes de Trabajo -->
     <div class="dashboard-quadrant">
+      <div class="quadrant-header">
+        <h3>Reporte de Órdenes de Trabajo por Año</h3>
+      </div>
+      <div class="quadrant-content">
+        <!-- Resumen de totales -->
+        <div class="summary-cards">
+          <div class="summary-card summary-card-active">
+            <div class="summary-title">Órdenes Activas</div>
+            <div class="summary-value">{{ reporteAnualData.totalOrdenesActivo || 0 }}</div>
+          </div>
+          <div class="summary-card summary-card-completed">
+            <div class="summary-title">Órdenes Finalizadas</div>
+            <div class="summary-value">{{ reporteAnualData.totalOrdenesFinalizado || 0 }}</div>
+          </div>
+          <div class="summary-card summary-card-fse">
+            <div class="summary-title">Órdenes FSE</div>
+            <div class="summary-value">{{ reporteAnualData.totalOrdenesFSE || 0 }}</div>
+          </div>
+          <div class="summary-card summary-card-canceled">
+            <div class="summary-title">Órdenes Anuladas</div>
+            <div class="summary-value">{{ reporteAnualData.totalOrdenesAnuladas || 0 }}</div>
+          </div>
+        </div>
+        
+        <!-- Gráfica -->
+        <div class="chart-container" *ngIf="!loadingAnual">
+          <p-chart type="bar" [data]="OrdenesAnualesData" [options]="OrdenesAnualesOptions" height="250px" width="100%"></p-chart>
+        </div>
+        <div class="spinner-container" *ngIf="loadingAnual">
+          <p-progressSpinner></p-progressSpinner>
+        </div>
+      </div>
+    </div>
+        <!-- Cuadrante 2: Reporte de Movimientos de Inventario -->
+    <div class="dashboard-quadrant">
         <div class="quadrant-header">
-          <h3>Reporte de Órdenes de Trabajo por Semana</h3>
+          <h3>Reporte de Movimientos de Inventario</h3>
         </div>
         <div class="quadrant-content">
-          <!-- Filtro de fechas -->
+          <!-- Filtro de fechas para Kardex -->
           <div class="filter-container">
             <div class="date-filter">
-              <label class="date-label">Seleccione cualquier día para ver la semana</label>
-              <div class="input-group">
-                <p-calendar [(ngModel)]="fechaSeleccionada" 
+              <label class="date-label">Rango de fechas para movimientos</label>
+              <div class="input-group flex align-items-center">
+                <p-calendar [(ngModel)]="kardexFechaInicio" 
                           [showIcon]="true" 
-                          dateFormat="dd/mm/yy" 
-                          [showWeek]="true"
-                          styleClass="w-100"
-                          placeholder="Seleccione una fecha" 
-                          (onSelect)="seleccionarSemana()"></p-calendar>
+                          dateFormat="dd/mm/yy"
+                          placeholder="Fecha inicio" 
+                          class="mr-2"></p-calendar>
+                <span class="mx-1">-</span>
+                <p-calendar [(ngModel)]="kardexFechaFin" 
+                          [showIcon]="true" 
+                          dateFormat="dd/mm/yy"
+                          placeholder="Fecha fin"
+                          class="ml-2"></p-calendar>
               </div>
-              <div class="week-info" *ngIf="fechaInicio && fechaFin">
-                Semana: {{ fechaInicio | date:'dd/MM/yyyy' }} - {{ fechaFin | date:'dd/MM/yyyy' }}
+              <div class="week-info" *ngIf="kardexFechaInicio && kardexFechaFin">
+                Movimientos: {{ kardexFechaInicio | date:'dd/MM/yyyy' }} - {{ kardexFechaFin | date:'dd/MM/yyyy' }}
               </div>
             </div>
             <div class="actions">
               <p-button label="Aplicar" 
                       icon="pi pi-filter" 
                       styleClass="p-button-sm"
-                      (onClick)="aplicarFiltro()" 
-                      [disabled]="!fechaSeleccionada"></p-button>
+                      (onClick)="aplicarFiltroKardex()" 
+                      [disabled]="!kardexFechaInicio || !kardexFechaFin"></p-button>
               <p-button label="Limpiar" 
                       icon="pi pi-times" 
                       styleClass="p-button-outlined p-button-sm" 
-                      (onClick)="limpiarFiltros()"></p-button>
+                      (onClick)="limpiarFiltrosKardex()"></p-button>
             </div>
           </div>
           
-          <!-- Resumen de totales -->
-          <div class="summary-cards">
-            <div class="summary-card summary-card-active">
-              <div class="summary-title">Órdenes Activas</div>
-              <div class="summary-value">{{ reporteData.totalOrdenesActivo }}</div>
-            </div>
-            <div class="summary-card summary-card-completed">
-              <div class="summary-title">Órdenes Finalizadas</div>
-              <div class="summary-value">{{ reporteData.totalOrdenesFinalizado }}</div>
-            </div>
-            <div class="summary-card summary-card-fse">
-              <div class="summary-title">Órdenes FSE</div>
-              <div class="summary-value">{{ reporteData.totalOrdenesFSE }}</div>
-            </div>
-            <div class="summary-card summary-card-canceled">
-              <div class="summary-title">Órdenes Anuladas</div>
-              <div class="summary-value">{{ reporteData.totalOrdenesAnuladas }}</div>
-            </div>
-          </div>
-          
-          <!-- Gráfica -->
-          <div class="chart-container" *ngIf="!loading">
-            <p-chart type="line" [data]="OrdenesData" [options]="OrdenesOptions" height="250px" width="100%" ></p-chart>
+          <!-- Gráfica de Kardex -->
+          <div class="chart-container kardex-chart" *ngIf="!loading">
+            <p-chart type="polarArea" 
+                  [data]="KardexData" 
+                  [options]="KardexOptions" 
+                  height="350px" 
+                  width="100%"></p-chart>
           </div>
           <div class="spinner-container" *ngIf="loading">
             <p-progressSpinner></p-progressSpinner>
           </div>
         </div>
       </div>
-    <!-- Cuadrante 2: Reporte de Movimientos de Inventario -->
-<div class="dashboard-quadrant">
-    <div class="quadrant-header">
-      <h3>Reporte de Movimientos de Inventario</h3>
-    </div>
-    <div class="quadrant-content">
-      <!-- Filtro de fechas para Kardex -->
-      <div class="filter-container">
-        <div class="date-filter">
-          <label class="date-label">Rango de fechas para movimientos</label>
-          <div class="input-group flex align-items-center">
-            <p-calendar [(ngModel)]="kardexFechaInicio" 
-                      [showIcon]="true" 
-                      dateFormat="dd/mm/yy"
-                      placeholder="Fecha inicio" 
-                      class="mr-2"></p-calendar>
-            <span class="mx-1">-</span>
-            <p-calendar [(ngModel)]="kardexFechaFin" 
-                      [showIcon]="true" 
-                      dateFormat="dd/mm/yy"
-                      placeholder="Fecha fin"
-                      class="ml-2"></p-calendar>
-          </div>
-          <div class="week-info" *ngIf="kardexFechaInicio && kardexFechaFin">
-            Movimientos: {{ kardexFechaInicio | date:'dd/MM/yyyy' }} - {{ kardexFechaFin | date:'dd/MM/yyyy' }}
-          </div>
-        </div>
-        <div class="actions">
-          <p-button label="Aplicar" 
-                  icon="pi pi-filter" 
-                  styleClass="p-button-sm"
-                  (onClick)="aplicarFiltroKardex()" 
-                  [disabled]="!kardexFechaInicio || !kardexFechaFin"></p-button>
-          <p-button label="Limpiar" 
-                  icon="pi pi-times" 
-                  styleClass="p-button-outlined p-button-sm" 
-                  (onClick)="limpiarFiltrosKardex()"></p-button>
-        </div>
-      </div>
-      
-      <!-- Gráfica de Kardex -->
-      <div class="chart-container kardex-chart" *ngIf="!loading">
-        <p-chart type="polarArea" 
-               [data]="KardexData" 
-               [options]="KardexOptions" 
-               height="350px" 
-               width="100%"></p-chart>
-      </div>
-      <div class="spinner-container" *ngIf="loading">
-        <p-progressSpinner></p-progressSpinner>
-      </div>
-    </div>
-  </div>
 
     <!-- Cuadrante 3: Disponible para otra gráfica -->
     <div class="dashboard-quadrant">

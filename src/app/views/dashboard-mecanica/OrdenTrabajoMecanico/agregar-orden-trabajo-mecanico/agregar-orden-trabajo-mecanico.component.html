@@ -58,8 +58,7 @@
           <span *ngIf="!cargandoVehiculo">Validar</span>
           <span *ngIf="cargandoVehiculo">Cargando...</span>
         </button>
-        <button class="secondary-btn" [disabled]="!vehiculoActual">Retirar propiedad</button>
-      </div>
+        <button class="secondary-btn" [disabled]="!vehiculoActual" (click)="retirarVehiculo()">Retirar propiedad</button>      </div>
     </div>
     <div class="info-section" *ngIf="mostrarInfoVehiculo && vehiculoActual">
       <div class="info-item">
@@ -874,3 +873,10 @@ styleClass="vehiculo-dialog"
     <span *ngIf="cargandoRegistroVehiculo">Registrando...</span>
   </button>
 </div>
+
+<p-confirmDialog [style]="{width: '450px'}" 
+                 styleClass="custom-confirm-dialog" 
+                 [baseZIndex]="10000"
+                 rejectButtonStyleClass="p-button-text p-button-secondary"
+                 acceptButtonStyleClass="p-button-danger">
+</p-confirmDialog>
