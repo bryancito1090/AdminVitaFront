@@ -18,7 +18,10 @@ export class MecanicoService {
     const headers = this.auth.getAuthHeaders();
     return this.http.get<SupervisorInputSelect[]>(`${this.apiUrl}/GetSupervisores`, { headers });
   }
-
+getSupervisoresMec(): Observable<SupervisorInputSelect[]> {
+    const headers = this.auth.getMecanicoAuthHeaders();
+    return this.http.get<SupervisorInputSelect[]>(`${this.apiUrl}/GetSupervisores`, { headers });
+  }
   getManoObraOT(code: string): Observable<ManoDeObra[]>{
     const headers = this.auth.getAuthHeaders();
     return this.http.get<ManoDeObra[]>(`${environment.domain}${environment.apiEndpoint}${environment.ordenesTrabajo}/ObtenerManoDeObra/${code}`,{ headers })

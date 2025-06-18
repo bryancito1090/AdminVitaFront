@@ -209,7 +209,7 @@ idAdjuntoTrasera: number | null = null;
 }
   cargarSupervisores() {
     this.cargandoMecanicos = true;
-    this.mecanicoService.getSupervisores().subscribe({
+    this.mecanicoService.getSupervisoresMec().subscribe({
       next: (data) => {
         this.mecanicos = data;
         this.cargandoMecanicos = false;

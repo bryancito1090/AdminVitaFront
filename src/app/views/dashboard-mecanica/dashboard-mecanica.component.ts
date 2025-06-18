@@ -1,7 +1,6 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ordenTrabajoList } from '../../../domain/response/OrdenTrabajoResponse.model';
-import { OrdenTrabajoService } from '../services/orden-trabajo.service';
 import { EstadosOTs, EstadosVehiculo, genericT, PrioridadesOT } from '../shared/util/genericData';
 import { HeadersTables } from '../shared/util/tables';
 import { Table, TableModule } from 'primeng/table';
@@ -51,7 +50,7 @@ interface Mecanico {
     DividerModule,
     ValidarAccionMecanicoComponent,
     ToastModule
-],
+  ],
   providers: [DatePipe, MecanicoService, OrdenMecanicoService, MessageService],
   templateUrl: './dashboard-mecanica.component.html',
   styleUrls: ['./dashboard-mecanica.component.scss']
@@ -77,12 +76,13 @@ export class DashboardMecanicaComponent implements OnInit {
   isDarkModeEnabled = false;
   permisosRequeridos: string[] = []; 
   rutaPendiente: string = ''; 
+
   constructor(
     private datePipe: DatePipe,
     private mecanicoService: MecanicoService,
     private ordenMecanicoService: OrdenMecanicoService,
     private router: Router,
-     private messageService: MessageService
+    private messageService: MessageService
   ) {}
 
   ngOnInit(): void {
@@ -93,6 +93,7 @@ export class DashboardMecanicaComponent implements OnInit {
     this.minDate = new Date();
     this.cargarMecanicos();
   }
+
   cargarMecanicos(): void {
     this.mecanicoService.getMecanicos().subscribe({
       next: (response) => {
@@ -100,12 +101,12 @@ export class DashboardMecanicaComponent implements OnInit {
         this.mecanicosFiltrados = [];
         this.cargarOrdenes();
       },
-      error: (err) => {
-        console.error('Error al cargar mecánicos:', err);
+      error: () => {
         this.cargarOrdenes();
       }
     });
   }
+
   cargarOrdenes(): void {
     this.loading = true;
     const idMecanicosSeleccionados = this.mecanicosFiltrados.length > 0 
@@ -129,32 +130,30 @@ export class DashboardMecanicaComponent implements OnInit {
         else if (response && response.ordenes && Array.isArray(response.ordenes)) {
           ordenesTemp = response.ordenes;
         }
-        if (ordenesTemp.length === 0) {
-          console.warn('No se encontraron órdenes en la respuesta:', response);
-        }
         this.ordenes = ordenesTemp.map((x: any) => ({
           ...x,
           fechaProgramada: this.formatDate(x.fechaProgramada)
         }));
         this.loading = false;
       },
-      error: (err: any) => {
-        console.error("Error al solicitar Ordenes de Trabajo: ", err);
+      error: () => {
         this.ordenes = [];
         this.loading = false;
       },
     });
   }
+
   formatDate(dateString: string): string {
     if(dateString === 'Vacío') return 'Vacío';
-    // Usar DatePipe para formatear la fecha
     const formattedDate = this.datePipe.transform(dateString, 'dd/MM/yyyy');
     return formattedDate || 'Fecha inválida';
   }
+
   filterGlobal(event: Event, dt: any) { 
     const inputValue = (event.target as HTMLInputElement)?.value || '';
     dt.filterGlobal(inputValue, 'contains');
   }
+
   filterMecHandler(mec: any) {
     const index1 = this.todosMecanicos.indexOf(mec);
     const index2 = this.mecanicosFiltrados.indexOf(mec);
@@ -165,25 +164,29 @@ export class DashboardMecanicaComponent implements OnInit {
     } else if (index2 !== -1) {
       this.mecanicosFiltrados.splice(index2, 1);
       this.todosMecanicos.push(mec);
-    } else {
-      console.warn('El valor no se encuentra en ninguno de los dos arreglos.');
     }
-    this.cargarOrdenes();  }
+    this.cargarOrdenes();
+  }
+
   clear(table: Table) {
     table.clear();
   }
-redirectToOTHandler(codigo: any) {
-  this.codigoOTPendiente = codigo;
-  this.mostrarValidacion = true;
-}
+
+  redirectToOTHandler(codigo: any) {
+    this.codigoOTPendiente = codigo;
+    this.mostrarValidacion = true;
+  }
+
   GetEstado(id: number)  {
     const item = this.estado.find(x => x.code === id);  
     return item?.name;
   }
+
   GetPrioridad(id: number)  {
     const item = this.prioridad.find(x => x.code === id);  
     return item?.name;
   }
+
   getSeverityEstado(status: number) {
     switch (status) {
       case 0: return undefined;
@@ -194,6 +197,7 @@ redirectToOTHandler(codigo: any) {
         return 'secondary';
     }
   }
+
   getSeverityPrioridad(status: number) {
     switch (status) {
       case 4: return 'secondary';
@@ -205,85 +209,61 @@ redirectToOTHandler(codigo: any) {
         return undefined;
     }
   }
-validarYEditarOT(codigo: any) {
-    console.log('🚀 Iniciando validación para editar OT:', codigo);
-    
-    // Guardar el código y mostrar modal
+
+  validarYEditarOT(codigo: any) {
     this.codigoOTPendiente = codigo;
-    this.permisosRequeridos = ['Ordenes de Trabajo.Editar']; // ✅ Pasar los permisos requeridos
+    this.permisosRequeridos = ['Ordenes de Trabajo.Editar'];
     this.mostrarValidacion = true;
   }
 
-  // ✅ MÉTODO PARA VER DETALLES (sin validación de permisos)
   verDetallesOT(codigo: any) {
-    console.log('👁️ Ver detalles de OT:', codigo);
-    // Aquí puedes agregar lógica para ver detalles sin validación
-    // Por ejemplo: abrir modal de detalles, navegar a vista de solo lectura, etc.
+    // Lógica para ver detalles
   }
 
-onValidacionExitosa(mecanicoAuth: any) {
-    console.log('✅ Validación exitosa:', mecanicoAuth);
-    
-    // Si hay un código de OT pendiente (viene del botón de editar)
+  onValidacionExitosa(mecanicoAuth: any) {
     if (this.codigoOTPendiente) {
-      console.log('📝 Abriendo OT para editar:', this.codigoOTPendiente);
-      
-      // ✅ MOSTRAR TOAST DE ÉXITO
       this.messageService.add({
         severity: 'success',
         summary: 'Acceso Autorizado',
         detail: `Abriendo orden de trabajo ${this.codigoOTPendiente}`,
         life: 3000
       });
-      
-      // Abrir la OT específica
       const url = `mecanica/${this.codigoOTPendiente}`;
       window.open(url, '_blank');
-      
-      // Limpiar
       this.codigoOTPendiente = '';
       this.permisosRequeridos = [];
-    }
-    // Si hay una ruta pendiente (viene de solicitarAcceso)
-    else if (this.rutaPendiente) {
-      console.log('🚀 Navegando a ruta:', this.rutaPendiente);
-      
-      // ✅ MOSTRAR TOAST DE ÉXITO
+    } else if (this.rutaPendiente) {
       this.messageService.add({
         severity: 'success',
         summary: 'Acceso Autorizado',
         detail: 'Redirigiendo...',
         life: 3000
       });
-      
-      // Navegar a la ruta especificada
       this.router.navigate([this.rutaPendiente]);
-      
-      // Limpiar
       this.rutaPendiente = '';
       this.permisosRequeridos = [];
     }
   }
+
   onValidacionSinPermisos(mecanicoAuth: any) {
-    console.log('❌ Usuario sin permisos:', mecanicoAuth);
-    
-    // ✅ MOSTRAR TOAST DE ERROR
     this.messageService.add({
       severity: 'error',
       summary: 'Acceso Denegado',
       detail: `${mecanicoAuth.name} no tiene permisos para esta acción`,
       life: 5000
     });
-    
-    // Limpiar variables
     this.codigoOTPendiente = '';
     this.permisosRequeridos = [];
     this.rutaPendiente = '';
   }
+
   onCerrarValidacion() {
     this.mostrarValidacion = false;
     this.codigoOTPendiente = '';
     this.permisosRequeridos = [];
     this.rutaPendiente = '';
+    }
+     irANuevaOrden() {
+    this.router.navigate(['/mecanica/agregar-orden']);
   }
 }

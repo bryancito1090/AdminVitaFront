@@ -186,17 +186,15 @@ loginMecanico(pin: string): Observable<MecanicoAuth> {
     return currentMecanico ? currentMecanico.token : null;
   }
 
-  // Obtener headers con token de mecánico
   getMecanicoAuthHeaders(): HttpHeaders {
-    const token = this.getMecanicoToken();
-    if (!token) {
-      return new HttpHeaders({'Content-Type': 'application/json'});
-    }
-    
-    return new HttpHeaders({
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json'
-    });
+  const token = this.getMecanicoToken();
+  if (!token) {
+    return new HttpHeaders({'Content-Type': 'application/json'});
   }
+  return new HttpHeaders({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  });
+}
+
 }

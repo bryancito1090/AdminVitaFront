@@ -40,7 +40,7 @@
                 </p-inputicon>
                 <input pInputText type="text" class="w-full" (input)="filterGlobal($event, dt1)" placeholder="Busca por una palabra clave" />
             </p-iconfield>              
-            <p-button class="" fluid icon="pi pi-plus" label="Nueva Orden de Trabajo"/>
+                <p-button class="" fluid icon="pi pi-plus" label="Nueva Orden de Trabajo" (onClick)="irANuevaOrden()"/>
         </div>
     </ng-template>
         <ng-template pTemplate="header" let-columns>
