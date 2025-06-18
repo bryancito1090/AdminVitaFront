@@ -41,6 +41,7 @@ import { forkJoin, Observable } from 'rxjs';
 import { Image, ImageModule } from 'primeng/image';
 import { ArchivosService } from '../../services/archivos.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { TooltipModule } from 'primeng/tooltip';
 
 interface jsPDFWithAutoTable extends jsPDF {
   lastAutoTable: {
@@ -75,6 +76,7 @@ interface jsPDFWithAutoTable extends jsPDF {
     SkeletonExpandInfoComponent,
     SkeletonSimpleComponent,
     ImageModule,
+    TooltipModule
   ],
   standalone: true,
   templateUrl: './orden-trabajo.component.html',
@@ -294,10 +296,25 @@ export class OrdenTrabajoComponent implements OnInit {
       }
     }) 
   }
-  showDialogExpand(code: string){
+showDialogExpand(code: string){
     this.visibleExpand = true;
     this.loadingExpandDialog = true;
     this.codeExpandDialog = code;
+    this.expandDataTables = [];
+    this.expandCols = [];
+    this.ExpandOptionsValue = '';
+    this.selectedCodeObservacion = '';
+    
+    this.adjuntoImages = [];
+    this.adjuntos = [];
+    this.allTablesData = {
+      tareas: [],
+      repuestos: [],
+      mecanicos: [],
+      trabajosExternos: [],
+      observaciones: [],
+      solicitudes: []
+    };
     
     this.otService.getOrdenTrabajoCodigo(code).subscribe({
       next: (response) =>{
@@ -548,8 +565,11 @@ export class OrdenTrabajoComponent implements OnInit {
     this.archivoUrl = '';
     this.displayImage = true;
   }
-  tablesOptionHandler(){
+ tablesOptionHandler(){
     this.selectedCodeObservacion = '';
+    this.expandDataTables = [];
+    this.expandCols = [];
+    
     switch(this.ExpandOptionsValue){
       case 'Tareas':
         this.tareaService.getTareasByOT(this.codeExpandDialog).subscribe({
@@ -558,7 +578,8 @@ export class OrdenTrabajoComponent implements OnInit {
             this.expandCols = HeadersTables.TareasList;
           },
           error: (err) => {
-            console.log(err);
+            this.expandDataTables = [];
+            this.expandCols = [];
           }
         })
         break;
@@ -566,10 +587,12 @@ export class OrdenTrabajoComponent implements OnInit {
         this.repuestoService.getRepuestosInsumosByOT(this.codeExpandDialog).subscribe({
           next: (response) => {
             this.expandDataTables = response;            
-            this.expandCols = HeadersTables. RepuestoseInsumosList;
+            this.expandCols = HeadersTables.RepuestoseInsumosList;
           },
           error: (err) => {
             console.log(err);
+            this.expandDataTables = [];
+            this.expandCols = [];
           }
         })
         break;
@@ -581,6 +604,8 @@ export class OrdenTrabajoComponent implements OnInit {
           },
           error: (err) => {
             console.log(err);
+            this.expandDataTables = [];
+            this.expandCols = [];
           }
         });
         break;
@@ -590,7 +615,11 @@ export class OrdenTrabajoComponent implements OnInit {
             this.expandDataTables = response;
             this.expandCols = HeadersTables.TrabajoExternoList;
           },
-          error: (err) => console.log(err)
+          error: (err) => {
+            console.log(err);
+            this.expandDataTables = [];
+            this.expandCols = [];
+          }
         })
         break;
       case 'Observaciones': 
@@ -599,7 +628,11 @@ export class OrdenTrabajoComponent implements OnInit {
             this.expandDataTables = response;
             this.expandCols = HeadersTables.ObservacionesTareaList;
           },
-          error: (err) => console.log(err)
+          error: (err) => {
+            console.log(err);
+            this.expandDataTables = [];
+            this.expandCols = [];
+          }
         })
         break;
       case 'Solicitudes':
@@ -608,7 +641,11 @@ export class OrdenTrabajoComponent implements OnInit {
             this.expandDataTables = response;
             this.expandCols = HeadersTables.SolicitudTareaList;
           },
-          error: (err) => console.log(err)
+          error: (err) => {
+            console.log(err);
+            this.expandDataTables = [];
+            this.expandCols = [];
+          }
         })
         break;
     }
@@ -1308,4 +1345,45 @@ if (this.allTablesData.solicitudes && this.allTablesData.solicitudes.length > 0)
       return '[DOC]';
     }
   }
+// Actualizar el método getSeverityAprobacion para que devuelva el tipo correcto
+
+// Método para obtener la severidad del estado de aprobación
+getSeverityAprobacion(aprobado: boolean | null): "success" | "info" | "warn" | "danger" | "secondary" | "contrast" | undefined {
+  if (aprobado === null) return 'warning' as "warn"; // PrimeNG usa 'warn' no 'warning'
+  return aprobado ? 'success' : 'danger';
+}
+
+// También agrega estos métodos si no los tienes:
+getEstadoAprobacion(aprobado: boolean | null): string {
+  if (aprobado === null) return 'Pendiente';
+  return aprobado ? 'Aprobado' : 'Rechazado';
+}
+
+aprobarSolicitud(codigo: string) {
+  this.solicitudService.actualizarAprobacionSolicitud(codigo, true).subscribe({
+    next: (response) => {
+      this.toastr.success('Solicitud aprobada exitosamente', 'Éxito');
+      // Recargar los datos de la tabla
+      this.tablesOptionHandler();
+    },
+    error: (error) => {
+      console.error('Error al aprobar solicitud:', error);
+      this.toastr.error('Error al aprobar la solicitud', 'Error');
+    }
+  });
+}
+
+rechazarSolicitud(codigo: string) {
+  this.solicitudService.actualizarAprobacionSolicitud(codigo, false).subscribe({
+    next: (response) => {
+      this.toastr.success('Solicitud rechazada exitosamente', 'Éxito');
+      // Recargar los datos de la tabla
+      this.tablesOptionHandler();
+    },
+    error: (error) => {
+      console.error('Error al rechazar solicitud:', error);
+      this.toastr.error('Error al rechazar la solicitud', 'Error');
+    }
+  });
+}
 }

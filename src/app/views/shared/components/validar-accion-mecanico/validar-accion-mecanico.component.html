@@ -1,0 +1,67 @@
+<p-dialog 
+  header="Validación de Mecánico" 
+  [(visible)]="visible" 
+  (onHide)="onDialogHide()"
+  [modal]="true"
+  [closable]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [style]="{ width: '400px', maxWidth: '90vw' }"
+  [baseZIndex]="10000"
+  styleClass="custom-dialog">
+  
+  <div class="dialog-body-content">
+    <!-- Mensaje de instrucción -->
+    <div class="verification-section">
+      <i class="pi pi-shield verification-icon"></i>
+      <h3 class="verification-title">Verificación de Identidad</h3>
+      <p class="verification-text">Para continuar, por favor ingrese su PIN de mecánico</p>
+    </div>
+
+    <!-- Campo de PIN -->
+    <div class="form-section">
+      <label for="pin" class="pin-label">Ingrese su PIN:</label>
+      <input 
+        pInputText 
+        id="pin" 
+        type="password"
+        [(ngModel)]="pin"
+        (ngModelChange)="onPinChange()"
+        (keyup.enter)="validarPin()"
+        [disabled]="loading"
+        class="pin-input"
+        placeholder="PIN de mecánico"
+        autofocus />
+      
+      <!-- Mensaje de error -->
+      <div class="error-message" *ngIf="errorMessage">
+        <i class="pi pi-exclamation-triangle"></i>
+        {{ errorMessage }}
+      </div>
+
+      <!-- Indicador de carga -->
+      <div class="loading-message" *ngIf="loading">
+        <i class="pi pi-spin pi-spinner"></i>
+        Validando...
+      </div>
+    </div>
+
+    <!-- Botones de acción -->
+    <div class="action-buttons">
+      <button 
+        class="btn btn-secondary" 
+        (click)="cerrarModal()"
+        [disabled]="loading">
+        Cancelar
+      </button>
+      <button 
+        class="btn btn-primary" 
+        (click)="validarPin()"
+        [disabled]="loading || !pin">
+        <i class="pi pi-check" *ngIf="!loading"></i>
+        <i class="pi pi-spin pi-spinner" *ngIf="loading"></i>
+        {{ loading ? 'Validando...' : 'Validar' }}
+      </button>
+    </div>
+  </div>
+</p-dialog>

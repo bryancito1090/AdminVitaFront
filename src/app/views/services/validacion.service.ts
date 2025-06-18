@@ -31,4 +31,17 @@ export class ValidacionService {
       const headers = this.auth.getAuthHeaders();
       return this.http.post<any>(`${this.apiUrl}/ValidarPersona`, {documento}, { headers });
     }
+    ValidarPinUnico(pin: string): Observable<boolean> {
+    const headers = this.auth.getAuthHeaders();
+    return this.http.get<boolean>(`${this.apiUrl}/ValidarPinUnico/${pin}`, { headers });
+    }
+    validarMecanico(documento: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/ValidarMecanico`, { documento });
+    }
+    ValidarUsuario(documento: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/ValidarUsuario`, { documento });
+    }
+    ValidarProveedor(documento: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/ValidarProveedor`, { documento });
+    }
 }

@@ -7,12 +7,28 @@ closeOnEscape="true"
 >
 <ng-template #headless>
     <div class="flex flex-col px-6 py-6 gap-6 rounded-2xl h-full max-h-[80vh] overflow-hidden">
-      <h5 class="text-2xl text-center text-black">{{titleDialog}}</h5>
+      <!-- Header con título y botón de cierre -->
+      <div class="flex justify-between items-center">
+        <h5 class="text-2xl text-black">{{titleDialog}}</h5>
+        <p-button 
+          icon="pi pi-times" 
+          severity="secondary"
+          size="small"
+          (onClick)="closeDialog()"
+          aria-label="Cerrar"
+        />
+      </div>
   
       <div class="overflow-y-auto grow pr-2">
-        <app-formulario-persona [personaVariante]="persona"></app-formulario-persona>
+          <app-formulario-persona 
+            #formularioPersona
+            [personaVariante]="persona" 
+            [modoEdicion]="esEdicion"
+            [datosIniciales]="datosPersonaEdicion"
+            (formSubmitted)="responseDialogPropietariosForm($event)">
+          </app-formulario-persona>    
       </div>
     </div>
-  </ng-template>
+</ng-template>
   
 </p-dialog>

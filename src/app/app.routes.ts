@@ -16,6 +16,7 @@ import { StartComponent } from './views/start/start.component';
 import { AgregarOrdenTrabajoMecanicoComponent } from './views/dashboard-mecanica/OrdenTrabajoMecanico/agregar-orden-trabajo-mecanico/agregar-orden-trabajo-mecanico.component';
 import { OrdenTrabajoMecanicaComponent } from './views/dashboard-mecanica/orden-trabajo-mecanica/orden-trabajo-mecanica.component';
 import { AppSimpleLayout } from './layout/component/app.simple-layout';
+import { ValidarAccionMecanicoComponent } from './views/shared/components/validar-accion-mecanico/validar-accion-mecanico.component';
 
 export const appRoutes: Routes = [
     {   path: '', component: StartComponent },
@@ -40,6 +41,7 @@ export const appRoutes: Routes = [
         children: [
             { path: '', component: DashboardMecanicaComponent },
             { path: 'agregar-orden', component: AgregarOrdenTrabajoMecanicoComponent },
+            { path: 'validar-accion', component: ValidarAccionMecanicoComponent },
             { path: ':codigo', component: OrdenTrabajoMecanicaComponent }
     ]},
     {   path: 'notFound404', component: NotfoundComponent}, 

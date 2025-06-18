@@ -58,8 +58,9 @@
                 </ng-template>
 
                 <div *ngIf="col.field =='actions'" class="flex justify-start w-full gap-2"> 
-                    <p-button icon="pi pi-pen-to-square" (onClick)="showDialogEdit(rowData['placa'])" [rounded]="true" [text]="true" [raised]="true" severity="secondary" />
-                    <p-button icon="pi pi-trash" (onClick)="showDialogDisable(rowData['placa'])" [rounded]="true" [text]="true" [raised]="true" severity="secondary" />
+                    <p-button icon="pi pi-pen-to-square" (onClick)="showDialogEdit(rowData['documento'])" [rounded]="true" [text]="true" [raised]="true" severity="secondary" />
+                    <p-button *ngIf="rowData['activo']" icon="pi pi-trash" (onClick)="restaurarPersona(rowData['documento'])" [rounded]="true" [text]="true" [raised]="true" severity="secondary" />
+                    <p-button *ngIf="!rowData['activo']" icon="pi pi-refresh" (onClick)="restaurarPersona(rowData['documento'])" [rounded]="true" [text]="true" [raised]="true" severity="success" pTooltip="Restaurar" />
                 </div>
             </td>
         </tr>

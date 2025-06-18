@@ -19,4 +19,12 @@ export class SolicitudService {
     const params = new HttpParams().set('codigo', code);
     return this.http.get<SolicitudDetalleTableExpandOT[]>(`${this.apiURL}/ObtenerSolicitudes`, { params, headers });
   }
+  actualizarAprobacionSolicitud(codigo: string, aprobado: boolean): Observable<any> {
+    const headers = this.auth.getAuthHeaders();
+    const body = {
+      codigo: codigo,
+      aprobado: aprobado
+    };
+    return this.http.put(`${this.apiURL}/ActualizarAprobacion`, body, { headers });
+  }
 }
