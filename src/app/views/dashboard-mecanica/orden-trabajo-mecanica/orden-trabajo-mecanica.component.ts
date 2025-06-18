@@ -134,14 +134,14 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
       next: (response) => {
         this.OrdenTrabajo = response;
         this.loadingGeneral = false;
+        this.getTareaOT();
       },
       error: (error) => {
         console.error('Error al obtener la orden de trabajo:', error);
         this.toastr.error('No se pudo cargar la información de la orden de trabajo', 'Error');
         this.loadingGeneral = false;
-        this.getTareaOT();
       }
-    );
+    });
   }
   getTareaOT() {
     this.tareaService.getTareasByOT(this.codigo!).subscribe({
