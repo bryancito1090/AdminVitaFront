@@ -1,95 +1,226 @@
-    <div class="text-center">
-        <p class="text-xl">{{header_dialog}}</p>
+<div class="text-center">
+    <p class="text-xl">{{header_dialog}}</p>
+</div>
+<div class="flex flex-wrap gap-4 mb-4 w-full">
+    <p>Tipo de tarea: </p>
+    <div class="flex items-center">
+        <p-radiobutton name="Interna" value="interna" [(ngModel)]="tipo_tarea" inputId="tipo_tarea1" />
+        <label for="tipo_tarea1" class="ml-2">Interna</label>
     </div>
-    <div class="flex flex-wrap gap-4 mb-4 w-full">
-        <p>Tipo de tarea: </p>
-        <div class="flex items-center">
-            <p-radiobutton name="Interna" value="interna" [(ngModel)]="tipo_tarea" inputId="tipo_tarea1" />
-            <label for="tipo_tarea1" class="ml-2">Interna</label>
-        </div>
 
-        <div class="flex items-center">
-            <p-radiobutton name="Externa" value="externa" [(ngModel)]="tipo_tarea" inputId="tipo_tarea2" />
-            <label for="tipo_tarea2" class="ml-2">Externa</label>
-        </div>
+    <div class="flex items-center">
+        <p-radiobutton name="Externa" value="externa" [(ngModel)]="tipo_tarea" inputId="tipo_tarea2" />
+        <label for="tipo_tarea2" class="ml-2">Externa</label>
     </div>
-    <div class="flex flex-wrap gap-4 mb-4 w-full">
-        <p>Mantenimiento: </p>
-        <div class="flex items-center">
-            <p-radiobutton name="Preventivo" value="preventivo" [(ngModel)]="tipo_mantenimiento" inputId="mant_preventivo" />
-            <label for="mant_preventivo" class="ml-2">Preventivo</label>
-        </div>
+</div>
+<div class="flex flex-wrap gap-4 mb-4 w-full">
+    <p>Mantenimiento: </p>
+    <div class="flex items-center">
+        <p-radiobutton name="Preventivo" value="preventivo" [(ngModel)]="tipo_mantenimiento" inputId="mant_preventivo" />
+        <label for="mant_preventivo" class="ml-2">Preventivo</label>
+    </div>
 
-        <div class="flex items-center">
-            <p-radiobutton name="Correctivo" value="correctivo" [(ngModel)]="tipo_mantenimiento" inputId="mant_correctivo" />
-            <label for="mant_correctivo" class="ml-2">Correctivo</label>
-        </div>
+    <div class="flex items-center">
+        <p-radiobutton name="Correctivo" value="correctivo" [(ngModel)]="tipo_mantenimiento" inputId="mant_correctivo" />
+        <label for="mant_correctivo" class="ml-2">Correctivo</label>
     </div>
-    <ng-container *ngIf="tipo_tarea === 'interna'">
-        <div class="flex flex-col justify-between gap-2">
+</div>
+<ng-container *ngIf="tipo_tarea === 'interna'">
+    <div class="flex flex-col justify-between gap-2">
+        <p-floatlabel variant="in">
+            <input fluid pInputText id="detalle_tarea" [(ngModel)]="detalleTarea" autocomplete="off" />
+            <label for="detalle_tarea">Detalle Tarea</label>
+        </p-floatlabel>
+        <div class="flex gap-4">
             <p-floatlabel variant="in">
-                <input fluid pInputText id="detalle_tarea" [(ngModel)]="detalleTarea" autocomplete="off" />
-                <label for="detalle_tarea">Detalle Tarea</label>
+                <p-inputnumber [(ngModel)]="duracion_tarea" inputId="duracion_tarea"/>
+                <label for="duracion_tarea">Duración (Unidad de Trabajo)</label>
             </p-floatlabel>
-            <div class="flex gap-4">
-                <p-floatlabel variant="in">
-                    <p-inputnumber [(ngModel)]="duracion_tarea" inputId="duracion_tarea"/>
-                    <label for="duracion_tarea">Duración (Unidad de Trabajo)</label>
-                </p-floatlabel>
-                <p-select [options]="estados_tarea" [(ngModel)]="estados_tarea" optionLabel="name" optionValue="code" placeholder="Estado" class="w-full md:w-56" />
-                <div class="flex gap-4 mb-4 w-full">
-                    <div class="flex items-center">
-                        <label>Requiere Autorización: </label>
-                    </div>
-                    <div class="flex items-center">
-                        <p-radiobutton name="requ_auth1" [value]="true" [(ngModel)]="requ_auth" inputId="requ_auth1" />
-                        <label for="requ_auth1" class="ml-2">Si</label>
-                    </div>
-                    <div class="flex items-center">
-                        <p-radiobutton name="requ_auth2" [value]="false" [(ngModel)]="requ_auth" inputId="requ_auth2" />
-                        <label for="requ_auth2" class="ml-2">No</label>
-                    </div>
-                </div>
-            </div>
-            <p-divider/>
+            <p-select 
+                [options]="estados_tarea" 
+                [(ngModel)]="estado_tarea" 
+                optionLabel="name" 
+                optionValue="code" 
+                placeholder="Estado" 
+                class="w-full md:w-56" />
             <div class="flex gap-4 mb-4 w-full">
                 <div class="flex items-center">
-                    <label>Requiere Repuestos: </label>
+                    <label>Requiere Autorización: </label>
                 </div>
                 <div class="flex items-center">
-                    <p-radiobutton name="requ_rep1" [value]="true" [(ngModel)]="requ_repuestos" inputId="requ_rep1" />
-                    <label for="requ_rep1" class="ml-2">Si</label>
+                    <p-radiobutton name="requ_auth1" [value]="true" [(ngModel)]="requ_auth" inputId="requ_auth1" />
+                    <label for="requ_auth1" class="ml-2">Si</label>
                 </div>
                 <div class="flex items-center">
-                    <p-radiobutton name="requ_rep2" [value]="false" [(ngModel)]="requ_repuestos" inputId="requ_rep2" />
-                    <label for="requ_rep2" class="ml-2">No</label>
+                    <p-radiobutton name="requ_auth2" [value]="false" [(ngModel)]="requ_auth" inputId="requ_auth2" />
+                    <label for="requ_auth2" class="ml-2">No</label>
                 </div>
-            </div>
-            <ng-container *ngIf="requ_repuestos === true">
-                <div class="flex flex-row justify-between gap-2">
-                    <p>Agregar un nuevo repuesto o insumo para esta Tarea.</p>
-                    <p-button fluid severity="secondary" icon="pi pi-plus" label="Agregar Respuesto"></p-button>
-                </div>
-                <div *ngIf="list_repuestos.length === 0" class="w-full text-center">
-                    <p>Esta tarea no tiene ningun respuesto o insumo registrado!</p>
-                </div>
-
-            </ng-container>
-            <p-divider/>
-            <ng-container>
-                <p class="font-bold">Asignacion de mecanicos </p>
-                <div class="flex flex-row justify-between gap-2">
-                    <p>Asignar a un mecanico a la Tarea.</p>
-                    <p-button fluid severity="secondary" icon="pi pi-plus" label="Agregar Mecanico"></p-button>
-                </div>
-                <div *ngIf="list_repuestos.length === 0" class="w-full text-center">
-                    <p>Esta tarea no tiene ningun mecanico asignado!</p>
-                </div>
-
-            </ng-container>
-            <p-divider/>
-            <div class="flex flex-row-reverse">
-                <p-button label="Agregar Tarea"></p-button>
             </div>
         </div>
-    </ng-container>    
+        <p-divider/>
+        <div class="flex gap-4 mb-4 w-full">
+            <div class="flex items-center">
+                <label>Requiere Repuestos: </label>
+            </div>
+            <div class="flex items-center">
+                <p-radiobutton name="requ_rep1" [value]="true" [(ngModel)]="requ_repuestos" inputId="requ_rep1" />
+                <label for="requ_rep1" class="ml-2">Si</label>
+            </div>
+            <div class="flex items-center">
+                <p-radiobutton name="requ_rep2" [value]="false" [(ngModel)]="requ_repuestos" inputId="requ_rep2" />
+                <label for="requ_rep2" class="ml-2">No</label>
+            </div>
+        </div>
+        <ng-container *ngIf="requ_repuestos === true">
+            <div class="flex flex-row justify-between gap-2">
+                <p>Agregar un nuevo repuesto o insumo para esta Tarea.</p>
+                <p-button fluid severity="secondary" icon="pi pi-plus" label="Agregar Respuesto" (onClick)="showDialogRepuestos()"></p-button>
+            </div>
+            <div *ngIf="list_repuestos.length == 0" class="w-full text-center">
+                <p>Esta tarea no tiene ningun respuesto o insumo registrado!</p>
+            </div>
+            <div *ngIf="list_repuestos.length != 0" class="w-full text-center">
+                <p-table [value]="list_repuestos" stripedRows [tableStyle]="{ 'min-width': '100%' }">
+                    <ng-template pTemplate="header">
+                        <tr>
+                        <th class="justify-center">Código</th>
+                        <th class="justify-center">Nombre</th>
+                        <th class="justify-center">Cantidad</th>
+                        <th class="justify-center">Acciones</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-repuesto>
+                        <tr>
+                        <td>{{ getItem(repuesto.idItem)?.codigo }}</td>
+                        <td>{{ getItem(repuesto.idItem)?.nombre }}</td>
+                        <td>{{ repuesto.cantidad }}</td>
+                        <td class="flex gap-2">
+                            <button pButton icon="pi pi-pencil" class="p-button-sm p-button-text" (click)="abrirEditar(repuesto)"></button>
+                            <button pButton icon="pi pi-trash" class="p-button-sm p-button-danger p-button-text" (click)="eliminarRepuesto(repuesto.idItem)"></button>
+                        </td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </div>
+
+        </ng-container>
+        <p-divider/>
+        <ng-container>
+            <p class="font-bold">Asignacion de mecanicos </p>
+            <div class="flex flex-row justify-between gap-2">
+                <p>Asignar a un mecanico a la Tarea.</p>
+                <p-button fluid severity="secondary" icon="pi pi-plus" label="Agregar Mecanico" (onClick)="showDialogMecanicos()"></p-button>
+            </div>
+            <div *ngIf="list_mecanicos.length === 0" class="w-full text-center">
+                <p>Esta tarea no tiene ningun mecanico asignado!</p>
+            </div>
+            <div *ngIf="list_mecanicos.length !== 0" class="w-full text-center">
+                <p-table [value]="list_mecanicos" [tableStyle]="{ 'min-width': '100%' }">
+                    <ng-template pTemplate="header">
+                        <tr>
+                        <th>Nombre</th>
+                        <th>Duración (min)</th>
+                        <th>Acciones</th>
+                        </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-mec>
+                        <tr>
+                        <td>{{ getMecanico(mec.idMecanico)?.nombre }} {{ getMecanico(mec.idMecanico)?.apellidos }}</td>
+                        <td>{{ mec.duracion }}</td>
+                        <td class="flex gap-2">
+                            <button pButton icon="pi pi-pencil" class="p-button-sm p-button-text" (click)="abrirEditarMecanico(mec)"></button>
+                            <button pButton icon="pi pi-trash" class="p-button-sm p-button-danger p-button-text" (click)="eliminarMecanico(mec.idMecanico)"></button>
+                        </td>
+                        </tr>
+                    </ng-template>
+                </p-table>
+            </div>
+
+        </ng-container>
+        <p-divider/>
+        <div class="flex flex-row-reverse">
+            <p-button label="Agregar Tarea" (onClick)="agregarTarea()"></p-button>
+        </div>
+    </div>
+</ng-container>    
+<p-dialog header="Agregar Repuesto" [modal]="true" [(visible)]="displayAddDialogRepuestos" [style]="{ width: '25rem' }">
+  <div class="flex flex-col gap-4">
+    
+    <p-select 
+      [options]="allItemsRepuestos" 
+      optionLabel="nombre" 
+      optionValue="idItem"
+      [(ngModel)]="selectedItemId"
+      placeholder="Selecciona un repuesto"
+      [filter]="true"
+      appendTo="body">
+      <ng-template let-item pTemplate="item">
+        <div class="flex flex-col">
+          <span class="font-semibold">{{ item.codigo }} - {{ item.nombre }}</span>
+          <small class="text-sm italic text-gray-500">{{ item.descripcion }}</small>
+        </div>
+      </ng-template>
+    </p-select>
+
+    <div class="flex items-center gap-2">
+      <label class="w-1/3">Cantidad:</label>
+      <input type="number" min="0.01" step="0.01" [(ngModel)]="cantidadSeleccionada" class="p-inputtext p-component w-full" />
+    </div>
+
+    <div class="flex justify-end gap-2">
+      <button pButton type="button" label="Cancelar" class="p-button-secondary" (click)="displayAddDialogRepuestos = false"></button>
+      <button pButton type="button" label="Agregar" class="p-button-primary" (click)="agregarRepuesto()"></button>
+    </div>
+
+  </div>
+</p-dialog>
+<p-dialog header="Editar Respuesto" [(visible)]="displayEditDialogRepuestos" [modal]="true" [style]="{ width: '20rem' }">
+  <div class="flex flex-col gap-4">
+    <p>{{ editingRepuesto.idItem ? getItem(editingRepuesto.idItem)?.nombre : '' }}</p>
+    <input type="number" min="0.01" step="0.01" [(ngModel)]="editingRepuesto.cantidad" class="p-inputtext p-component w-full" />
+    <div class="flex justify-end gap-2">
+      <button pButton label="Cancelar" class="p-button-secondary" (click)="displayEditDialogRepuestos = false"></button>
+      <button pButton label="Guardar" class="p-button-primary" (click)="guardarCantidad()"></button>
+    </div>
+  </div>
+</p-dialog>
+<p-dialog header="Agregar Mecánico" [(visible)]="displayDialogMecanicos" [modal]="true" [style]="{ width: '25rem' }">
+  <div class="flex flex-col gap-4">
+    <p-select 
+      [options]="allMecanicos" 
+      optionLabel="nombre" 
+      optionValue="idMecanico" 
+      [(ngModel)]="selectedMecanicoId"
+      placeholder="Selecciona un mecánico"
+      [filter]="true"
+      appendTo="body">
+      <ng-template let-m pTemplate="item">
+        <div class="flex flex-col">
+          <span class="font-semibold">{{ m.nombre }} {{ m.apellidos }}</span>
+          <small class="text-sm italic text-gray-500">{{ m.codigo }}</small>
+        </div>
+      </ng-template>
+    </p-select>
+
+    <div class="flex items-center gap-2">
+      <label class="w-1/3">Duración estimada (min):</label>
+      <input type="number" min="1" [(ngModel)]="duracionEstimada" class="p-inputtext p-component w-full" />
+    </div>
+
+    <div class="flex justify-end gap-2">
+      <button pButton label="Cancelar" class="p-button-secondary" (click)="displayDialogMecanicos = false"></button>
+      <button pButton label="Agregar" class="p-button-primary" (click)="agregarMecanico()"></button>
+    </div>
+
+  </div>
+</p-dialog>
+<p-dialog header="Editar Duración" [(visible)]="displayEditMecanico" [modal]="true" [style]="{ width: '20rem' }">
+  <div class="flex flex-col gap-4">
+    <p>{{ getMecanico(editingMecanico.idMecanico)?.nombre }} {{ getMecanico(editingMecanico.idMecanico)?.apellidos }}</p>
+    <input type="number" min="1" [(ngModel)]="editingMecanico.duracion" class="p-inputtext p-component w-full" />
+    <div class="flex justify-end gap-2">
+      <button pButton label="Cancelar" class="p-button-secondary" (click)="displayEditMecanico = false"></button>
+      <button pButton label="Guardar" class="p-button-primary" (click)="guardarDuracionMecanico()"></button>
+    </div>
+  </div>
+</p-dialog>

@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { InputNumberModule } from 'primeng/inputnumber';
@@ -9,6 +10,13 @@ import { EstadoTarea } from '../../../shared/util/genericData';
 import { SelectModule } from 'primeng/select';
 import { DividerModule } from 'primeng/divider';
 import { ButtonModule } from 'primeng/button';
+import { Dialog } from 'primeng/dialog';
+import { ItemService } from '../../../services/item.service';
+import { MecanicoService } from '../../../services/mecanico.service';
+import { TableModule } from 'primeng/table';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { AuthMecanicaComponent } from '../../../auth/components/auth-mecanica/auth-mecanica.component';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-crud-tarea-mecanica',
@@ -21,8 +29,11 @@ import { ButtonModule } from 'primeng/button';
     InputNumberModule,
     SelectModule,
     DividerModule,
-    ButtonModule
+    ButtonModule,
+    Dialog,
+    TableModule,
   ],
+  providers: [ItemService, DialogService],
   templateUrl: './crud-tarea-mecanica.component.html',
   styleUrl: './crud-tarea-mecanica.component.scss'
 })
@@ -33,8 +44,28 @@ export class CrudTareaMecanicaComponent implements OnInit{
   @Input() color: any;
   @Output() onClose: EventEmitter<any> = new EventEmitter<any>();
 
-  header_dialog: string = '';
+  //dialog repuestos
+  displayAddDialogRepuestos: boolean = false;
+  displayEditDialogRepuestos: boolean = false;
+  allItemsRepuestos: any[] = [];
 
+  selectedItemId: any | null = null;
+  cantidadSeleccionada: number | null = null;
+  editingRepuesto: { idItem: number; cantidad: number } = { idItem: 0, cantidad: 0 };
+
+  //dialog mecanicos
+  allMecanicos: any[] = [];
+
+  displayDialogMecanicos: boolean = false;
+  selectedMecanicoId: number | null = null;
+  duracionEstimada: number | null = null;
+
+  displayEditMecanico: boolean = false;
+  editingMecanico: { idMecanico: number; duracion: number } = { idMecanico: 0, duracion: 0 };
+
+  //header dialog
+  header_dialog: string = '';
+  
   //formulario
   tipo_tarea: 'interna' | 'externa' = 'interna';
   tipo_mantenimiento: 'preventivo' | 'correctivo' = 'preventivo';
@@ -44,9 +75,20 @@ export class CrudTareaMecanicaComponent implements OnInit{
   estado_tarea: any = EstadoTarea[0].code;
   requ_auth: boolean = true;
   requ_repuestos: boolean = true;
-  list_repuestos: any [] = [];
+  list_repuestos: { idItem: number; cantidad: number }[] = [];
+  list_mecanicos: { idMecanico: number; duracion: number }[] = [];
 
   estados_tarea!: any [];
+  
+  //Dialgo Dinamic
+  dialogRef: DynamicDialogRef | undefined;
+  
+  constructor(
+    private itemService: ItemService,
+    private mecanicoService: MecanicoService,
+    private dialogService: DialogService,
+    private toastr: ToastrService
+  ) {}
 
   ngOnInit(): void {
     this.initData();
@@ -54,7 +96,172 @@ export class CrudTareaMecanicaComponent implements OnInit{
 
   initData(){
     this.estados_tarea = EstadoTarea;
+    this.itemService.getItemsTipoRespuesto().subscribe({
+      next: (items : any) => {
+        this.allItemsRepuestos = items;
+      }
+    });
+    this.mecanicoService.getMecanicos().subscribe({
+      next: (mecanicos: any) => {
+        this.allMecanicos = mecanicos;
+      },
+      error: (error) => {
+        console.error('Error al cargar mecánicos:', error);
+      }
+    })
     this.headerDialog();
+  }
+
+  agregarTarea() {
+    // Validaciones mínimas
+    if (!this.detalleTarea || this.duracion_tarea <= 0) {
+      console.warn('Los campos Detalle de Tarea y Duración son obligatorios.');
+      return;
+    }
+
+    this.dialogRef = this.dialogService.open(AuthMecanicaComponent, {
+      header: 'Código de Autenticación',
+      width: '400px',
+      modal: true,
+      dismissableMask: false, 
+      closable: false,
+      data: {
+        accion: 'Agregar Tarea'
+      }
+    });
+
+
+    this.dialogRef.onClose.subscribe((result: { acceso: boolean, id: number | null }) => {
+      if (result.acceso) {
+        this.toastr.success('Tarea creada correctamente', 'Éxito');
+
+        const nuevaTarea = {
+          codigoOrdenTrabajo: this.codigoOT,
+          detalle: this.detalleTarea.trim(),
+          idUsuario: result.id,
+          estado: this.estado_tarea,
+          esManual: true,
+          requiereRepuesto: this.requ_repuestos,
+          requiereServicioExterno: this.tipo_tarea === 'externa' ? true : false,
+          requiereAutorizacion: this.requ_auth,
+          tipoMantenimiento: this.tipo_mantenimiento === 'preventivo' ? true : false,
+          duracion: this.duracion_tarea,
+          repuestos: this.list_repuestos,
+          mecanicos: this.list_mecanicos,
+        };
+
+        console.log('Tarea creada:', nuevaTarea); 
+          
+      } else {
+        this.toastr.error('Código incorrecto', 'Error');
+      }
+    });
+  }
+
+  showDialogRepuestos() {
+    this.displayAddDialogRepuestos = true;
+  }
+
+  showDialogMecanicos() {
+    this.displayDialogMecanicos = true;
+  }
+
+  agregarRepuesto() {
+    if (!this.selectedItemId || !this.cantidadSeleccionada || this.cantidadSeleccionada <= 0) {
+      alert('Selecciona un repuesto y una cantidad válida.');
+      return;
+    }
+
+    const item = this.allItemsRepuestos.find(i => i.idItem === this.selectedItemId);
+    if (!item) {
+      alert('El repuesto seleccionado no es válido.');
+      return;
+    }
+
+    if (this.cantidadSeleccionada > item.stock) {
+      alert(`La cantidad excede el stock disponible: ${item.stock}`);
+      return;
+    }
+
+    const yaExiste = this.list_repuestos.some(r => r.idItem === this.selectedItemId);
+    if (yaExiste) {
+      alert('Este repuesto ya fue agregado.');
+      return;
+    }
+
+    this.list_repuestos.push({
+      idItem: this.selectedItemId,
+      cantidad: this.cantidadSeleccionada,
+    });
+
+    // Limpiar inputs
+    this.selectedItemId = null;
+    this.cantidadSeleccionada = null;
+    this.displayAddDialogRepuestos = false;
+  }
+
+  getItem(id: number): any {
+    return this.allItemsRepuestos.find(i => i.idItem === id);
+  }
+
+  abrirEditar(repuesto: { idItem: number; cantidad: number }) {
+    this.editingRepuesto = { ...repuesto }; // copia temporal
+    this.displayEditDialogRepuestos = true;
+  }
+
+  guardarCantidad() {
+    const index = this.list_repuestos.findIndex(r => r.idItem === this.editingRepuesto.idItem);
+    if (index !== -1) {
+      this.list_repuestos[index].cantidad = this.editingRepuesto.cantidad;
+    }
+    this.displayEditDialogRepuestos = false;
+  }
+
+  eliminarRepuesto(idItem: number) {
+    this.list_repuestos = this.list_repuestos.filter(r => r.idItem !== idItem);
+  }
+
+  getMecanico(id: number): any {
+    return this.allMecanicos.find(m => m.idMecanico === id);
+  }
+
+  agregarMecanico() {
+    if (!this.selectedMecanicoId || !this.duracionEstimada || this.duracionEstimada <= 0) {
+      alert('Selecciona un mecánico y una duración válida.');
+      return;
+    }
+
+    const yaExiste = this.list_mecanicos.some(m => m.idMecanico === this.selectedMecanicoId);
+    if (yaExiste) {
+      alert('Este mecánico ya está asignado.');
+      return;
+    }
+
+    this.list_mecanicos.push({
+      idMecanico: this.selectedMecanicoId,
+      duracion: this.duracionEstimada
+    });
+
+    this.selectedMecanicoId = null;
+    this.duracionEstimada = null;
+    this.displayDialogMecanicos = false;
+  }
+
+  abrirEditarMecanico(mec: { idMecanico: number; duracion: number }) {
+    this.editingMecanico = { ...mec };
+    this.displayEditMecanico = true;
+  }
+
+  guardarDuracionMecanico() {
+    const index = this.list_mecanicos.findIndex(m => m.idMecanico === this.editingMecanico.idMecanico);
+    if (index !== -1) {
+      this.list_mecanicos[index].duracion = this.editingMecanico.duracion;
+    }
+    this.displayEditMecanico = false;
+  }
+
+  eliminarMecanico(idMecanico: number) {
+    this.list_mecanicos = this.list_mecanicos.filter(m => m.idMecanico !== idMecanico);
   }
 
   headerDialog(){
