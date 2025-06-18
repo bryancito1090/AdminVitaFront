@@ -91,9 +91,7 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
     this.tareaService.getTareasByOT(this.codigo!).subscribe({
       next: (response) => {
         this.TareasOT = response;
-        this.loadingTable = false;
-        console.log(this.TareasOT);
-        
+        this.loadingTable = false;        
       },
     });
   }
