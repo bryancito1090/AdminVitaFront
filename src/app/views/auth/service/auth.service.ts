@@ -11,10 +11,16 @@ export class AuthService {
   private apiUrl = `${environment.domain}${environment.apiEndpoint}${environment.authentication}`;
 
   constructor(private http: HttpClient) { }
+
   login(email: string, password: string): Observable<any> {
     const body = { email, password };
     const headers = new HttpHeaders({'Content-Type': 'application/json'});
-    return this.http.post(this.apiUrl, body, { headers });
+    return this.http.post(`${this.apiUrl}/login`, body, { headers });
+  }
+
+  auth_mecanica(codigo: string): Observable<any> {
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    return this.http.post<any>(`${this.apiUrl}/login-mecanico`, JSON.stringify(codigo), { headers });
   }
 
   saveToken(token: string): void {
@@ -37,6 +43,17 @@ export class AuthService {
       'Authorization': `Bearer ${token}`,
       'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     });
+  }
+
+  DecodedTokenAuth(token: any): JwtPayload | null {
+    if (!token) return null;
+
+    try {
+      return jwtDecode<JwtPayload>(token);
+    } catch (error) {
+      console.error('Error al decodificar el token', error);
+      return null;
+    }
   }
 
   getDecodedToken(): JwtPayload | null {

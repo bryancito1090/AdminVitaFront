@@ -16,11 +16,12 @@ import { StartComponent } from './views/start/start.component';
 import { AgregarOrdenTrabajoMecanicoComponent } from './views/dashboard-mecanica/OrdenTrabajoMecanico/agregar-orden-trabajo-mecanico/agregar-orden-trabajo-mecanico.component';
 import { OrdenTrabajoMecanicaComponent } from './views/dashboard-mecanica/orden-trabajo-mecanica/orden-trabajo-mecanica.component';
 import { AppSimpleLayout } from './layout/component/app.simple-layout';
+import { administradorGuard } from './views/auth/guards/administrador.guard';
 
 export const appRoutes: Routes = [
     {   path: '', component: StartComponent },
     {   path: 'login', component: LoginComponent },
-    {   path: 'panel', component: AppLayout,
+    {   path: 'panel', component: AppLayout, canActivate: [administradorGuard],
         children: [
             { path: '', component: HomeComponent},
             { path: 'OrdenTrabajo', component: OrdenTrabajoComponent},

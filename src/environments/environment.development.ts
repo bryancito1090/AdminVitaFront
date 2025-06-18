@@ -2,7 +2,7 @@ export const environment = {
     production: 'false',
     domain: 'https://localhost:7267',
     apiEndpoint: '/api',
-    authentication: '/Autenticate/login',
+    authentication: '/Autenticate',
     ordenesTrabajo: '/OrdenesTrabajo',
     mecanico: '/MecanicosController',
     validacion: '/Validacion',
