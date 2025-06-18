@@ -1,3 +1,4 @@
+<p-toast [style]="{marginTop: '80px'}" />
 <div class="card pt-4">
     <p-table 
         #dt1
@@ -39,7 +40,7 @@
                 </p-inputicon>
                 <input pInputText type="text" class="w-full" (input)="filterGlobal($event, dt1)" placeholder="Busca por una palabra clave" />
             </p-iconfield>              
-            <p-button class="" fluid icon="pi pi-plus" label="Nueva Orden de Trabajo"/>
+                <p-button class="" fluid icon="pi pi-plus" label="Nueva Orden de Trabajo" (onClick)="irANuevaOrden()"/>
         </div>
     </ng-template>
         <ng-template pTemplate="header" let-columns>
@@ -85,8 +86,18 @@
                         {{ rowData[col.field] }}
                     </ng-template>
                     <div *ngIf="col.field =='actions'" class="flex justify-start w-full gap-2"> 
-                        <p-button icon="pi pi-pen-to-square" (onClick)="redirectToOTHandler(rowData['codigo'])" />
-                        <p-button icon="pi pi-expand" />
+                        <p-button 
+                            icon="pi pi-pen-to-square" 
+                            (onClick)="validarYEditarOT(rowData['codigo'])"
+                            pTooltip="Editar Orden de Trabajo"
+                            tooltipPosition="top" />
+                        
+                        <!-- ✅ BOTÓN DE VER DETALLES -->
+                        <p-button 
+                            icon="pi pi-expand"
+                            (onClick)="verDetallesOT(rowData['codigo'])"
+                            pTooltip="Ver detalles"
+                            tooltipPosition="top" />
                     </div>
                 </td>
             </tr>
@@ -99,3 +110,11 @@
         </ng-template>
     </p-table>
 </div>
+
+<app-validar-accion-mecanico
+  [(visible)]="mostrarValidacion"
+  [requiredPermissions]="permisosRequeridos"
+  (validacionExitosa)="onValidacionExitosa($event)"
+  (validacionSinPermisos)="onValidacionSinPermisos($event)"
+  (onCerrar)="onCerrarValidacion()">
+</app-validar-accion-mecanico>

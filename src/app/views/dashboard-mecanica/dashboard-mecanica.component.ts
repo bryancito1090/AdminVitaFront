@@ -1,7 +1,6 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ordenTrabajoList } from '../../../domain/response/OrdenTrabajoResponse.model';
-import { OrdenTrabajoService } from '../services/orden-trabajo.service';
 import { EstadosOTs, EstadosVehiculo, genericT, PrioridadesOT } from '../shared/util/genericData';
 import { HeadersTables } from '../shared/util/tables';
 import { Table, TableModule } from 'primeng/table';
@@ -16,6 +15,10 @@ import { OrdenMecanicoService } from '../services/ordenMecanico.service';
 import { IconField } from 'primeng/iconfield';
 import { InputIcon } from 'primeng/inputicon';
 import { DividerModule } from 'primeng/divider';
+import { ToastModule } from 'primeng/toast';
+import { ValidarAccionMecanicoComponent } from '../shared/components/validar-accion-mecanico/validar-accion-mecanico.component';
+import { Router } from '@angular/router';
+import { MessageService } from 'primeng/api';
 
 interface TableColumn {
   field: string;
@@ -44,9 +47,11 @@ interface Mecanico {
     PickListModule,
     IconField,
     InputIcon,
-    DividerModule
-],
-  providers: [DatePipe, MecanicoService, OrdenMecanicoService],
+    DividerModule,
+    ValidarAccionMecanicoComponent,
+    ToastModule
+  ],
+  providers: [DatePipe, MecanicoService, OrdenMecanicoService, MessageService],
   templateUrl: './dashboard-mecanica.component.html',
   styleUrls: ['./dashboard-mecanica.component.scss']
 })
@@ -65,11 +70,19 @@ export class DashboardMecanicaComponent implements OnInit {
   todosMecanicos: Mecanico[] = [];
   mecanicosFiltrados: Mecanico[] = [];
   
+  mostrarValidacion: boolean = false;
+  codigoOTPendiente: string = '';
+  cargandoValidacion: boolean = false;
   isDarkModeEnabled = false;
+  permisosRequeridos: string[] = []; 
+  rutaPendiente: string = ''; 
+
   constructor(
     private datePipe: DatePipe,
     private mecanicoService: MecanicoService,
     private ordenMecanicoService: OrdenMecanicoService,
+    private router: Router,
+    private messageService: MessageService
   ) {}
 
   ngOnInit(): void {
@@ -80,6 +93,7 @@ export class DashboardMecanicaComponent implements OnInit {
     this.minDate = new Date();
     this.cargarMecanicos();
   }
+
   cargarMecanicos(): void {
     this.mecanicoService.getMecanicos().subscribe({
       next: (response) => {
@@ -87,12 +101,12 @@ export class DashboardMecanicaComponent implements OnInit {
         this.mecanicosFiltrados = [];
         this.cargarOrdenes();
       },
-      error: (err) => {
-        console.error('Error al cargar mecánicos:', err);
+      error: () => {
         this.cargarOrdenes();
       }
     });
   }
+
   cargarOrdenes(): void {
     this.loading = true;
     const idMecanicosSeleccionados = this.mecanicosFiltrados.length > 0 
@@ -116,32 +130,30 @@ export class DashboardMecanicaComponent implements OnInit {
         else if (response && response.ordenes && Array.isArray(response.ordenes)) {
           ordenesTemp = response.ordenes;
         }
-        if (ordenesTemp.length === 0) {
-          console.warn('No se encontraron órdenes en la respuesta:', response);
-        }
         this.ordenes = ordenesTemp.map((x: any) => ({
           ...x,
           fechaProgramada: this.formatDate(x.fechaProgramada)
         }));
         this.loading = false;
       },
-      error: (err: any) => {
-        console.error("Error al solicitar Ordenes de Trabajo: ", err);
+      error: () => {
         this.ordenes = [];
         this.loading = false;
       },
     });
   }
+
   formatDate(dateString: string): string {
     if(dateString === 'Vacío') return 'Vacío';
-    // Usar DatePipe para formatear la fecha
     const formattedDate = this.datePipe.transform(dateString, 'dd/MM/yyyy');
     return formattedDate || 'Fecha inválida';
   }
+
   filterGlobal(event: Event, dt: any) { 
     const inputValue = (event.target as HTMLInputElement)?.value || '';
     dt.filterGlobal(inputValue, 'contains');
   }
+
   filterMecHandler(mec: any) {
     const index1 = this.todosMecanicos.indexOf(mec);
     const index2 = this.mecanicosFiltrados.indexOf(mec);
@@ -152,25 +164,29 @@ export class DashboardMecanicaComponent implements OnInit {
     } else if (index2 !== -1) {
       this.mecanicosFiltrados.splice(index2, 1);
       this.todosMecanicos.push(mec);
-    } else {
-      console.warn('El valor no se encuentra en ninguno de los dos arreglos.');
     }
-    this.cargarOrdenes();  }
+    this.cargarOrdenes();
+  }
+
   clear(table: Table) {
     table.clear();
   }
-  redirectToOTHandler(codigo:any){
-    const url = `mecanica/${codigo}`;
-    window.open(url, '_blank');
+
+  redirectToOTHandler(codigo: any) {
+    this.codigoOTPendiente = codigo;
+    this.mostrarValidacion = true;
   }
+
   GetEstado(id: number)  {
     const item = this.estado.find(x => x.code === id);  
     return item?.name;
   }
+
   GetPrioridad(id: number)  {
     const item = this.prioridad.find(x => x.code === id);  
     return item?.name;
   }
+
   getSeverityEstado(status: number) {
     switch (status) {
       case 0: return undefined;
@@ -181,6 +197,7 @@ export class DashboardMecanicaComponent implements OnInit {
         return 'secondary';
     }
   }
+
   getSeverityPrioridad(status: number) {
     switch (status) {
       case 4: return 'secondary';
@@ -191,5 +208,62 @@ export class DashboardMecanicaComponent implements OnInit {
       default: 
         return undefined;
     }
+  }
+
+  validarYEditarOT(codigo: any) {
+    this.codigoOTPendiente = codigo;
+    this.permisosRequeridos = ['Ordenes de Trabajo.Editar'];
+    this.mostrarValidacion = true;
+  }
+
+  verDetallesOT(codigo: any) {
+    // Lógica para ver detalles
+  }
+
+  onValidacionExitosa(mecanicoAuth: any) {
+    if (this.codigoOTPendiente) {
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Acceso Autorizado',
+        detail: `Abriendo orden de trabajo ${this.codigoOTPendiente}`,
+        life: 3000
+      });
+      const url = `mecanica/${this.codigoOTPendiente}`;
+      window.open(url, '_blank');
+      this.codigoOTPendiente = '';
+      this.permisosRequeridos = [];
+    } else if (this.rutaPendiente) {
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Acceso Autorizado',
+        detail: 'Redirigiendo...',
+        life: 3000
+      });
+      this.router.navigate([this.rutaPendiente]);
+      this.rutaPendiente = '';
+      this.permisosRequeridos = [];
+    }
+  }
+
+  onValidacionSinPermisos(mecanicoAuth: any) {
+    this.messageService.add({
+      severity: 'error',
+      summary: 'Acceso Denegado',
+      detail: `${mecanicoAuth.name} no tiene permisos para esta acción`,
+      life: 5000
+    });
+    this.codigoOTPendiente = '';
+    this.permisosRequeridos = [];
+    this.rutaPendiente = '';
+  }
+
+  onCerrarValidacion() {
+    this.mostrarValidacion = false;
+    this.codigoOTPendiente = '';
+    this.permisosRequeridos = [];
+    this.rutaPendiente = '';
+    }
+     irANuevaOrden() {
+    this.router.navigate(['/mecanica/agregar-orden']);
   }
 }

@@ -4,7 +4,7 @@ import { environment } from '../../../environments/environment.development';
 import { Observable } from 'rxjs';
 import { VehicleDetalleResponse, VehiculosList } from '../../../domain/response/Vehiculo.model';
 import { HttpClient } from '@angular/common/http';
-import { AddVehicleInstitucional, UpdateOptionsVehicle } from '../../../domain/request/Vehiculo.model';
+import { AddVehicleInstitucional, AddVehicleNoInstitucional, UpdateOptionsVehicle } from '../../../domain/request/Vehiculo.model';
 
 @Injectable({
   providedIn: 'root'
@@ -30,5 +30,9 @@ export class VehiculoService {
   putVehicleInstitucionalOptions(vehicle: UpdateOptionsVehicle):Observable<any> {
     const headers = this.auth.getAuthHeaders();
     return this.http.put<any>(`${this.apiUrl}/UpdateVehiculo`, vehicle, { headers });
+  }
+  postVehicleNoInstitucional(vehicle: AddVehicleNoInstitucional): Observable<any> {
+    const headers = this.auth.getAuthHeaders();
+    return this.http.post<any>(`${this.apiUrl}/CreateVehiculo`, vehicle, { headers });
   }
 }

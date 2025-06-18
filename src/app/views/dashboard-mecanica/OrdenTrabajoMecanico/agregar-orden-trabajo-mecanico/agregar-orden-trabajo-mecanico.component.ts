@@ -14,6 +14,14 @@ import { Dialog } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { Cliente } from '../../../../../domain/request/Cliente.model';
+import { TipoVehiculoService } from '../../../services/tipo-vehiculo.service';
+import { DropdownModule } from 'primeng/dropdown';
+import { CalendarModule } from 'primeng/calendar';
+import { AddVehicleNoInstitucional } from '../../../../../domain/request/Vehiculo.model';
+import { VehiculoService } from '../../../services/vehiculo.service';
+import { ArchivosService } from '../../../services/archivos.service';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { ConfirmationService } from 'primeng/api';
 
 @Component({
   selector: 'app-agregar-orden-trabajo-mecanico',
@@ -23,7 +31,12 @@ import { Cliente } from '../../../../../domain/request/Cliente.model';
     ReactiveFormsModule,
     Dialog,
     ButtonModule, 
-    InputTextModule],
+    InputTextModule,
+    DropdownModule,
+    CalendarModule,
+    ConfirmDialogModule
+    ],
+  providers: [ConfirmationService],
   templateUrl: './agregar-orden-trabajo-mecanico.component.html',
   styleUrl: './agregar-orden-trabajo-mecanico.component.scss'
 })
@@ -90,7 +103,10 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit{
   mostrarTipoDocumento: boolean = true;
 
   mostrarPopupPropietario: boolean = false;
-  visibleVehiculo = false;
+  visibleVehiculo: boolean = false;
+
+  // Property to store vehicle types
+  tipoVehiculo: any[] = [];
   tipoDocumento: string = 'cedula';
 
 // Datos para el formulario
@@ -125,6 +141,43 @@ datosEmpresa = {
   mensajeExito: string = '';
   mensajeError: string = '';
   cargando: boolean = false;
+  // En el componente .ts, agrega esta propiedad
+  dialogStyle = {
+    width: '680px', 
+    maxWidth: '95vw',
+    padding: 0,
+    margin: 0,
+    overflow: 'visible'
+  };
+  documentoVehiculo: string = '';
+  clienteVehiculoActual: any = null;
+  mostrarInfoClienteVehiculo: boolean = false;
+  cargandoClienteVehiculo: boolean = false;
+  errorClienteVehiculo: string = '';
+
+  nuevoVehiculo: AddVehicleNoInstitucional = {
+   idTipoVehiculo: 0,
+  marca: '',
+  modelo: '',
+  version: null,            // Ahora es opcional
+  placa: '',
+  anio: 0,
+  color: '',
+  numeroChasis: null,       // Ahora es opcional
+  numeroVehiculo: null,     // Ahora es opcional
+  estado: 1,
+  ultimoAnioMatriculacion: null, // Ahora es opcional
+  ultimoAnioRTV: null,      // Ahora es opcional
+  idCliente: 0,
+  idLicencias: [],
+  archivos: []
+};
+listaAnios: number[] = [];
+cargandoRegistroVehiculo: boolean = false;
+idAdjuntoFrontal: number | null = null;
+idAdjuntoLateralIzquierda: number | null = null;
+idAdjuntoLateralDerecha: number | null = null;
+idAdjuntoTrasera: number | null = null;
   constructor(
     private router: Router,
     private validacionService: ValidacionService,
@@ -132,17 +185,31 @@ datosEmpresa = {
     private mecanicoService: MecanicoService,
     private ordenTrabajoService: OrdenTrabajoService,
     private adjuntoService : AdjuntoService,
-    private clienteService: ClienteService
+    private clienteService: ClienteService,
+    private tipoVehiculoService: TipoVehiculoService,
+    private vehiculoService: VehiculoService,
+    private archivoService : ArchivosService,
+    private confirmationService: ConfirmationService
   ) {}
 
   ngOnInit() {
     this.obtenerNombreUsuario();
     this.cargarSupervisores();
+    this.GetTipoVehiculo();
+    this.generarListaAnios();
   }
+  generarListaAnios(): void {
+  const anioActual = new Date().getFullYear();
+  const anioInicio = anioActual - 30; // 30 años atrás
   
+  this.listaAnios = [];
+  for (let i = anioActual; i >= anioInicio; i--) {
+    this.listaAnios.push(i);
+  }
+}
   cargarSupervisores() {
     this.cargandoMecanicos = true;
-    this.mecanicoService.getSupervisores().subscribe({
+    this.mecanicoService.getSupervisoresMec().subscribe({
       next: (data) => {
         this.mecanicos = data;
         this.cargandoMecanicos = false;
@@ -224,45 +291,55 @@ datosEmpresa = {
     this.activeTab = 'informacion'; // Reiniciamos a la primera pestaña
   }
   
-  validarVehiculo() {
-    if (!this.placa || this.placa.trim() === '') {
-      this.toastr.warning('Por favor ingrese una placa válida', 'Advertencia');
-      return;
-    }
-    
-    this.cargandoVehiculo = true;
-    this.mostrarInfoVehiculo = false;
-    
-    this.validacionService.validarVehiculoXPlaca(this.placa)
-      .subscribe({
-        next: (respuesta) => {
-          this.vehiculoActual = respuesta;
-          this.mostrarInfoVehiculo = true;
-          this.cargandoVehiculo = false;
-          
-          // Asignar idVehiculo a ordenData
-          this.ordenData.idVehiculo = this.vehiculoActual.idVehiculo;
-          
-          if (this.vehiculoActual.estado === 0) {
-            this.toastr.success('Vehículo encontrado - Estado: Operativo', 'Éxito');
-          } else if (this.vehiculoActual.estado === 1) {
-            this.toastr.info('Vehículo encontrado - Estado: En Mantenimiento', 'Información');
-          } else if (this.vehiculoActual.estado === 2) {
-            this.toastr.warning('Vehículo encontrado - Estado: De Baja', 'Precaución');
-          }
-        },
-        error: (error) => {
-          console.error('Error al validar el vehículo:', error);
-          this.cargandoVehiculo = false;
-          
-          if (error.status === 404) {
-            this.toastr.warning('Vehículo no encontrado', 'No existe');
-          } else {
-            this.toastr.error('Error al validar el vehículo', 'Error');
-          }
-        }
-      });
+validarVehiculo() {
+  if (!this.placa || this.placa.trim() === '') {
+    this.toastr.warning('Por favor ingrese una placa válida', 'Advertencia');
+    return;
   }
+  
+  this.cargandoVehiculo = true;
+  this.mostrarInfoVehiculo = false;
+  
+  // Limpiar previews de imágenes existentes
+  this.limpiarPrevisualizaciones();
+  
+  this.validacionService.validarVehiculoXPlaca(this.placa)
+    .subscribe({
+      next: (respuesta) => {
+        console.log('Respuesta de validación de vehículo:', respuesta);
+        this.vehiculoActual = respuesta;
+        this.mostrarInfoVehiculo = true;
+        
+        // Asignar idVehiculo a ordenData
+        this.ordenData.idVehiculo = this.vehiculoActual.idVehiculo;
+        
+        // Cargar las imágenes del vehículo si tiene un ID válido
+        if (this.vehiculoActual.idVehiculo) {
+          this.cargarImagenesVehiculo(this.vehiculoActual.idVehiculo);
+        }
+        
+        this.cargandoVehiculo = false;
+        
+        if (this.vehiculoActual.estado === 0) {
+          this.toastr.success('Vehículo encontrado - Estado: Operativo', 'Éxito');
+        } else if (this.vehiculoActual.estado === 1) {
+          this.toastr.info('Vehículo encontrado - Estado: En Mantenimiento', 'Información');
+        } else if (this.vehiculoActual.estado === 2) {
+          this.toastr.warning('Vehículo encontrado - Estado: De Baja', 'Precaución');
+        }
+      },
+      error: (error) => {
+        console.error('Error al validar el vehículo:', error);
+        this.cargandoVehiculo = false;
+        
+        if (error.status === 404) {
+          this.toastr.warning('Vehículo no encontrado', 'No existe');
+        } else {
+          this.toastr.error('Error al validar el vehículo', 'Error');
+        }
+      }
+    });
+}
   crearNuevoVehiculo() {
     this.router.navigate(['/panel/mecanica/nuevo-vehiculo']);
   }
@@ -443,7 +520,93 @@ datosEmpresa = {
     };
     reader.readAsDataURL(file);
   }
-  eliminarImagen(tipo: string): void {
+eliminarImagen(tipo: string): void {
+  let idAdjunto: number | null = null;
+  let tipoImagen = '';
+  
+  // Determinar qué imagen y ID se están eliminando
+  switch (tipo) {
+    case 'frontal':
+      idAdjunto = this.idAdjuntoFrontal;
+      tipoImagen = 'frontal';
+      break;
+    case 'lateralIzquierda':
+      idAdjunto = this.idAdjuntoLateralIzquierda;
+      tipoImagen = 'lateral izquierda';
+      break;
+    case 'lateralDerecha':
+      idAdjunto = this.idAdjuntoLateralDerecha;
+      tipoImagen = 'lateral derecha';
+      break;
+    case 'trasera':
+      idAdjunto = this.idAdjuntoTrasera;
+      tipoImagen = 'trasera';
+      break;
+  }
+  
+  // Si hay un ID de adjunto, mostrar confirmación
+  if (idAdjunto) {
+    this.confirmationService.confirm({
+      message: `Esta acción no se puede deshacer. ¿Desea eliminar la imagen ${tipoImagen}?`,
+      header: 'Confirmación para eliminar imagen',
+      icon: 'pi pi-exclamation-circle',
+      acceptLabel: 'Sí, eliminar imagen',
+      rejectLabel: 'Cancelar',
+      accept: () => {
+        this.toastr.info('Procesando su solicitud...', 'Eliminando imagen');
+        
+        // Llamar al servicio para eliminar el adjunto
+        this.adjuntoService.eliminarAdjuntoCompleto(idAdjunto).subscribe({
+          next: (respuesta) => {
+            // Si la eliminación fue exitosa
+            if (respuesta) {
+              this.toastr.success(`Imagen ${tipoImagen} eliminada correctamente`, 'Éxito');
+              
+              // Limpiar la vista previa y el ID según el tipo
+              switch (tipo) {
+                case 'frontal':
+                  this.previewFrontal = null;
+                  this.idAdjuntoFrontal = null;
+                  this.imagenFrontal = null;
+                  break;
+                case 'lateralIzquierda':
+                  this.previewLateralIzquierda = null;
+                  this.idAdjuntoLateralIzquierda = null;
+                  this.imagenLateralIzquierda = null;
+                  break;
+                case 'lateralDerecha':
+                  this.previewLateralDerecha = null;
+                  this.idAdjuntoLateralDerecha = null;
+                  this.imagenLateralDerecha = null;
+                  break;
+                case 'trasera':
+                  this.previewTrasera = null;
+                  this.idAdjuntoTrasera = null;
+                  this.imagenTrasera = null;
+                  break;
+              }
+            } else {
+              this.toastr.error(`No se pudo eliminar la imagen ${tipoImagen}`, 'Error');
+            }
+          },
+          error: (error) => {
+            console.error('Error al eliminar el adjunto:', error);
+            
+            if (error.status === 400) {
+              this.toastr.error(`No se puede eliminar esta imagen. Verifique que no esté en uso`, 'Error');
+            } else if (error.status === 401 || error.status === 403) {
+              this.toastr.error('No tiene permisos para realizar esta acción', 'Error de autorización');
+            } else if (error.status === 404) {
+              this.toastr.error('No se encontró la imagen especificada', 'Error');
+            } else {
+              this.toastr.error(`Error al eliminar la imagen ${tipoImagen}: ` + (error.error?.mensaje || error.message), 'Error');
+            }
+          }
+        });
+      }
+    });
+  } else {
+    // Si no hay ID de adjunto (imagen local), solo eliminar la vista previa
     switch (tipo) {
       case 'frontal':
         this.imagenFrontal = null;
@@ -463,58 +626,103 @@ datosEmpresa = {
         break;
     }
   }
-  hayImagenesParaSubir(): boolean {
-    return !!(this.imagenFrontal || this.imagenLateralIzquierda || this.imagenLateralDerecha || this.imagenTrasera);
+}
+ hayImagenesParaSubir(): boolean {
+  return !!(
+    (this.imagenFrontal && !this.idAdjuntoFrontal) || 
+    (this.imagenLateralIzquierda && !this.idAdjuntoLateralIzquierda) || 
+    (this.imagenLateralDerecha && !this.idAdjuntoLateralDerecha) || 
+    (this.imagenTrasera && !this.idAdjuntoTrasera)
+  );
+}
+async subirImagenes(): Promise<boolean> {
+  if (!this.vehiculoActual) {
+    return true;
   }
-  async subirImagenes(): Promise<boolean> {
-    if (!this.vehiculoActual || !this.hayImagenesParaSubir()) {
-      return true;
-    }
-    
-    // Array de tuples [File, string] para mantener el tipo de imagen
-    const imagenesConTipo: [File, string][] = [];
-    if (this.imagenFrontal) imagenesConTipo.push([this.imagenFrontal, 'frontal']);
-    if (this.imagenLateralIzquierda) imagenesConTipo.push([this.imagenLateralIzquierda, 'lateralIzquierda']);
-    if (this.imagenLateralDerecha) imagenesConTipo.push([this.imagenLateralDerecha, 'lateralDerecha']);
-    if (this.imagenTrasera) imagenesConTipo.push([this.imagenTrasera, 'trasera']);
-    
-    this.cargandoImagenes = true;
-    this.imagenesSubidas = 0;
-    this.totalImagenes = imagenesConTipo.length;
-    
-    try {
-      for (const [imagen, tipo] of imagenesConTipo) {
-        // Renombrar el archivo para incluir el tipo de imagen
-        const tipoImagen = tipo.charAt(0).toUpperCase() + tipo.slice(1);
-        const extensionArchivo = imagen.name.split('.').pop();
-        const nuevoNombreArchivo = `${this.vehiculoActual.placa || 'vehiculo'}_${tipoImagen}.${extensionArchivo}`;
-        
-        // Crear un nuevo archivo con el nombre modificado
-        const imagenRenombrada = new File(
-          [imagen], 
-          nuevoNombreArchivo, 
-          { type: imagen.type }
-        );
-        
-        await lastValueFrom(this.adjuntoService.createAdjunto(imagenRenombrada, this.vehiculoActual.idVehiculo));
-        this.imagenesSubidas++;
+  
+  // Array de tuples [File, string] para mantener el tipo de imagen, solo las nuevas
+  const imagenesConTipo: [File, string][] = [];
+  
+  // Solo incluir las imágenes que no tienen ya un ID de adjunto (son nuevas)
+  if (this.imagenFrontal && !this.idAdjuntoFrontal) {
+    imagenesConTipo.push([this.imagenFrontal, 'frontal']);
+  }
+  if (this.imagenLateralIzquierda && !this.idAdjuntoLateralIzquierda) {
+    imagenesConTipo.push([this.imagenLateralIzquierda, 'lateralIzquierda']);
+  }
+  if (this.imagenLateralDerecha && !this.idAdjuntoLateralDerecha) {
+    imagenesConTipo.push([this.imagenLateralDerecha, 'lateralDerecha']);
+  }
+  if (this.imagenTrasera && !this.idAdjuntoTrasera) {
+    imagenesConTipo.push([this.imagenTrasera, 'trasera']);
+  }
+  
+  // Si no hay imágenes nuevas para subir, retornar éxito
+  if (imagenesConTipo.length === 0) {
+    return true;
+  }
+  
+  this.cargandoImagenes = true;
+  this.imagenesSubidas = 0;
+  this.totalImagenes = imagenesConTipo.length;
+  
+  try {
+    for (const [imagen, tipo] of imagenesConTipo) {
+      // Renombrar el archivo para incluir el tipo de imagen
+      const tipoImagen = tipo.charAt(0).toUpperCase() + tipo.slice(1);
+      const extensionArchivo = imagen.name.split('.').pop();
+      const nuevoNombreArchivo = `${this.vehiculoActual.placa || 'vehiculo'}_${tipoImagen}.${extensionArchivo}`;
+      
+      // Crear un nuevo archivo con el nombre modificado
+      const imagenRenombrada = new File(
+        [imagen], 
+        nuevoNombreArchivo, 
+        { type: imagen.type }
+      );
+      
+      // Subir la imagen y obtener la respuesta
+      const respuesta = await lastValueFrom(this.adjuntoService.createAdjunto(imagenRenombrada, this.vehiculoActual.idVehiculo));
+      
+      // Si la respuesta contiene el ID del adjunto, actualizarlo en el componente
+      if (respuesta && respuesta.idAdjunto) {
+        switch (tipo) {
+          case 'frontal':
+            this.idAdjuntoFrontal = respuesta.idAdjunto;
+            break;
+          case 'lateralIzquierda':
+            this.idAdjuntoLateralIzquierda = respuesta.idAdjunto;
+            break;
+          case 'lateralDerecha':
+            this.idAdjuntoLateralDerecha = respuesta.idAdjunto;
+            break;
+          case 'trasera':
+            this.idAdjuntoTrasera = respuesta.idAdjunto;
+            break;
+        }
       }
       
-      this.toastr.success(`Se subieron ${this.imagenesSubidas} imágenes exitosamente`, 'Éxito');
-      this.cargandoImagenes = false;
-      return true;
-    } catch (error) {
-      console.error('Error al subir imágenes:', error);
-      this.cargandoImagenes = false;
-      if (this.imagenesSubidas > 0) {
-        this.toastr.warning(`Se subieron ${this.imagenesSubidas} de ${this.totalImagenes} imágenes`, 'Advertencia');
-        return true; // Consideramos éxito parcial
-      } else {
-        this.toastr.error('No se pudieron subir las imágenes', 'Error');
-        return false;
-      }
+      this.imagenesSubidas++;
+    }
+    
+    if (this.imagenesSubidas > 0) {
+      this.toastr.success(`Se subieron ${this.imagenesSubidas} imágenes nuevas exitosamente`, 'Éxito');
+    }
+    
+    this.cargandoImagenes = false;
+    return true;
+  } catch (error) {
+    console.error('Error al subir imágenes:', error);
+    this.cargandoImagenes = false;
+    
+    if (this.imagenesSubidas > 0) {
+      this.toastr.warning(`Se subieron ${this.imagenesSubidas} de ${this.totalImagenes} imágenes nuevas`, 'Advertencia');
+      return true; // Consideramos éxito parcial
+    } else {
+      this.toastr.error('No se pudieron subir las imágenes nuevas', 'Error');
+      return false;
     }
   }
+}
   isMobileDevice(): boolean {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   }
@@ -583,46 +791,58 @@ datosEmpresa = {
     this.mensajeError = '';
   }
   
-  // Preparar objeto Cliente para enviar al backend
   prepararDatosCliente(): Cliente {
-    let cliente: Cliente;
+    const fechaActual = new Date().toISOString();
     
     if (this.isPersonaNatural) {
-      cliente = {
+      // Para persona natural
+      return {
         nombre: this.datosPersonaNatural.nombres,
-        tipoPersona: 'N', // Natural
-        tipoDocumento: this.tipoDocumento === 'cedula' ? 'C' : 'P', // C: Cédula, P: Pasaporte
+        tipoPersona: 'N',
+        tipoDocumento: this.tipoDocumento === 'cedula' ? 'C' : 'P',
         documento: this.datosPersonaNatural.documento,
         email: this.datosPersonaNatural.email,
-        celular: this.datosPersonaNatural.celular,
-        telefono: this.datosPersonaNatural.telefono,
+        celular: this.datosPersonaNatural.celular || '',
+        telefono: this.datosPersonaNatural.telefono || '',
         direccion: this.datosPersonaNatural.direccion,
         apellidos: this.datosPersonaNatural.apellidos,
-        fechaNacimiento: this.datosPersonaNatural.fechaNacimiento || undefined,
+        // Importante: Manejar correctamente el tipo de fechaNacimiento
+        fechaNacimiento: this.datosPersonaNatural.fechaNacimiento ? 
+          (typeof this.datosPersonaNatural.fechaNacimiento === 'string' ? 
+           this.datosPersonaNatural.fechaNacimiento : 
+           this.datosPersonaNatural.fechaNacimiento.toISOString()) : undefined,
         genero: this.datosPersonaNatural.genero === 'masculino' ? 'M' : 
-                this.datosPersonaNatural.genero === 'femenino' ? 'F' : '',
+          this.datosPersonaNatural.genero === 'femenino' ? 'F' : '',
+        // Campos de empresa con valores por defecto para que no sean null/undefined
+        razonSocial: '',
+        idRepresentanteLegal: 0,
+        representanteLegalNombre: '',
+        obligadaContabilidad: false,
         esLocal: this.datosPersonaNatural.esLocal
       };
     } else {
-      cliente = {
+      // Para empresa
+      return {
         nombre: this.datosEmpresa.nombre,
-        tipoPersona: 'E', // Empresa
-        tipoDocumento: 'R', // RUC
+        tipoPersona: 'E',
+        tipoDocumento: 'R',
         documento: this.datosEmpresa.documento,
         email: this.datosEmpresa.email,
-        celular: this.datosEmpresa.celular,
-        telefono: this.datosEmpresa.telefono,
+        celular: this.datosEmpresa.celular || '',
+        telefono: this.datosEmpresa.telefono || '',
         direccion: this.datosEmpresa.direccion,
+        // Campos para cumplir con el schema (pueden ir vacíos para empresas)
+        apellidos: '',
+        fechaNacimiento: undefined,
+        genero: '',
         razonSocial: this.datosEmpresa.razonSocial,
+        idRepresentanteLegal: 0, // Ajustar si tienes este dato
         representanteLegalNombre: this.datosEmpresa.representanteLegal,
         obligadaContabilidad: this.datosEmpresa.obligadaContabilidad,
         esLocal: this.datosEmpresa.esLocal
       };
     }
-    
-    return cliente;
   }
-  
 // Validación mejorada con alertas Toast
 validarFormulario(): boolean {
   // Validaciones para persona natural
@@ -724,67 +944,63 @@ registrarPropietario(): void {
   this.mensajeExito = '';
   
   if (!this.validarFormulario()) {
-    return; // Ya se mostró la alerta específica en validarFormulario()
+    return;
   }
   
   const cliente = this.prepararDatosCliente();
   this.cargando = true;
   
+  // Depuración detallada
+  console.log('Datos del cliente a registrar (objeto completo):', JSON.stringify(cliente, null, 2));
+  
   this.clienteService.registrarCliente(cliente).subscribe({
     next: (respuesta) => {
-      this.cargando = false;
-      if (respuesta === 'Cliente registrado correctamente.') {
-        this.toastr.success('Cliente registrado correctamente', 'Operación exitosa');
-        
-        // Actualizar el campo documento en el formulario principal
-        this.documento = this.isPersonaNatural ? 
-          this.datosPersonaNatural.documento : 
-          this.datosEmpresa.documento;
-        
-        // Cerrar el modal inmediatamente
-        this.visible = false; // Cerrar el p-dialog
-        this.mostrarPopupPropietario = false; // Asegurar que también se actualiza esta variable
-        
-        // Un pequeño retraso antes de validar el cliente para asegurar que la UI se actualiza correctamente
-        setTimeout(() => {
-          this.validarCliente(); // Cargar el cliente recién registrado
-        }, 500);
-      } else {
-        this.toastr.warning(respuesta, 'Advertencia');
-      }
-    },
-    error: (error) => {
+      console.log('Respuesta del servidor:', respuesta);
       this.cargando = false;
       
-      // Si es un error 400 pero sospechamos que el cliente fue creado
-      if (error.status === 400 && error.error?.includes('ya existe')) {
+      if (respuesta === 'Cliente registrado correctamente.' || 
+          (typeof respuesta === 'object' && respuesta.success)) {
         this.toastr.success('Cliente registrado correctamente', 'Operación exitosa');
         
         // Actualizar documento y cerrar popup
-        this.documento = this.isPersonaNatural ? 
-          this.datosPersonaNatural.documento : 
-          this.datosEmpresa.documento;
-        
+        this.documento = cliente.documento;
         this.visible = false;
-        this.mostrarPopupPropietario = false;
         
+        // Cargar cliente después
         setTimeout(() => {
           this.validarCliente();
         }, 500);
-        return;
+      } else {
+        this.toastr.warning(typeof respuesta === 'string' ? respuesta : 'Respuesta inesperada del servidor', 'Advertencia');
       }
+    },
+    error: (error) => {
+      console.error('Error completo al registrar cliente:', error);
+      this.cargando = false;
       
-      // Manejo de otros errores como antes
+      // Analizar la respuesta para obtener más detalles
       let mensaje = 'Error al registrar el cliente';
       let titulo = 'Error';
       
-      if (error.status === 409) {
+      if (error.status === 400) {
+        if (error.error && error.error.includes('ya existe')) {
+          this.toastr.info('Este documento ya está registrado', 'Cliente existente');
+          this.documento = cliente.documento;
+          this.visible = false;
+          setTimeout(() => this.validarCliente(), 500);
+          return;
+        }
+        
+        // Intentar extraer mensaje específico del error
+        if (typeof error.error === 'object') {
+          mensaje = JSON.stringify(error.error);
+        } else if (typeof error.error === 'string') {
+          mensaje = error.error;
+        }
+        titulo = 'Datos inválidos';
+      } else if (error.status === 409) {
         mensaje = 'Ya existe un cliente con ese documento';
         titulo = 'Cliente duplicado';
-      } else if (error.error && typeof error.error === 'string') {
-        mensaje = error.error;
-      } else if (error.message) {
-        mensaje = error.message;
       }
       
       this.toastr.error(mensaje, titulo);
@@ -828,21 +1044,290 @@ validarCampo(tipo: string, campo: string, valor: any): void {
       break;
   }
 }
-  showDialog(event?: Event) {
-    if (event) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-    setTimeout(() => {
-      this.visible = true;
-    }, 10);
-    return false;
+showDialog() {
+  this.visible = true;
+}
+  GetTipoVehiculo(): void {
+    this.tipoVehiculoService.getTiposVehiculo().subscribe({
+      next: (data) => {
+        this.tipoVehiculo = data;
+      },
+      error: (error) => {
+        console.error('Error al cargar los tipos de vehículo:', error);
+        this.toastr.error('No se pudieron cargar los tipos de vehículo', 'Error');
+      }
+    });
   }
-  mostrarPopupVehiculo(): void {
-    this.visibleVehiculo = true;
-  }
-
+abrirPopupVehiculo() {
+  this.visibleVehiculo = true;
+  // Reiniciar las variables
+  this.documentoVehiculo = '';
+  this.clienteVehiculoActual = null;
+  this.mostrarInfoClienteVehiculo = false;
+  this.errorClienteVehiculo = '';
+  
+  // Reiniciar el objeto del nuevo vehículo
+  this.nuevoVehiculo = {
+    idTipoVehiculo: 0,
+    marca: '',
+    modelo: '',
+    version: '',
+    placa: '',
+    anio: 0,
+    color: '',
+    numeroChasis: '',
+    numeroVehiculo: '', 
+    estado: 1,  
+    ultimoAnioMatriculacion: 0, 
+    ultimoAnioRTV: 0, 
+    idCliente: 0,
+    idLicencias: [],
+    archivos: []
+  };
+}
   cerrarPopupVehiculo(): void {
     this.visibleVehiculo = false;
   }
+validarClienteVehiculo() {
+  if (!this.documentoVehiculo || this.documentoVehiculo.trim() === '') {
+    this.toastr.warning('Por favor ingrese un documento válido', 'Advertencia');
+    return;
+  }
+  
+  this.cargandoClienteVehiculo = true;
+  this.mostrarInfoClienteVehiculo = false;
+  this.errorClienteVehiculo = '';
+  
+  // Usar exactamente el mismo servicio y método que usas en validarCliente()
+  this.validacionService.validarClienteXDoc(this.documentoVehiculo)
+    .subscribe({
+      next: (respuesta) => {
+        this.clienteVehiculoActual = respuesta;
+        this.mostrarInfoClienteVehiculo = true;
+        this.cargandoClienteVehiculo = false;
+        
+        // También puedes asignar el cliente al vehículo aquí si lo necesitas
+        // this.nuevoVehiculo.idCliente = this.clienteVehiculoActual.idPersona;
+        
+        if (this.clienteVehiculoActual.esClienteActivo) {
+          this.toastr.success('Cliente encontrado', 'Éxito');
+        } else {
+          this.toastr.info('El cliente existe pero no está activo', 'Información');
+        }
+      },
+      error: (error) => {
+        console.error('Error al validar el cliente:', error);
+        this.cargandoClienteVehiculo = false;
+        this.clienteVehiculoActual = null;
+        
+        if (error.status === 404) {
+          this.errorClienteVehiculo = 'Cliente no encontrado';
+          this.toastr.warning('Cliente no encontrado', 'No existe');
+        } else {
+          this.errorClienteVehiculo = 'Error al validar el cliente';
+          this.toastr.error('Error al validar el cliente', 'Error');
+        }
+      }
+    });
+}
+registrarVehiculo() {
+  // Validar campos obligatorios
+  if (!this.clienteVehiculoActual) {
+    this.toastr.warning('Debe validar un cliente primero', 'Advertencia');
+    return;
+  }
+
+  if (!this.nuevoVehiculo.marca || !this.nuevoVehiculo.modelo || !this.nuevoVehiculo.color || 
+      !this.nuevoVehiculo.anio || !this.nuevoVehiculo.idTipoVehiculo) {
+    this.toastr.warning('Complete todos los campos obligatorios', 'Advertencia');
+    return;
+  }
+
+  // Extraer solo los campos necesarios para la petición, omitiendo idVehiculo
+  const vehiculoParaEnviar = {
+    idTipoVehiculo: this.nuevoVehiculo.idTipoVehiculo,
+    marca: this.nuevoVehiculo.marca,
+    modelo: this.nuevoVehiculo.modelo,
+    version: this.nuevoVehiculo.version,
+    placa: this.nuevoVehiculo.placa,
+    anio: this.nuevoVehiculo.anio,
+    color: this.nuevoVehiculo.color,
+    numeroChasis: this.nuevoVehiculo.numeroChasis,
+    numeroVehiculo: null,  // Usa null en vez de string vacío
+    estado: this.nuevoVehiculo.estado,
+    idCliente: this.clienteVehiculoActual.idPersona,
+    idLicencias: this.nuevoVehiculo.idLicencias || null,
+    archivos: this.nuevoVehiculo.archivos || null,
+    ultimoAnioMatriculacion: this.nuevoVehiculo.ultimoAnioMatriculacion || 0, // Add this property
+    ultimoAnioRTV: this.nuevoVehiculo.ultimoAnioRTV || 0 // Add this property
+  };
+  
+  // Conversión segura para años (usando null si no hay valor)
+  if (this.nuevoVehiculo.ultimoAnioMatriculacion !== null) {
+    vehiculoParaEnviar.ultimoAnioMatriculacion = Number(this.nuevoVehiculo.ultimoAnioMatriculacion) || 0;
+  }
+  
+  if (this.nuevoVehiculo.ultimoAnioRTV !== null) {
+    vehiculoParaEnviar.ultimoAnioRTV = Number(this.nuevoVehiculo.ultimoAnioRTV) || 0;
+  }
+  
+  this.cargandoRegistroVehiculo = true;
+  console.log('Datos del vehículo a registrar:', vehiculoParaEnviar);
+  
+  this.vehiculoService.postVehicleNoInstitucional(vehiculoParaEnviar)
+    .subscribe({
+      next: (respuesta) => {
+        console.log('Respuesta del servidor:', respuesta);
+        this.cargandoRegistroVehiculo = false;
+        
+        if (respuesta === 'Vehículo registrado correctamente.' || 
+            (typeof respuesta === 'object' && respuesta.success)) {
+          this.toastr.success('Vehículo registrado correctamente', 'Éxito');
+          this.visibleVehiculo = false;
+          this.resetearFormulario();
+          
+          // Si deseas usar la placa del vehículo recién creado
+          if (respuesta.placa) {
+            this.placa = respuesta.placa;
+            this.validarVehiculo();
+          }
+        } else {
+          this.toastr.warning(typeof respuesta === 'string' ? respuesta : 'Respuesta inesperada del servidor', 'Advertencia');
+        }
+      },
+      error: (error) => {
+        console.error('Error al registrar vehículo:', error);
+        this.cargandoRegistroVehiculo = false;
+        
+        if (error.error && typeof error.error === 'string') {
+          this.toastr.error(error.error, 'Error');
+        } else {
+          this.toastr.error('Error al registrar el vehículo', 'Error');
+        }
+      }
+    });
+}
+limpiarPrevisualizaciones(): void {
+  this.previewFrontal = null;
+  this.previewLateralIzquierda = null;
+  this.previewLateralDerecha = null;
+  this.previewTrasera = null;
+  
+  // También limpiar los archivos
+  this.imagenFrontal = null;
+  this.imagenLateralIzquierda = null;
+  this.imagenLateralDerecha = null;
+  this.imagenTrasera = null;
+  
+  // Limpiar IDs de adjuntos
+  this.idAdjuntoFrontal = null;
+  this.idAdjuntoLateralIzquierda = null;
+  this.idAdjuntoLateralDerecha = null;
+  this.idAdjuntoTrasera = null;
+}
+
+// Método para cargar imágenes del vehículo
+cargarImagenesVehiculo(idVehiculo: number) {
+  this.adjuntoService.getAdjuntosByVehiculo(idVehiculo)
+    .subscribe({
+      next: (adjuntos) => {
+        console.log('Adjuntos del vehículo:', adjuntos);
+        if (adjuntos && adjuntos.length > 0) {
+          // Procesar cada adjunto
+          adjuntos.forEach(adjunto => {
+            if (adjunto.ruta) {
+              // Obtener el nombre del archivo desde la ruta
+              const fileName = adjunto.ruta.split('/').pop() || '';
+              
+              // Llamar al servicio para obtener el archivo físico
+              this.archivoService.getArchivo(fileName)
+                .subscribe({
+                  next: (blob) => {
+                    // Crear una URL para el blob
+                    const objectURL = URL.createObjectURL(blob);
+                    
+                    // Asignar la imagen según el nombre o tipo
+                    this.asignarImagenSegunTipo(adjunto, objectURL);
+                  },
+                  error: (error) => {
+                    console.error(`Error al obtener el archivo ${fileName}:`, error);
+                  }
+                });
+            }
+          });
+          
+          // Informar al usuario
+          this.toastr.info(`Se han encontrado ${adjuntos.length} imágenes del vehículo`, 'Imágenes cargadas');
+        }
+      },
+      error: (error) => {
+        console.error('Error al obtener adjuntos del vehículo:', error);
+        this.toastr.warning('No se pudieron cargar las imágenes del vehículo', 'Advertencia');
+      }
+    });
+}
+
+// Método para asignar la imagen a su ubicación correspondiente
+asignarImagenSegunTipo(adjunto: any, objectURL: string): void {
+  const nombreLowerCase = adjunto.nombre.toLowerCase();
+  
+  if (nombreLowerCase.includes('frontal')) {
+    this.previewFrontal = objectURL;
+    this.idAdjuntoFrontal = adjunto.idAdjunto;
+  } else if (nombreLowerCase.includes('lateral') && nombreLowerCase.includes('izq')) {
+    this.previewLateralIzquierda = objectURL;
+    this.idAdjuntoLateralIzquierda = adjunto.idAdjunto;
+  } else if (nombreLowerCase.includes('lateral') && !nombreLowerCase.includes('izq')) {
+    this.previewLateralDerecha = objectURL;
+    this.idAdjuntoLateralDerecha = adjunto.idAdjunto;
+  } else if (nombreLowerCase.includes('trasera') || nombreLowerCase.includes('posterior')) {
+    this.previewTrasera = objectURL;
+    this.idAdjuntoTrasera = adjunto.idAdjunto;
+  } else {
+    // Si no se puede determinar el tipo por el nombre, asignar a la primera vista previa disponible
+    if (!this.previewFrontal) {
+      this.previewFrontal = objectURL;
+      this.idAdjuntoFrontal = adjunto.idAdjunto;
+    } else if (!this.previewLateralIzquierda) {
+      this.previewLateralIzquierda = objectURL;
+      this.idAdjuntoLateralIzquierda = adjunto.idAdjunto;
+    } else if (!this.previewLateralDerecha) {
+      this.previewLateralDerecha = objectURL;
+      this.idAdjuntoLateralDerecha = adjunto.idAdjunto;
+    } else if (!this.previewTrasera) {
+      this.previewTrasera = objectURL;
+      this.idAdjuntoTrasera = adjunto.idAdjunto;
+    }
+  }
+}
+
+// Método auxiliar para obtener el nombre del archivo de una ruta
+obtenerNombreArchivo(ruta: string): string {
+  if (!ruta) return '';
+  return ruta.split('/').pop() || '';
+}
+retirarVehiculo() {
+  this.confirmationService.confirm({
+    message: '¿Está seguro que desea retirar este vehículo? Se limpiarán todos los datos asociados.',
+    header: 'Confirmación para retirar vehículo',
+    icon: 'pi pi-exclamation-triangle',
+    acceptLabel: 'Sí, retirar vehículo',
+    rejectLabel: 'Cancelar',
+    accept: () => {
+      // Limpiar datos del vehículo
+      this.vehiculoActual = null;
+      this.mostrarInfoVehiculo = false;
+      this.placa = '';
+      
+      // Limpiar imágenes
+      this.limpiarPrevisualizaciones();
+      
+      // Limpiar ID de vehículo en ordenData
+      this.ordenData.idVehiculo = 0;
+      
+      // Notificar al usuario
+      this.toastr.info('Se ha retirado el vehículo', 'Información');
+    }
+  });
+}
 }

@@ -24,6 +24,7 @@ export const environment = {
     reporte: '/Reportes',
     usuarios: '/Usuarios',
     ordenMecanico: '/OrdenMecanico',
-    impuesto: '/Impuesto'
+    impuesto: '/Impuesto',
+    persona: '/Persona',
 };
 

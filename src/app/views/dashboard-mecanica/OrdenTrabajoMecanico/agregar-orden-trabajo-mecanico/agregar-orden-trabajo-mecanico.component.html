@@ -39,7 +39,7 @@
     
     <!-- Botón de nuevo propietario (siempre visible) -->
     <div class="actions" style="margin-top: 15px;">
-      <button class="action-btn" (click)="showDialog($event)" type="button">
+      <button class="action-btn" (click)="showDialog()" type="button">
         Registrar Nuevo Cliente
       </button>
     </div>
@@ -58,8 +58,7 @@
           <span *ngIf="!cargandoVehiculo">Validar</span>
           <span *ngIf="cargandoVehiculo">Cargando...</span>
         </button>
-        <button class="secondary-btn" [disabled]="!vehiculoActual">Retirar propiedad</button>
-      </div>
+        <button class="secondary-btn" [disabled]="!vehiculoActual" (click)="retirarVehiculo()">Retirar propiedad</button>      </div>
     </div>
     <div class="info-section" *ngIf="mostrarInfoVehiculo && vehiculoActual">
       <div class="info-item">
@@ -78,7 +77,7 @@
     
     <!-- Botón para nuevo vehículo (siempre visible) -->
     <div class="actions" style="margin-top: 15px;">
-      <button class="action-btn" (click)="mostrarPopupVehiculo()">Nuevo Vehículo</button>
+      <button class="action-btn" (click)="abrirPopupVehiculo()">Nuevo Vehículo</button>
     </div>
   </div>
 </div>
@@ -412,114 +411,114 @@
 </div>
 
 
-<!-- Modal para Nuevo Propietario -->
-<p-dialog [(visible)]="visible" 
-[modal]="true" 
-[draggable]="false" 
-[resizable]="false"
-[style]="{ width: '800px', padding: '0', margin: '0', maxHeight: '90vh' }"
-styleClass="custom-dialog" 
-[showHeader]="false" 
-[closable]="false" 
-[baseZIndex]="1000">
+<!-- Modal para Nuevo Propietario (Versión corregida) -->
+<p-dialog  [(visible)]="visible" 
+          [modal]="true" 
+          [draggable]="false" 
+          [resizable]="false"
+          [style]="{width: '680px', maxWidth: '95vw'}"
+          styleClass="cliente-dialog" 
+          [baseZIndex]="1000"
+          [breakpoints]="{ '1199px': '75vw', '575px': '90vw' }"
+          header=" Registrar Nuevo Cliente">
   
-<!-- Header personalizado -->
-<div class="popup-header">
-  <h2 class="popup-title">Registrar Nuevo Cliente</h2>
-  <button type="button" class="close-button" (click)="cerrarPopupPropietario()">✕</button>
-</div>
-
-<!-- Mensajes de error/éxito -->
-<div *ngIf="mensajeError" class="alert alert-danger">
-  {{ mensajeError }}
-</div>
-<div *ngIf="mensajeExito" class="alert alert-success">
-  {{ mensajeExito }}
-</div>
-
-<!-- Content -->
-<div class="popup-content">
-  <form (ngSubmit)="registrarPropietario()">
-    <!-- Separar los selectores en dos filas independientes -->
-    <div class="selector-group">
-      <div class="selector-header">
-        <span class="selector-title">Tipo de cliente</span>
-      </div>
-      <div class="selector-options">
-        <div class="selector-option">
-          <input type="radio" id="personaNatural" name="tipoCliente" class="selector-input"
-                  [checked]="isPersonaNatural"
-                  (change)="toggleClienteType(true)">
-          <label for="personaNatural" class="selector-label">Persona Natural</label>
+  <div class="dialog-content">
+    <!-- Mensajes de alerta -->
+    <div *ngIf="mensajeError" class="alert alert-danger">
+      {{ mensajeError }}
+    </div>
+    <div *ngIf="mensajeExito" class="alert alert-success">
+      {{ mensajeExito }}
+    </div>
+    
+    <!-- Tipo de cliente -->
+    <div class="client-type-section">
+      <h3 class="section-title">Tipo de cliente</h3>
+      <div class="selection-options">
+        <div class="selection-option" [class.selected]="isPersonaNatural">
+          <label class="selection-option-label">
+            <input type="radio" name="tipoCliente" [checked]="isPersonaNatural" (change)="toggleClienteType(true)">
+            <span class="selection-radio"></span>
+            <span class="selection-text">Persona Natural</span>
+          </label>
         </div>
-        <div class="selector-option">
-          <input type="radio" id="empresa" name="tipoCliente" class="selector-input"
-                  [checked]="!isPersonaNatural"
-                  (change)="toggleClienteType(false)">
-          <label for="empresa" class="selector-label">Empresa</label>
+        <div class="selection-option" [class.selected]="!isPersonaNatural">
+          <label class="selection-option-label">
+            <input type="radio" name="tipoCliente" [checked]="!isPersonaNatural" (change)="toggleClienteType(false)">
+            <span class="selection-radio"></span>
+            <span class="selection-text">Empresa</span>
+          </label>
         </div>
       </div>
     </div>
     
-    <div class="selector-group" *ngIf="mostrarTipoDocumento">
-      <div class="selector-header">
-        <span class="selector-title">Tipo de documento</span>
-      </div>
-      <div class="selector-options">
-        <div class="selector-option" *ngIf="isPersonaNatural">
-          <input type="radio" id="cedula" name="documento" class="selector-input"
-                 [checked]="tipoDocumento === 'cedula'"
-                 (change)="cambiarTipoDocumento('cedula')">
-          <label for="cedula" class="selector-label">Cédula</label>
+    <!-- Tipo de documento -->
+    <div class="document-type-section" *ngIf="mostrarTipoDocumento">
+      <h3 class="section-title">Tipo de documento</h3>
+      <div class="selection-options">
+        <div class="selection-option" *ngIf="isPersonaNatural" [class.selected]="tipoDocumento === 'cedula'">
+          <label class="selection-option-label">
+            <input type="radio" name="tipoDocumento" [checked]="tipoDocumento === 'cedula'" (change)="cambiarTipoDocumento('cedula')">
+            <span class="selection-radio"></span>
+            <span class="selection-text">Cédula</span>
+          </label>
         </div>
-        <div class="selector-option" *ngIf="isPersonaNatural">
-          <input type="radio" id="pasaporte" name="documento" class="selector-input"
-                 [checked]="tipoDocumento === 'pasaporte'"
-                 (change)="cambiarTipoDocumento('pasaporte')">
-          <label for="pasaporte" class="selector-label">Pasaporte</label>
+        <div class="selection-option" *ngIf="isPersonaNatural" [class.selected]="tipoDocumento === 'pasaporte'">
+          <label class="selection-option-label">
+            <input type="radio" name="tipoDocumento" [checked]="tipoDocumento === 'pasaporte'" (change)="cambiarTipoDocumento('pasaporte')">
+            <span class="selection-radio"></span>
+            <span class="selection-text">Pasaporte</span>
+          </label>
         </div>
-        <div class="selector-option" *ngIf="!isPersonaNatural">
-          <input type="radio" id="ruc" name="documento" class="selector-input"
-                 [checked]="tipoDocumento === 'ruc'"
-                 (change)="cambiarTipoDocumento('ruc')">
-          <label for="ruc" class="selector-label">RUC</label>
+        <div class="selection-option" *ngIf="!isPersonaNatural" [class.selected]="tipoDocumento === 'ruc'">
+          <label class="selection-option-label">
+            <input type="radio" name="tipoDocumento" [checked]="tipoDocumento === 'ruc'" (change)="cambiarTipoDocumento('ruc')">
+            <span class="selection-radio"></span>
+            <span class="selection-text">RUC</span>
+          </label>
         </div>
       </div>
     </div>
     
-    <!-- Campos Persona Natural -->
-    <div *ngIf="mostrarCamposPersonaNatural">
-      <div class="tabs">
-        <div class="tab" [class.active]="activeTab === 'informacion'" (click)="activeTab = 'informacion'">Información Básica</div>
-        <div class="tab" [class.active]="activeTab === 'contacto'" (click)="activeTab = 'contacto'">Contacto</div>
+    <!-- Formulario para Persona Natural -->
+    <div class="form-section" *ngIf="mostrarCamposPersonaNatural">
+      <div class="tabs-nav">
+        <button type="button" class="tab-button" [class.active]="activeTab === 'informacion'" (click)="activeTab = 'informacion'">
+          <i class="pi pi-user tab-icon"></i> Información Básica
+        </button>
+        <button type="button" class="tab-button" [class.active]="activeTab === 'contacto'" (click)="activeTab = 'contacto'">
+          <i class="pi pi-envelope tab-icon"></i> Contacto
+        </button>
       </div>
       
-      <div class="tab-content" [class.active]="activeTab === 'informacion'">
-        <div class="form-group required">
-          <label for="documentoPN" class="form-label">Número de documento</label>
-          <input type="text" id="documentoPN" class="form-input" [(ngModel)]="datosPersonaNatural.documento" name="documentoPN">
+      <!-- Tab de Información Básica - Persona Natural -->
+      <div class="form-fields" *ngIf="activeTab === 'informacion'">
+        <div class="form-field">
+          <label class="form-label required" for="documentoPN">Número de documento</label>
+          <input id="documentoPN" class="form-input" type="text" [(ngModel)]="datosPersonaNatural.documento" name="documentoPN" placeholder="Ingrese número de documento">
+          <span class="form-hint">Ingrese el número sin guiones</span>
         </div>
         
         <div class="form-row">
-          <div class="form-group required">
-            <label for="nombres" class="form-label">Nombres</label>
-            <input type="text" id="nombres" class="form-input" [(ngModel)]="datosPersonaNatural.nombres" name="nombres">
+          <div class="form-field">
+            <label class="form-label required" for="nombres">Nombres</label>
+            <input id="nombres" class="form-input" type="text" [(ngModel)]="datosPersonaNatural.nombres" name="nombres" placeholder="Nombres completos">
           </div>
           
-          <div class="form-group required">
-            <label for="apellidos" class="form-label">Apellidos</label>
-            <input type="text" id="apellidos" class="form-input" [(ngModel)]="datosPersonaNatural.apellidos" name="apellidos">
+          <div class="form-field">
+            <label class="form-label required" for="apellidos">Apellidos</label>
+            <input id="apellidos" class="form-input" type="text" [(ngModel)]="datosPersonaNatural.apellidos" name="apellidos" placeholder="Apellidos completos">
           </div>
         </div>
         
         <div class="form-row">
-          <div class="form-group">
-            <label for="fechaNacimiento" class="form-label">Fecha de nacimiento</label>
-            <input type="date" id="fechaNacimiento" class="form-input" [(ngModel)]="datosPersonaNatural.fechaNacimiento" name="fechaNacimiento">
+          <div class="form-field">
+            <label class="form-label" for="fechaNacimiento">Fecha de nacimiento</label>
+            <input id="fechaNacimiento" class="form-input" type="date" [(ngModel)]="datosPersonaNatural.fechaNacimiento" name="fechaNacimiento">
           </div>
           
-          <div class="form-group">
-            <label for="genero" class="form-label">Género</label>
+          <div class="form-field">
+            <label class="form-label" for="genero">Género</label>
             <select id="genero" class="form-input" [(ngModel)]="datosPersonaNatural.genero" name="genero">
               <option value="">Seleccionar</option>
               <option value="masculino">Masculino</option>
@@ -530,230 +529,354 @@ styleClass="custom-dialog"
         </div>
       </div>
       
-      <div class="tab-content" [class.active]="activeTab === 'contacto'">
+      <!-- Tab de Contacto - Persona Natural -->
+      <div class="form-fields" *ngIf="activeTab === 'contacto'">
         <div class="form-row">
-          <div class="form-group required">
-            <label for="email" class="form-label">Email</label>
-            <input type="email" id="email" class="form-input" [(ngModel)]="datosPersonaNatural.email" name="email">
+          <div class="form-field">
+            <label class="form-label required" for="email">Email</label>
+            <input id="email" class="form-input" type="email" [(ngModel)]="datosPersonaNatural.email" name="email" placeholder="correo@ejemplo.com">
           </div>
           
-          <div class="form-group">
-            <label for="celular" class="form-label">Celular</label>
-            <input type="tel" id="celular" class="form-input w-full" [(ngModel)]="datosPersonaNatural.celular" name="celular" fluid>
+          <div class="form-field">
+            <label class="form-label" for="celular">Celular</label>
+            <input id="celular" class="form-input" type="tel" [(ngModel)]="datosPersonaNatural.celular" name="celular" placeholder="+593 00 000 0000">
           </div>
         </div>
         
         <div class="form-row">
-          <div class="form-group">
-            <label for="telefono" class="form-label">Teléfono</label>
-            <input type="tel" id="telefono" class="form-input" [(ngModel)]="datosPersonaNatural.telefono" name="telefono">
+          <div class="form-field">
+            <label class="form-label" for="telefono">Teléfono</label>
+            <input id="telefono" class="form-input" type="tel" [(ngModel)]="datosPersonaNatural.telefono" name="telefono" placeholder="02 000 0000">
           </div>
           
-          <div class="form-group required">
-            <label for="direccion" class="form-label">Dirección</label>
-            <input type="text" id="direccion" class="form-input" [(ngModel)]="datosPersonaNatural.direccion" name="direccion">
+          <div class="form-field">
+            <label class="form-label required" for="direccion">Dirección</label>
+            <input id="direccion" class="form-input" type="text" [(ngModel)]="datosPersonaNatural.direccion" name="direccion" placeholder="Dirección completa">
           </div>
         </div>
         
-        <div class="form-group">
+        <div class="form-field">
           <label class="form-label">Es Local</label>
-          <div class="radio-group">
-            <div class="radio-option">
-              <input type="radio" id="localSiPN" name="esLocalPN" class="radio-input"
-                     [checked]="datosPersonaNatural.esLocal"
-                     (change)="datosPersonaNatural.esLocal = true">
-              <label for="localSiPN" class="form-label">Sí</label>
+          <div class="selection-options">
+            <div class="selection-option" [class.selected]="datosPersonaNatural.esLocal">
+              <label class="selection-option-label">
+                <input type="radio" name="esLocalPN" [checked]="datosPersonaNatural.esLocal" (change)="datosPersonaNatural.esLocal = true">
+                <span class="selection-radio"></span>
+                <span class="selection-text">Sí</span>
+              </label>
             </div>
-            <div class="radio-option">
-              <input type="radio" id="localNoPN" name="esLocalPN" class="radio-input"
-                     [checked]="!datosPersonaNatural.esLocal"
-                     (change)="datosPersonaNatural.esLocal = false">
-              <label for="localNoPN" class="form-label">No</label>
+            <div class="selection-option" [class.selected]="!datosPersonaNatural.esLocal">
+              <label class="selection-option-label">
+                <input type="radio" name="esLocalPN" [checked]="!datosPersonaNatural.esLocal" (change)="datosPersonaNatural.esLocal = false">
+                <span class="selection-radio"></span>
+                <span class="selection-text">No</span>
+              </label>
             </div>
           </div>
         </div>
       </div>
     </div>
     
-    <!-- Campos Empresa -->
-    <div *ngIf="mostrarCamposEmpresa">
-      <div class="tabs">
-        <div class="tab" [class.active]="activeTab === 'informacion'" (click)="activeTab = 'informacion'">Información Básica</div>
-        <div class="tab" [class.active]="activeTab === 'contacto'" (click)="activeTab = 'contacto'">Contacto</div>
-        <div class="tab" [class.active]="activeTab === 'adicional'" (click)="activeTab = 'adicional'">Adicional</div>
+    <!-- Formulario para Empresa -->
+    <div class="form-section" *ngIf="mostrarCamposEmpresa">
+      <div class="tabs-nav">
+        <button type="button" class="tab-button" [class.active]="activeTab === 'informacion'" (click)="activeTab = 'informacion'">
+          <i class="pi pi-building tab-icon"></i> Información Básica
+        </button>
+        <button type="button" class="tab-button" [class.active]="activeTab === 'contacto'" (click)="activeTab = 'contacto'">
+          <i class="pi pi-envelope tab-icon"></i> Contacto
+        </button>
+        <button type="button" class="tab-button" [class.active]="activeTab === 'adicional'" (click)="activeTab = 'adicional'">
+          <i class="pi pi-file tab-icon"></i> Adicional
+        </button>
       </div>
       
-      <div class="tab-content" [class.active]="activeTab === 'informacion'">
-        <div class="form-group required">
-          <label for="documentoEmpresa" class="form-label">Número de documento</label>
-          <input type="text" id="documentoEmpresa" class="form-input" [(ngModel)]="datosEmpresa.documento" name="documentoEmpresa">
+      <!-- Tab de Información Básica - Empresa -->
+      <div class="form-fields" *ngIf="activeTab === 'informacion'">
+        <div class="form-field">
+          <label class="form-label required" for="documentoEmpresa">Número de documento</label>
+          <input id="documentoEmpresa" class="form-input" type="text" [(ngModel)]="datosEmpresa.documento" name="documentoEmpresa" placeholder="Ingrese número de RUC">
+          <span class="form-hint">Ingrese los 13 dígitos sin guiones</span>
         </div>
         
         <div class="form-row">
-          <div class="form-group required">
-            <label for="nombreEmpresa" class="form-label">Nombre</label>
-            <input type="text" id="nombreEmpresa" class="form-input" [(ngModel)]="datosEmpresa.nombre" name="nombreEmpresa">
+          <div class="form-field">
+            <label class="form-label required" for="nombreEmpresa">Nombre</label>
+            <input id="nombreEmpresa" class="form-input" type="text" [(ngModel)]="datosEmpresa.nombre" name="nombreEmpresa" placeholder="Nombre comercial">
           </div>
           
-          <div class="form-group required">
-            <label for="razonSocial" class="form-label">Razón social</label>
-            <input type="text" id="razonSocial" class="form-input" [(ngModel)]="datosEmpresa.razonSocial" name="razonSocial">
+          <div class="form-field">
+            <label class="form-label required" for="razonSocial">Razón social</label>
+            <input id="razonSocial" class="form-input" type="text" [(ngModel)]="datosEmpresa.razonSocial" name="razonSocial" placeholder="Razón social completa">
           </div>
         </div>
         
-        <div class="form-group required">
-          <label for="representanteLegal" class="form-label">Nombre representante legal</label>
-          <input type="text" id="representanteLegal" class="form-input" [(ngModel)]="datosEmpresa.representanteLegal" name="representanteLegal">
+        <div class="form-field">
+          <label class="form-label required" for="representanteLegal">Nombre representante legal</label>
+          <input id="representanteLegal" class="form-input" type="text" [(ngModel)]="datosEmpresa.representanteLegal" name="representanteLegal" placeholder="Nombre completo del representante">
         </div>
       </div>
       
-      <div class="tab-content" [class.active]="activeTab === 'contacto'">
+      <!-- Tab de Contacto - Empresa -->
+      <div class="form-fields" *ngIf="activeTab === 'contacto'">
         <div class="form-row">
-          <div class="form-group required">
-            <label for="emailEmpresa" class="form-label">Email</label>
-            <input type="email" id="emailEmpresa" class="form-input" [(ngModel)]="datosEmpresa.email" name="emailEmpresa">
+          <div class="form-field">
+            <label class="form-label required" for="emailEmpresa">Email</label>
+            <input id="emailEmpresa" class="form-input" type="email" [(ngModel)]="datosEmpresa.email" name="emailEmpresa" placeholder="empresa@ejemplo.com">
           </div>
           
-          <div class="form-group">
-            <label for="celularEmpresa" class="form-label">Celular</label>
-            <input type="tel" id="celularEmpresa" class="form-input" [(ngModel)]="datosEmpresa.celular" name="celularEmpresa">
+          <div class="form-field">
+            <label class="form-label" for="celularEmpresa">Celular</label>
+            <input id="celularEmpresa" class="form-input" type="tel" [(ngModel)]="datosEmpresa.celular" name="celularEmpresa" placeholder="+593 00 000 0000">
           </div>
         </div>
         
         <div class="form-row">
-          <div class="form-group">
-            <label for="telefonoEmpresa" class="form-label">Teléfono</label>
-            <input type="tel" id="telefonoEmpresa" class="form-input" [(ngModel)]="datosEmpresa.telefono" name="telefonoEmpresa">
+          <div class="form-field">
+            <label class="form-label" for="telefonoEmpresa">Teléfono</label>
+            <input id="telefonoEmpresa" class="form-input" type="tel" [(ngModel)]="datosEmpresa.telefono" name="telefonoEmpresa" placeholder="02 000 0000">
           </div>
           
-          <div class="form-group required">
-            <label for="direccionEmpresa" class="form-label">Dirección</label>
-            <input type="text" id="direccionEmpresa" class="form-input" [(ngModel)]="datosEmpresa.direccion" name="direccionEmpresa">
+          <div class="form-field">
+            <label class="form-label required" for="direccionEmpresa">Dirección</label>
+            <input id="direccionEmpresa" class="form-input" type="text" [(ngModel)]="datosEmpresa.direccion" name="direccionEmpresa" placeholder="Dirección completa">
           </div>
         </div>
       </div>
       
-      <div class="tab-content" [class.active]="activeTab === 'adicional'">
+      <!-- Tab Adicional - Empresa -->
+      <div class="form-fields" *ngIf="activeTab === 'adicional'">
         <div class="form-row">
-          <div class="form-group">
+          <div class="form-field">
             <label class="form-label">Obligada contabilidad</label>
-            <div class="radio-group">
-              <div class="radio-option">
-                <input type="radio" id="contabilidadSi" name="obligadaContabilidad" class="radio-input"
-                       [checked]="datosEmpresa.obligadaContabilidad"
-                       (change)="datosEmpresa.obligadaContabilidad = true">
-                <label for="contabilidadSi" class="form-label">Sí</label>
+            <div class="selection-options">
+              <div class="selection-option" [class.selected]="datosEmpresa.obligadaContabilidad">
+                <label class="selection-option-label">
+                  <input type="radio" name="obligadaContabilidad" [checked]="datosEmpresa.obligadaContabilidad" (change)="datosEmpresa.obligadaContabilidad = true">
+                  <span class="selection-radio"></span>
+                  <span class="selection-text">Sí</span>
+                </label>
               </div>
-              <div class="radio-option">
-                <input type="radio" id="contabilidadNo" name="obligadaContabilidad" class="radio-input"
-                       [checked]="!datosEmpresa.obligadaContabilidad"
-                       (change)="datosEmpresa.obligadaContabilidad = false">
-                <label for="contabilidadNo" class="form-label">No</label>
+              <div class="selection-option" [class.selected]="!datosEmpresa.obligadaContabilidad">
+                <label class="selection-option-label">
+                  <input type="radio" name="obligadaContabilidad" [checked]="!datosEmpresa.obligadaContabilidad" (change)="datosEmpresa.obligadaContabilidad = false">
+                  <span class="selection-radio"></span>
+                  <span class="selection-text">No</span>
+                </label>
               </div>
             </div>
           </div>
           
-          <div class="form-group">
+          <div class="form-field">
             <label class="form-label">Es Local</label>
-            <div class="radio-group">
-              <div class="radio-option">
-                <input type="radio" id="localSi" name="esLocal" class="radio-input"
-                       [checked]="datosEmpresa.esLocal"
-                       (change)="datosEmpresa.esLocal = true">
-                <label for="localSi" class="form-label">Sí</label>
+            <div class="selection-options">
+              <div class="selection-option" [class.selected]="datosEmpresa.esLocal">
+                <label class="selection-option-label">
+                  <input type="radio" name="esLocal" [checked]="datosEmpresa.esLocal" (change)="datosEmpresa.esLocal = true">
+                  <span class="selection-radio"></span>
+                  <span class="selection-text">Sí</span>
+                </label>
               </div>
-              <div class="radio-option">
-                <input type="radio" id="localNo" name="esLocal" class="radio-input"
-                       [checked]="!datosEmpresa.esLocal"
-                       (change)="datosEmpresa.esLocal = false">
-                <label for="localNo" class="form-label">No</label>
+              <div class="selection-option" [class.selected]="!datosEmpresa.esLocal">
+                <label class="selection-option-label">
+                  <input type="radio" name="esLocal" [checked]="!datosEmpresa.esLocal" (change)="datosEmpresa.esLocal = false">
+                  <span class="selection-radio"></span>
+                  <span class="selection-text">No</span>
+                </label>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </form>
-</div>
-
-<!-- Botones de acción -->
-<div class="buttons-container">
-  <button type="button" class="btn btn-cancel" (click)="cerrarPopupPropietario()">Cancelar</button>
-  <button type="button" class="btn btn-submit" [disabled]="cargando" (click)="registrarPropietario()">
-    <span *ngIf="cargando">Registrando...</span>
-    <span *ngIf="!cargando">Registrar</span>
-  </button>
-</div>
+  </div>
+  
+  <!-- Footer -->
+  <div class="dialog-footer">
+    <button type="button" class="btn-cancel" (click)="cerrarPopupPropietario()">
+      <i class="pi pi-times"></i> Cancelar
+    </button>
+    <button type="button" class="btn-submit" [disabled]="cargando" (click)="registrarPropietario()">
+      <i class="pi pi-save"></i>
+      <span *ngIf="cargando">Registrando...</span>
+      <span *ngIf="!cargando">Registrar</span>
+    </button>
+  </div>
 </p-dialog>
 <!-- Modal para nuevo vehiculo -->
+
 <p-dialog [(visible)]="visibleVehiculo" 
 [modal]="true" 
 [draggable]="false" 
 [resizable]="false"
-[style]="{ width: '650px', padding: '0', margin: '0', maxHeight: '90vh' }"
-styleClass="vehiculo-dialog light-theme" 
+[style]="{ width: '750px', padding: '0', margin: '0', maxHeight: '90vh' }"
+styleClass="vehiculo-dialog" 
 [showHeader]="false" 
 [closable]="false" 
 [baseZIndex]="1000">
   
 <!-- Header personalizado -->
-<div class="popup-header light">
-  <h2 class="popup-title">Registrar Nuevo Vehículo</h2>
-  <button type="button" class="close-button" (click)="cerrarPopupVehiculo()">✕</button>
+<div class="popup-header">
+  <h2 class="popup-title">Registrar Vehículo</h2>
+  <button type="button" class="close-button" (click)="cerrarPopupVehiculo()">
+    <i class="pi pi-times"></i>
+  </button>
 </div>
 
 <!-- Content -->
-<div class="popup-content light">
-  <form >
-    <div class="form-group">
-      <label for="placa" class="form-label">Número de Placa:</label>
-      <input type="text" id="placa" class="form-input"  name="placa">
+<div class="popup-content">
+  <form>
+    <!-- Sección de cliente -->
+    <div class="section-title">
+      <i class="pi pi-user"></i>
+      <span>Información del Cliente</span>
     </div>
     
-    <div class="form-row">
+<!-- En el diálogo de vehículo -->
+    <div class="client-validation-section">
       <div class="form-group required">
-        <label for="marca" class="form-label">Marca<span class="required-indicator"></span></label>
-        <input type="text" id="marca" class="form-input"  name="marca" required>
+        <label for="documentoVehiculo" class="form-label">Número de Cédula<span class="required-indicator"></span></label>
+        <div class="cedula-validation-container">
+          <!-- Cambiamos el id para evitar conflictos con otros inputs -->
+          <input type="text" id="documentoVehiculo" name="documentoVehiculo" class="form-input" 
+                placeholder="Ej: 1712345678" [(ngModel)]="documentoVehiculo">
+          <button type="button" class="btn-validate" (click)="validarClienteVehiculo()" [disabled]="cargandoClienteVehiculo">
+            <i class="pi pi-search"></i>
+            <span *ngIf="!cargandoClienteVehiculo">Validar</span>
+            <span *ngIf="cargandoClienteVehiculo">Cargando...</span>
+          </button>
+        </div>
       </div>
       
-      <div class="form-group required">
-        <label for="modelo" class="form-label">Modelo<span class="required-indicator"></span></label>
-        <input type="text" id="modelo" class="form-input"  name="modelo" required>
+      <!-- Sección de información del cliente validado (condicional) -->
+      <div class="info-section" *ngIf="mostrarInfoClienteVehiculo && clienteVehiculoActual">
+        <div class="info-item">
+          <p><strong>Nombre completo:</strong> {{clienteVehiculoActual.nombreCompleto}}</p>
+          <p><strong>Documento:</strong> {{clienteVehiculoActual.documento}}</p>
+          <p><strong>Estado:</strong> 
+            <span *ngIf="clienteVehiculoActual.esClienteActivo" style="color: green;">Activo</span>
+            <span *ngIf="!clienteVehiculoActual.esClienteActivo" style="color: orange;">Inactivo</span>
+          </p>
+        </div>
       </div>
+
+      <!-- Mensaje de error cuando no se encuentra el cliente -->
+      <div class="alert alert-danger" *ngIf="errorClienteVehiculo">
+        {{ errorClienteVehiculo }}
+      </div>
+    </div>
+    <!-- Sección de información del vehículo -->
+    <div class="section-title">
+      <i class="pi pi-car"></i>
+      <span>Información del Vehículo</span>
     </div>
     
-    <div class="form-row">
-      <div class="form-group">
-        <label for="version" class="form-label">Versión</label>
-        <input type="text" id="version" class="form-input"  name="version">
-      </div>
-      
-      <div class="form-group required">
-        <label for="ano" class="form-label">Año<span class="required-indicator"></span></label>
-        <input type="number" id="ano" class="form-input"  name="ano" required>
-      </div>
-    </div>
-    
-    <div class="form-row">
-      <div class="form-group">
-        <label for="chasis" class="form-label">Número de Chasis</label>
-        <input type="text" id="chasis" class="form-input"  name="chasis">
-      </div>
-      
-      <div class="form-group required">
-        <label for="color" class="form-label">Color<span class="required-indicator"></span></label>
-        <input type="text" id="color" class="form-input"  name="color" required>
-      </div>
-    </div>
-    
-    <div class="form-group">
-      <label for="tipoVehiculo" class="form-label">Tipo de Vehículo</label>
-    </div>
-  </form>
+    <!-- Actualización de los campos del formulario de vehículo -->
+<div class="form-row">
+  <div class="form-group">
+    <label for="placa" class="form-label">Número de Placa</label>
+    <input type="text" id="placa" class="form-input" placeholder="Ej: ABC-1234" 
+           [(ngModel)]="nuevoVehiculo.placa" name="vehiculoPlaca">
+  </div>
 </div>
 
-<div class="buttons-container light">
-  <button type="button" class="btn btn-cancel light" (click)="cerrarPopupVehiculo()">Cancelar</button>
-  <button type="button" class="btn btn-submit light" >Registrar</button>
+<div class="form-row">
+  <div class="form-group required">
+    <label for="marca" class="form-label">Marca<span class="required-indicator"></span></label>
+    <input type="text" id="marca" class="form-input" required placeholder="Ej: Toyota" 
+           [(ngModel)]="nuevoVehiculo.marca" name="vehiculoMarca">
+  </div>
+  
+  <div class="form-group required">
+    <label for="modelo" class="form-label">Modelo<span class="required-indicator"></span></label>
+    <input type="text" id="modelo" class="form-input" required placeholder="Ej: Corolla" 
+           [(ngModel)]="nuevoVehiculo.modelo" name="vehiculoModelo">
+  </div>
 </div>
-</p-dialog>
+
+<div class="form-row">
+  <div class="form-group">
+    <label for="version" class="form-label">Versión</label>
+    <input type="text" id="version" class="form-input" placeholder="Ej: XLI" 
+           [(ngModel)]="nuevoVehiculo.version" name="vehiculoVersion">
+  </div>
+  
+  <div class="form-group required">
+    <label for="anio" class="form-label">Año<span class="required-indicator"></span></label>
+    <input type="number" id="anio" class="form-input" required placeholder="Ej: 2023" 
+           [(ngModel)]="nuevoVehiculo.anio" name="vehiculoAnio">
+  </div>
+</div>
+
+<div class="form-row">
+  <div class="form-group">
+    <label for="chasis" class="form-label">Número de Chasis</label>
+    <input type="text" id="chasis" class="form-input" placeholder="Ej: JH4DA9380PS016458" 
+           [(ngModel)]="nuevoVehiculo.numeroChasis" name="vehiculoChasis">
+  </div>
+  
+  <div class="form-group required">
+    <label for="color" class="form-label">Color<span class="required-indicator"></span></label>
+    <input type="text" id="color" class="form-input" required placeholder="Ej: Azul" 
+           [(ngModel)]="nuevoVehiculo.color" name="vehiculoColor">
+  </div>
+</div>
+
+<div class="form-row">
+  <div class="form-group required">
+    <label for="tipoVehiculo" class="form-label">Tipo de Vehículo<span class="required-indicator"></span></label>
+    <p-dropdown id="tipoVehiculo" [options]="tipoVehiculo" 
+               optionLabel="detalle" optionValue="idTipoVehiculo" placeholder="Seleccione un tipo" 
+               styleClass="full-width-dropdown"
+               [(ngModel)]="nuevoVehiculo.idTipoVehiculo" name="vehiculoTipo"></p-dropdown>
+  </div>
+</div>
+
+<!-- Sección de información adicional -->
+<div class="section-title">
+  <i class="pi pi-file"></i>
+  <span>Información Adicional</span>
+</div>
+
+<div class="form-row">
+  <div class="form-group">
+    <label for="ultimoAnioMatriculacion" class="form-label">Último Año matriculacion</label>
+    <select id="ultimoAnioMatriculacion" 
+          class="form-control" 
+          [(ngModel)]="nuevoVehiculo.ultimoAnioMatriculacion" 
+          name="vehiculoUltimoAnioMatriculacion">
+    <option [ngValue]="0">Seleccione año</option>
+    <option *ngFor="let anio of listaAnios" [ngValue]="anio">{{ anio }}</option>
+  </select>
+  </div>
+  <div class="form-group">
+  <label for="ultimoAnioRTV" class="form-label">Último Año RTV</label>
+  <select id="ultimoAnioRTV" 
+          class="form-control" 
+          [(ngModel)]="nuevoVehiculo.ultimoAnioRTV" 
+          name="vehiculoUltimoAnioRTV">
+    <option [ngValue]="0">Seleccione año</option>
+    <option *ngFor="let anio of listaAnios" [ngValue]="anio">{{ anio }}</option>
+  </select>
+</div>
+</div>
+
+<!-- Actualiza el botón para registrar el vehículo -->
+<div class="buttons-container">
+  <button type="button" class="btn btn-cancel" (click)="cerrarPopupVehiculo()">
+    <i class="pi pi-times"></i>
+    Cancelar
+  </button>
+  <button type="button" class="btn btn-submit" (click)="registrarVehiculo()" [disabled]="cargandoRegistroVehiculo">
+    <i class="pi pi-save"></i>
+    <span *ngIf="!cargandoRegistroVehiculo">Registrar</span>
+    <span *ngIf="cargandoRegistroVehiculo">Registrando...</span>
+  </button>
+</div>
+
+<p-confirmDialog [style]="{width: '450px'}" 
+                 styleClass="custom-confirm-dialog" 
+                 [baseZIndex]="10000"
+                 rejectButtonStyleClass="p-button-text p-button-secondary"
+                 acceptButtonStyleClass="p-button-danger">
+</p-confirmDialog>

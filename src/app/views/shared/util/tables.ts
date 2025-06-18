@@ -70,15 +70,18 @@ export const HeadersTables = {
     {field: 'detalle', header: 'Detalle'},
     {field: 'fechaRegistro', header: 'Fecha de Registro'},
   ],
-  SolicitudTareaList: [
-    {field: 'codigo', header: 'Código Solicitud'},
-    {field: 'detalle', header: 'Detalle'},
-    {field: 'solicitante', header: 'Solicitante'},
-    {field: 'codigoTarea', header: 'Código Tarea'},
-    {field: 'fechaRegistro', header: 'Fecha de Registro'},
-    {field: 'fechaAprobacion', header: 'Fecha de Aprobación'},
-    {field: 'idAdjunto', header: 'Adjunto'},
-  ],
+ // En tu archivo HeadersTables, actualiza SolicitudTareaList para incluir acciones
+SolicitudTareaList: [
+  { field: 'codigo', header: 'Código', sort: false, type: 'text' },
+  { field: 'codigoTarea', header: 'Código Tarea', sort: false, type: 'text' },
+  { field: 'detalle', header: 'Detalle', sort: false, type: 'text' },
+  { field: 'solicitante', header: 'Solicitante', sort: false, type: 'text' },
+  { field: 'fechaRegistro', header: 'Fecha Registro', sort: false, type: 'date' },
+  { field: 'fechaAprobacion', header: 'Fecha Aprobación', sort: false, type: 'date' },
+  { field: 'aprobado', header: 'Estado', sort: false, type: 'text' },
+  { field: 'idAdjunto', header: 'Evidencia', sort: false, type: 'text' },
+  { field: 'actions', header: 'Acciones', sort: false, type: 'text' }
+],
   AdquisicionesList: [
     { field: 'numeroFactura', header: '# Factura' },
     { field: 'fechaRegistro', header: 'Fecha de Registro' },

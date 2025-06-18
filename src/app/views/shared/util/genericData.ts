@@ -8,7 +8,6 @@ export const EstadosOTs = [
     {name: 'Finalizado', code: 1},
     {name: 'Finalizado sin Exito', code: 2},
     {name: 'Anulado', code: 3},
-    {name: 'Pendiente', code: 4}
 ];
 
 export const PrioridadesOT = [

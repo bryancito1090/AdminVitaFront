@@ -15,7 +15,6 @@ interface Mecanico {
   apellidos: string;
   totalUnidadesTiempo: number;
 }
-
 @Component({
   selector: 'app-home',
   imports: [ChartModule, ProgressSpinnerModule,CommonModule,CalendarModule,ButtonModule,FormsModule,DatePipe, AccordionModule,PaginatorModule
@@ -25,9 +24,20 @@ interface Mecanico {
   styleUrl: './home.component.scss'
 })
 export class HomeComponent implements OnInit {
-  OrdenesData: any;
+ OrdenesData: any;
   OrdenesOptions: any;
   loading: boolean = true;
+  
+  // Add these properties to fix template errors
+  loadingAnual: boolean = true;
+  OrdenesAnualesData: any;
+  OrdenesAnualesOptions: any;
+  reporteAnualData: any = {
+    totalOrdenesActivo: 0,
+    totalOrdenesFinalizado: 0,
+    totalOrdenesFSE: 0,
+    totalOrdenesAnuladas: 0
+  };
 
   KardexData: any;
   KardexOptions: any;
@@ -78,73 +88,76 @@ export class HomeComponent implements OnInit {
     this.initChartOptions();
     this.initKardexChartOptions(); 
     this.getReportOrdenesData(); 
-    this.establecerSemanaActual();
+    this.getReportOrdenesAnualesData(); // Add this method call
     this.loadKardexData();
     this.loadMechanicsData();
     this.loadTopItems();
     this.loadVehiculosData();
   }
 
-  establecerSemanaActual() {
-    const hoy = new Date();
-    this.seleccionarSemanaDeFecha(hoy);
-  }
-  
-  // Obtiene la semana correspondiente a una fecha dada
-  seleccionarSemanaDeFecha(fecha: Date) {
-    const diaSemana = fecha.getDay(); // 0 = domingo, 1 = lunes, ..., 6 = sábado
-    
-    // Restar días para llegar al lunes (primer día de la semana)
-    const inicio = new Date(fecha);
-    const diasHastaLunes = diaSemana === 0 ? 6 : diaSemana - 1;
-    inicio.setDate(fecha.getDate() - diasHastaLunes);
-    inicio.setHours(0, 0, 0, 0);
-    
-    // Sumar días para llegar al domingo (último día de la semana)
-    const fin = new Date(fecha);
-    const diasHastaDomingo = diaSemana === 0 ? 0 : 7 - diaSemana;
-    fin.setDate(fecha.getDate() + diasHastaDomingo);
-    fin.setHours(23, 59, 59, 999);
-    
-    this.fechaInicio = inicio;
-    this.fechaFin = fin;
-  }
-  
-  // Se llama cuando se selecciona una fecha en el calendario
-  seleccionarSemana() {
-    if (this.fechaSeleccionada) {
-      this.seleccionarSemanaDeFecha(this.fechaSeleccionada);
-    }
-  }
-  
-  // Aplica el filtro de fechas y recarga los datos
-  aplicarFiltro() {
-    if (!this.fechaInicio || !this.fechaFin) {
-      this.mensajeError = 'Por favor seleccione una fecha válida';
-      return;
-    }
-    
-    if (this.fechaInicio > this.fechaFin) {
-      this.mensajeError = 'La fecha de inicio no puede ser posterior a la fecha final';
-      return;
-    }
-    
-    this.mensajeError = '';
-    this.getReportOrdenesData(this.fechaInicio, this.fechaFin);
-  }
-  
-  // Limpia los filtros y vuelve a cargar con datos de la semana actual
-  limpiarFiltros() {
-    this.fechaSeleccionada = null;
-    this.establecerSemanaActual();
-    this.mensajeError = '';
-    this.getReportOrdenesData(this.fechaInicio, this.fechaFin);
+  // Add this method to load annual data
+  getReportOrdenesAnualesData() {
+    this.loadingAnual = true;
+    this.reporteService.getReporteOrdenes().subscribe({
+      next: (response) => {
+        this.updateAnualChartWithData(response);
+        // Actualizar datos de totales anuales
+        this.reporteAnualData = {
+          totalOrdenesActivo: response.totalOrdenesActivo || 0,
+          totalOrdenesFinalizado: response.totalOrdenesFinalizado || 0,
+          totalOrdenesFSE: response.totalOrdenesFSE || 0,
+          totalOrdenesAnuladas: response.totalOrdenesAnuladas || 0
+        };
+        
+        this.loadingAnual = false;
+        this.cd.markForCheck();
+      },
+      error: (error) => {
+        console.error('Error al cargar datos anuales:', error);
+        this.loadingAnual = false;
+        this.cd.markForCheck();
+      }
+    });
   }
 
+  // Add this method to update annual chart data
+  updateAnualChartWithData(response: any) {
+    if (!response || !response.datosGrafica) {
+      console.warn('No se encontraron datos para la gráfica anual');
+      return;
+    }
 
-  getReportOrdenesData(fechaInicio?: Date | null, fechaFin?: Date | null) {
+    const documentStyle = getComputedStyle(document.documentElement);
+    
+    // Asignar colores y propiedades visuales a los datasets
+    const colors = [
+      documentStyle.getPropertyValue('--p-cyan-500'),    // Activas
+      documentStyle.getPropertyValue('--p-green-500'),   // Finalizadas
+      documentStyle.getPropertyValue('--p-orange-500'),  // FSE
+      documentStyle.getPropertyValue('--p-red-500')      // Anuladas
+    ];
+
+    // Copiar la estructura de datos pero añadiendo los colores
+    const formattedDatasets = response.datosGrafica.datasets.map((dataset: any, index: number) => {
+      return {
+        ...dataset,
+        backgroundColor: colors[index % colors.length],
+        borderColor: colors[index % colors.length],
+      };
+    });
+
+    // Actualizar los datos de la gráfica
+    this.OrdenesAnualesData = {
+      labels: response.datosGrafica.labels,
+      datasets: formattedDatasets
+    };
+
+    this.cd.markForCheck();
+  }
+ 
+  getReportOrdenesData() {
     this.loading = true;
-    this.reporteService.getReporteOrdenes(fechaInicio || undefined, fechaFin || undefined).subscribe({
+    this.reporteService.getReporteOrdenes().subscribe({
       next: (response) => {
         this.updateChartWithData(response);
         // Actualizar datos de totales
@@ -228,6 +241,14 @@ export class HomeComponent implements OnInit {
                 return `${label}: ${value} órdenes`;
               }
             }
+          },
+          title: {
+            display: true,
+            text: 'Distribución de Órdenes por Mes',
+            color: textColor,
+            font: {
+              size: 16
+            }
           }
         },
         scales: {
@@ -237,6 +258,11 @@ export class HomeComponent implements OnInit {
             },
             grid: {
               color: surfaceBorder
+            },
+            title: {
+              display: true,
+              text: 'Meses del Año',
+              color: textColor
             }
           },
           y: {
@@ -287,6 +313,78 @@ export class HomeComponent implements OnInit {
             },
             grid: {
               drawOnChartArea: false,
+              color: surfaceBorder
+            }
+          }
+        }
+      };
+      
+      // Add chart options for the annual chart
+      this.OrdenesAnualesOptions = {
+        stacked: false,
+        maintainAspectRatio: false,
+        aspectRatio: window.innerWidth < 992 ? 1 : 0.6,
+        responsive: true,
+        plugins: {
+          legend: {
+            labels: {
+              color: textColor
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context: any) {
+                const label = context.dataset.label || '';
+                const value = context.parsed.y;
+                return `${label}: ${value} órdenes`;
+              }
+            }
+          },
+          title: {
+            display: true,
+            text: 'Distribución de Órdenes Anuales',
+            color: textColor,
+            font: {
+              size: 16
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: {
+              color: textColorSecondary
+            },
+            grid: {
+              color: surfaceBorder
+            },
+            title: {
+              display: true,
+              text: 'Meses del Año',
+              color: textColor
+            }
+          },
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+            title: {
+              display: true,
+              text: 'Número de Órdenes',
+              color: textColor
+            },
+            min: 0,
+            ticks: {
+              color: textColorSecondary,
+              precision: 0,
+              stepSize: 1,
+              callback: function(value: number) {
+                if (Math.floor(value) === value) {
+                  return value;
+                }
+                return null;
+              }
+            },
+            grid: {
               color: surfaceBorder
             }
           }

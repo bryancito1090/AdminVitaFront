@@ -22,22 +22,22 @@ export interface Persona {
 
 export interface Cliente {
     nombre: string;
-    tipoPersona: string;
-    tipoDocumento?: string;
+    tipoPersona: string;  // 'N' o 'E'
+    tipoDocumento: string; // 'C', 'P' o 'R'
     documento: string;
     email: string;
-    celular?: string;
-    telefono?: string;
-    direccion?: string;
+    celular: string;
+    telefono: string;
+    direccion: string;
     apellidos?: string;
-    fechaNacimiento?: Date; // ISO format: yyyy-MM-ddTHH:mm:ss
+    fechaNacimiento?: Date | string;
     genero?: string;
     razonSocial?: string;
     idRepresentanteLegal?: number;
     representanteLegalNombre?: string;
     obligadaContabilidad?: boolean;
-    esLocal?: boolean;
-}
+    esLocal: boolean;
+  }
 
 export interface Propietario {
     nombre: string;

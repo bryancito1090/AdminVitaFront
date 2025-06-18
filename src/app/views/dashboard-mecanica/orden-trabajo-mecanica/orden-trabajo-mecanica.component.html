@@ -1,5 +1,6 @@
 <div class="card"  [style]="{'width': '100%'}">
     <h3 class="text-2xl font-bold text-black pb-4">Orden de Trabajo {{codigo}}</h3>
+        <p-button icon="pi pi-pencil" label="Editar datos generales" severity="secondary" (onClick)="showEditDialog()"></p-button>
     <div *ngIf="OrdenTrabajo" [ngClass]="loadingGeneral ? 'loading': ''">
         <p><strong>Detalle:</strong> {{ OrdenTrabajo.detalle || ""}}</p>
     <div class="grid grid-cols-3 gap-4 p-4">
@@ -43,14 +44,16 @@
 </div>
 <div class="card py-4 px-8 bg-primary-700">
     <div class="flex justify-between items-center">
-        <p-button fluid severity="danger" label="Finalizar OT"></p-button>
+        <div class="flex gap-3">
+            <p-button fluid severity="danger" label="Finalizar OT"></p-button>
+            <p-button fluid severity="warn" label="Anular OT" (onClick)="confirmarAnularOT()"></p-button>        </div>
         <p-button 
-        fluid 
-        [icon]="agregar_tarea_card ? 'pi pi-chevron-down':'pi pi-chevron-up'"
-        [raised]="agregar_tarea_card ? false: true"
-        severity="secondary"
-        (onClick)="agregar_tarea_card = !agregar_tarea_card" 
-        label="Agregar Tarea"></p-button>
+            fluid 
+            [icon]="agregar_tarea_card ? 'pi pi-chevron-down':'pi pi-chevron-up'"
+            [raised]="agregar_tarea_card ? false: true"
+            severity="secondary"
+            (onClick)="agregar_tarea_card = !agregar_tarea_card" 
+            label="Agregar Tarea"></p-button>
     </div>
 </div>
 <div 
@@ -143,3 +146,79 @@
     </ng-template>
     </p-table>
 </div>
+
+<!-- Diálogo para editar datos generales -->
+<p-dialog [header]="'Editar Orden de Trabajo: '+codigo" [modal]="true" [(visible)]="visibleEdit" [styleClass]="'custom-dialog'" [breakpoints]="{'768px': '95vw'}">
+    <span class="p-text-secondary block mb-4">Actualiza los campos disponibles de la Orden de Trabajo (OT):</span>
+    <form [formGroup]="fb_editOt">
+        <div *ngIf="loadingEditDialog" class="flex justify-center p-4">
+            <p-progressSpinner></p-progressSpinner>
+        </div>
+        <ng-container *ngIf="!loadingEditDialog">
+            <div class="flex flex-col mb-4">
+                <!-- Campos informativos (solo lectura) -->
+                <div class="p-field mb-3">
+                    <label class="block font-medium text-gray-700 mb-1">Detalle:</label>
+                    <div class="p-2 bg-gray-100 border border-gray-300 rounded text-gray-700">
+                        {{ OrdenTrabajo?.detalle || 'Sin detalle' }}
+                    </div>
+                </div>
+                
+                <div class="p-field mb-3">
+                    <label class="block font-medium text-gray-700 mb-1">Nombre Cliente:</label>
+                    <div class="p-2 bg-gray-100 border border-gray-300 rounded text-gray-700">
+                        {{ OrdenTrabajo?.nombreCliente || 'Sin cliente' }}
+                    </div>
+                </div>
+                
+                <div class="p-field mb-3">
+                    <label class="block font-medium text-gray-700 mb-1">Placa del vehículo:</label>
+                    <div class="p-2 bg-gray-100 border border-gray-300 rounded text-gray-700">
+                        {{ OrdenTrabajo?.placa || 'Sin placa' }}
+                    </div>
+                </div>
+                
+                <!-- Campos editables -->
+                <p-floatlabel variant="on" class="my-1 w-full">
+                    <p-select formControlName="estado" [options]="estado" optionValue="code" optionLabel="name" class="w-full" />
+                    <label>Estado</label>
+                </p-floatlabel>
+                
+                <p-floatlabel variant="on" class="my-1 w-full">
+                    <p-select formControlName="prioridad" [options]="prioridad" optionValue="code" optionLabel="name" class="w-full" />
+                    <label>Nivel de prioridad</label>
+                </p-floatlabel>
+                
+                <p-floatlabel variant="on" class="my-1 w-full">
+                    <p-select formControlName="supervisor" [options]="supervisor" optionValue="code" optionLabel="name" class="w-full" />
+                    <label>Supervisor</label>
+                </p-floatlabel>
+                
+                <p-floatlabel variant="on" class="my-1 w-full">
+    <div class="p-inputgroup">
+        <p-calendar 
+            formControlName="fechaProgramada" 
+            dateFormat="dd/mm/yy" 
+            [minDate]="minDate"
+            [showIcon]="true"
+            [readonlyInput]="true"
+            [showButtonBar]="true"
+            class="w-full">
+        </p-calendar>
+    </div>
+    <label>Fecha programa de inicio OT</label>
+</p-floatlabel>
+                <p-floatlabel variant="on" class="w-full my-1">
+                    <textarea pTextarea formControlName="observacion" rows="2" cols="34.5"></textarea>
+                    <label>Observaciones</label>
+                </p-floatlabel>
+            </div>
+        </ng-container>
+        <div class="flex justify-end gap-2">
+            <p-button label="Cancelar" severity="secondary" (click)="visibleEdit = false" />
+            <p-button label="Guardar" [disabled]="loadingEditDialog || fb_editOt.invalid" (click)="updateOT()" />
+        </div>
+    </form>
+</p-dialog>
+<!-- Diálogo de confirmación para anular OT -->
+<p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
