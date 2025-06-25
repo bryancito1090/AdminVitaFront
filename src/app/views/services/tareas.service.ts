@@ -14,10 +14,16 @@ export class TareasService {
 
   constructor(private http: HttpClient, private auth: AuthService) { }
 
-  getTareasByOT(code: string): Observable<TareaDetalle[]> {
-    const params = new HttpParams().set('Codigo', code); 
-    return this.http.get<TareaDetalle[]>(`${this.apiURL}/GetTareaDetalle`, { params });
-  } 
+getTareasByOT(code: string): Observable<TareaDetalle[]> {
+  const headers = this.auth.getAuthHeaders();
+  const params = new HttpParams().set('Codigo', code);
+  return this.http.get<TareaDetalle[]>(`${this.apiURL}/GetTareaDetalle`, { params, headers });
+}
+  getTareasByOTMec(code: string): Observable<TareaDetalle[]> {
+  const headers = this.auth.getMecanicoAuthHeaders();
+  const params = new HttpParams().set('Codigo', code);
+  return this.http.get<TareaDetalle[]>(`${this.apiURL}/GetTareaDetalle`, { params, headers });
+}
 
   getTareaExternaByOT(code: string): Observable<TrabajoExternoDetalle[]> {
     const headers = this.auth.getAuthHeaders();

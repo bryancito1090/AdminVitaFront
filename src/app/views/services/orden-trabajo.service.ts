@@ -22,6 +22,10 @@ export class OrdenTrabajoService {
   }
 
  getOrdenTrabajoCodigo(code: string): Observable<any> {
+   const headers = this.auth.getAuthHeaders();
+    return this.http.get(`${this.apiUrl}/${code}`, { headers });
+ }
+ getOrdenTrabajoCodigoMec(code: string): Observable<any> {
    const headers = this.auth.getMecanicoAuthHeaders();
     return this.http.get(`${this.apiUrl}/${code}`, { headers });
  }
@@ -45,7 +49,7 @@ export class OrdenTrabajoService {
     return this.http.get(`${this.apiUrl}/ExportToExcel`, { headers, responseType: 'blob' });
   }
   agendarOrdenMecanico(data: AgendarOrdenMecanicoRequest): Observable<any> {
-    const headers = this.auth.getAuthHeaders();
+    const headers = this.auth.getMecanicoAuthHeaders();
     return this.http.post<any>(`${this.apiUrl}/AgendarOrdenMecanico`, data, { headers });
   }
 

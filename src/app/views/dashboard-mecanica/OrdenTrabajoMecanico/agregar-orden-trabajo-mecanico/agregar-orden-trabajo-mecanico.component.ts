@@ -254,7 +254,7 @@ idAdjuntoTrasera: number | null = null;
     }
     this.cargandoCliente = true;
     this.mostrarInfoCliente = false;
-    this.validacionService.validarClienteXDoc(this.documento)
+    this.validacionService.validarClienteXDocMec(this.documento)
       .subscribe({
         next: (respuesta) => {
           this.clienteActual = respuesta;
@@ -303,7 +303,7 @@ validarVehiculo() {
   // Limpiar previews de imágenes existentes
   this.limpiarPrevisualizaciones();
   
-  this.validacionService.validarVehiculoXPlaca(this.placa)
+  this.validacionService.validarVehiculoXPlacaMec(this.placa)
     .subscribe({
       next: (respuesta) => {
         console.log('Respuesta de validación de vehículo:', respuesta);
@@ -1099,7 +1099,7 @@ validarClienteVehiculo() {
   this.errorClienteVehiculo = '';
   
   // Usar exactamente el mismo servicio y método que usas en validarCliente()
-  this.validacionService.validarClienteXDoc(this.documentoVehiculo)
+  this.validacionService.validarClienteXDocMec(this.documentoVehiculo)
     .subscribe({
       next: (respuesta) => {
         this.clienteVehiculoActual = respuesta;
@@ -1228,7 +1228,7 @@ limpiarPrevisualizaciones(): void {
 
 // Método para cargar imágenes del vehículo
 cargarImagenesVehiculo(idVehiculo: number) {
-  this.adjuntoService.getAdjuntosByVehiculo(idVehiculo)
+  this.adjuntoService.getAdjuntosByVehiculoMec(idVehiculo)
     .subscribe({
       next: (adjuntos) => {
         console.log('Adjuntos del vehículo:', adjuntos);

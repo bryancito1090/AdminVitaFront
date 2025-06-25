@@ -82,7 +82,7 @@ export class AuthService {
   
     try {
       const decoded: any = jwtDecode(token);
-      return decoded.codigo || null;
+      return decoded.codigoUsuario || null;
     } catch (error) {
       console.error('Error al decodificar el token:', error);
       return undefined;

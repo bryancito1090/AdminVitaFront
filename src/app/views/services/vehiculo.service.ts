@@ -32,7 +32,7 @@ export class VehiculoService {
     return this.http.put<any>(`${this.apiUrl}/UpdateVehiculo`, vehicle, { headers });
   }
   postVehicleNoInstitucional(vehicle: AddVehicleNoInstitucional): Observable<any> {
-    const headers = this.auth.getAuthHeaders();
+    const headers = this.auth.getMecanicoAuthHeaders();
     return this.http.post<any>(`${this.apiUrl}/CreateVehiculo`, vehicle, { headers });
   }
 }

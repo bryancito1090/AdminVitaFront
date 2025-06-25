@@ -272,6 +272,7 @@ private agregarListeners() {
     this.form_persona.reset();
     this.formSubmitted.emit(true);
   }
+  
   crearPersonaHandler(){
     const documento = this.form_persona.get('documento')?.value;
     const tipoDOC = identificarDocumento(documento);
@@ -281,6 +282,11 @@ private agregarListeners() {
         this.procesarActualizacion();
         return;
     }
+    const raw = this.form_persona.value;
+    const fechaNacimiento = raw.FechaNacimiento instanceof Date
+  ? raw.FechaNacimiento.toISOString().split('T')[0]
+  : raw.FechaNacimiento;
+
     const nuevaPersona: Persona = {
       nombre: this.form_persona.get('nombre')?.value,
       tipoPersona: this.form_persona.get('tipoPersona')?.value.key,
@@ -291,11 +297,7 @@ private agregarListeners() {
       telefono: this.form_persona.get('telefono')?.value,
       direccion: this.form_persona.get('direccion')?.value,
       apellidos: this.form_persona.get('apellidos')?.value,
-      fechaNacimiento: this.form_persona.get('fecha_nacimiento')?.value 
-        ? (this.form_persona.get('fecha_nacimiento')?.value instanceof Date 
-            ? this.form_persona.get('fecha_nacimiento')?.value.toISOString() 
-            : this.form_persona.get('fecha_nacimiento')?.value)
-        : undefined,      genero: this.form_persona.get('genero')?.value.key,
+      fechaNacimiento: fechaNacimiento,
       razonSocial: this.form_persona.get('razonSocial')?.value,
       representanteLegalNombre: this.form_persona.get('representanteLegal')?.value,
       obligadaContabilidad: this.form_persona.get('obligadaContabilidad')?.value,
@@ -560,12 +562,13 @@ private agregarListeners() {
         this.propietarioService.registrarPropietario(nuevaPersona).subscribe({
           next: (response) => {
             console.log(response);
+            this.formSubmitted.emit(response);
             this.toastr.success('Se ha cambiado el propietario exitosamente!', 'Tarea Exitosa')
             this.router.navigate(['/panel/Vehiculos']);
           },
           error: (err) =>{
             console.log(err);
-            this.toastr.success('No se ha podido cambiar el propietario, intente mas tarde!', "Upss! Error!")
+            this.toastr.error('No se ha podido cambiar el propietario, intente mas tarde!', "Upss! Error!")
           }
         })
         break;

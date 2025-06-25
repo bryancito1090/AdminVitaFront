@@ -28,6 +28,10 @@ export class AdjuntoService {
     return this.http.get<Adjunto[]>(`${this.apiUrl}/GetByIdVehiculo/${idVehiculo}`, { headers });
   }
   
+   getAdjuntosByVehiculoMec(idVehiculo: number): Observable<Adjunto[]> {
+    const headers = this.auth.getMecanicoAuthHeaders();
+    return this.http.get<Adjunto[]>(`${this.apiUrl}/GetByIdVehiculo/${idVehiculo}`, { headers });
+  }
   /**
    * Construye la URL completa para acceder a la imagen a partir de la ruta relativa
    * @param ruta La ruta relativa recibida del backend (ej: /Uploads/imagen.jpg)

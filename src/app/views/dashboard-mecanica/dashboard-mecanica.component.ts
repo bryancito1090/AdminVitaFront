@@ -228,8 +228,9 @@ export class DashboardMecanicaComponent implements OnInit {
         detail: `Abriendo orden de trabajo ${this.codigoOTPendiente}`,
         life: 3000
       });
-      const url = `mecanica/${this.codigoOTPendiente}`;
-      window.open(url, '_blank');
+      
+      this.router.navigate([`mecanica/${this.codigoOTPendiente}`]);
+      
       this.codigoOTPendiente = '';
       this.permisosRequeridos = [];
     } else if (this.rutaPendiente) {

@@ -42,7 +42,8 @@ export class ComprasService {
     );
   }
   getCompraDetallada(factura: string): Observable<any> {
-    return this.http.get<any>(`${this.apiURL}/GetCompraDetallada/${factura}`);
+    const headers = this.auth.getAuthHeaders();
+    return this.http.get<any>(`${this.apiURL}/GetCompraDetallada/${factura}`,{headers});
   }
 agregarAdjuntoCompra(idCompra: number, file: File): Observable<any> {
   let headers = this.auth.getAuthHeaders();

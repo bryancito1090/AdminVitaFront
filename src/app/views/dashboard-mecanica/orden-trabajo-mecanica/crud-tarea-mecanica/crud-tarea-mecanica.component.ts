@@ -17,6 +17,7 @@ import { TableModule } from 'primeng/table';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { AuthMecanicaComponent } from '../../../auth/components/auth-mecanica/auth-mecanica.component';
 import { ToastrService } from 'ngx-toastr';
+import { MagnitudService } from '../../../services/magnitud.service';
 
 @Component({
   selector: 'app-crud-tarea-mecanica',
@@ -82,36 +83,105 @@ export class CrudTareaMecanicaComponent implements OnInit{
   
   //Dialgo Dinamic
   dialogRef: DynamicDialogRef | undefined;
-  
+  tipoItemSeleccionado: 'repuesto' | 'insumo' = 'repuesto';
+  allItemsInsumos: any[] = [];
+  allItemsActual: any[] = []; 
+  loadingItems: boolean = false;
+  // Variables para magnitudes
+  magnitudesCompatibles: any[] = [];
+  magnitudOrigen: any = null;
+  selectedMagnitudId: number | null = null;
+  loadingMagnitudes: boolean = false;
+  mostrarMagnitudes: boolean = false;
   constructor(
     private itemService: ItemService,
     private mecanicoService: MecanicoService,
     private dialogService: DialogService,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private magnitudService: MagnitudService
   ) {}
 
   ngOnInit(): void {
     this.initData();
   }
 
-  initData(){
-    this.estados_tarea = EstadoTarea;
-    this.itemService.getItemsTipoRespuesto().subscribe({
-      next: (items : any) => {
-        this.allItemsRepuestos = items;
-      }
-    });
-    this.mecanicoService.getMecanicos().subscribe({
-      next: (mecanicos: any) => {
-        this.allMecanicos = mecanicos;
+initData(){
+  this.estados_tarea = EstadoTarea;
+  
+  // Cargar repuestos por defecto
+  this.itemService.getItemsTipoRespuestoMec().subscribe({
+    next: (items : any) => {
+      this.allItemsRepuestos = items;
+      this.allItemsActual = items; // Por defecto mostrar repuestos
+    }
+  });
+  
+  // Cargar insumos también
+  this.itemService.getItemsTipoInsumoMec().subscribe({
+    next: (items : any) => {
+      this.allItemsInsumos = items;
+    }
+  });
+  
+  this.mecanicoService.getMecanicos().subscribe({
+    next: (mecanicos: any) => {
+      this.allMecanicos = mecanicos;
+    },
+    error: (error) => {
+      console.error('Error al cargar mecánicos:', error);
+    }
+  })
+  this.headerDialog();
+}
+onTipoItemChange() {
+  this.loadingItems = true;
+  this.selectedItemId = null; 
+  this.mostrarMagnitudes = false;
+  this.magnitudesCompatibles = [];
+  this.selectedMagnitudId = null;
+  
+  if (this.tipoItemSeleccionado === 'repuesto') {
+    this.allItemsActual = this.allItemsRepuestos;
+    this.loadingItems = false;
+  } else {
+    this.allItemsActual = this.allItemsInsumos;
+    this.loadingItems = false;
+  }
+}
+onItemSelectionChange(itemId: number) {
+  this.selectedItemId = itemId;
+  
+  if (this.tipoItemSeleccionado === 'insumo' && itemId) {
+    this.loadingMagnitudes = true;
+    this.mostrarMagnitudes = true;
+    
+    this.magnitudService.GetMagnitudCompatibleByItem(itemId).subscribe({
+      next: (response: any) => {
+        this.magnitudOrigen = response.magnitudOrigen;
+        this.magnitudesCompatibles = response.magnitudesCompatibles;
+        
+        const todasLasMagnitudes = [
+          response.magnitudOrigen,
+          ...response.magnitudesCompatibles
+        ];
+        this.magnitudesCompatibles = todasLasMagnitudes;
+        
+        this.selectedMagnitudId = response.magnitudOrigen.idMagnitud;
+        
+        this.loadingMagnitudes = false;
       },
       error: (error) => {
-        console.error('Error al cargar mecánicos:', error);
+        console.error('Error al cargar magnitudes:', error);
+        this.loadingMagnitudes = false;
+        this.mostrarMagnitudes = false;
       }
-    })
-    this.headerDialog();
+    });
+  } else {
+    this.mostrarMagnitudes = false;
+    this.magnitudesCompatibles = [];
+    this.selectedMagnitudId = null;
   }
-
+}
   agregarTarea() {
     // Validaciones mínimas
     if (!this.detalleTarea || this.duracion_tarea <= 0) {
@@ -166,43 +236,95 @@ export class CrudTareaMecanicaComponent implements OnInit{
     this.displayDialogMecanicos = true;
   }
 
-  agregarRepuesto() {
-    if (!this.selectedItemId || !this.cantidadSeleccionada || this.cantidadSeleccionada <= 0) {
-      alert('Selecciona un repuesto y una cantidad válida.');
-      return;
-    }
-
-    const item = this.allItemsRepuestos.find(i => i.idItem === this.selectedItemId);
-    if (!item) {
-      alert('El repuesto seleccionado no es válido.');
-      return;
-    }
-
-    if (this.cantidadSeleccionada > item.stock) {
-      alert(`La cantidad excede el stock disponible: ${item.stock}`);
-      return;
-    }
-
-    const yaExiste = this.list_repuestos.some(r => r.idItem === this.selectedItemId);
-    if (yaExiste) {
-      alert('Este repuesto ya fue agregado.');
-      return;
-    }
-
-    this.list_repuestos.push({
-      idItem: this.selectedItemId,
-      cantidad: this.cantidadSeleccionada,
-    });
-
-    // Limpiar inputs
-    this.selectedItemId = null;
-    this.cantidadSeleccionada = null;
-    this.displayAddDialogRepuestos = false;
+agregarRepuesto() {
+  if (!this.selectedItemId || !this.cantidadSeleccionada || this.cantidadSeleccionada <= 0) {
+    this.toastr.error('Selecciona un ítem y una cantidad válida.', 'Error');
+    return;
   }
 
-  getItem(id: number): any {
-    return this.allItemsRepuestos.find(i => i.idItem === id);
+  const item = this.allItemsActual.find(i => i.idItem === this.selectedItemId);
+  if (!item) {
+    this.toastr.error('El ítem seleccionado no es válido.', 'Error');
+    return;
   }
+
+  if (this.cantidadSeleccionada > item.stock) {
+    this.toastr.error(`La cantidad excede el stock disponible: ${item.stock}`, 'Stock insuficiente');
+    return;
+  }
+
+  const yaExiste = this.list_repuestos.some(r => r.idItem === this.selectedItemId);
+  if (yaExiste) {
+    this.toastr.warning('Este ítem ya fue agregado.', 'Ítem duplicado');
+    return;
+  }
+
+  if (this.tipoItemSeleccionado === 'insumo' && this.mostrarMagnitudes && this.selectedMagnitudId) {
+    this.procesarConversionYAgregar();
+  } else {
+    this.agregarItemALista(this.cantidadSeleccionada);
+  }
+}
+
+procesarConversionYAgregar() {
+  if (this.selectedMagnitudId === this.magnitudOrigen.idMagnitud) {
+    this.agregarItemALista(this.cantidadSeleccionada!);
+    return;
+  }
+
+  this.magnitudService.convertirUnidad(
+    this.magnitudOrigen.idMagnitud,
+    this.cantidadSeleccionada!,
+    this.selectedMagnitudId!
+  ).subscribe({
+    next: (response: any) => {
+      console.log('Conversión realizada:', response);
+      this.agregarItemALista(response.unidadDestino);
+    },
+    error: (error) => {
+      console.error('Error en la conversión:', error);
+      alert('Error al convertir la unidad. Se usará la cantidad original.');
+      this.agregarItemALista(this.cantidadSeleccionada!);
+    }
+  });
+}
+
+agregarItemALista(cantidadFinal: number) {
+  this.list_repuestos.push({
+    idItem: this.selectedItemId!,
+    cantidad: cantidadFinal
+  });
+  console.log(`Ítem agregado - ID: ${this.selectedItemId}, Cantidad final: ${cantidadFinal}`);
+  this.limpiarFormulario();
+}
+
+limpiarFormulario() {
+  this.selectedItemId = null;
+  this.cantidadSeleccionada = null;
+  this.selectedMagnitudId = null;
+  this.mostrarMagnitudes = false;
+  this.magnitudesCompatibles = [];
+  this.magnitudOrigen = null;
+  this.displayAddDialogRepuestos = false;
+}
+limpiarFormularioAlCerrar() {
+  this.selectedItemId = null;
+  this.cantidadSeleccionada = null;
+  this.selectedMagnitudId = null;
+  this.mostrarMagnitudes = false;
+  this.magnitudesCompatibles = [];
+  this.magnitudOrigen = null;
+  this.tipoItemSeleccionado = 'repuesto'; 
+  this.allItemsActual = this.allItemsRepuestos; 
+  this.loadingItems = false;
+  this.loadingMagnitudes = false;
+}
+
+ getItem(id: number): any {
+  return this.allItemsActual.find(i => i.idItem === id) || 
+         this.allItemsRepuestos.find(i => i.idItem === id) ||
+         this.allItemsInsumos.find(i => i.idItem === id);
+}
 
   abrirEditar(repuesto: { idItem: number; cantidad: number }) {
     this.editingRepuesto = { ...repuesto }; // copia temporal

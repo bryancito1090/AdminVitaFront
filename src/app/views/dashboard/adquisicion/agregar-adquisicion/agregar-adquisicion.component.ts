@@ -397,6 +397,7 @@ this.compraService.getCompraDetallada(id).subscribe({
       valorUnitario: valorUnitario,
       idImpuesto: this.impuestoSeleccionado?.idImpuesto || 4  
     };
+    console.log("detalle Im", detalleCompraPeticion)
     const detalleCompra = {
       codigo: this.selectedItem.codigo,
       description: this.selectedItem.nombre + ' - ' + this.selectedItem.descripcion,
@@ -801,6 +802,7 @@ private actualizarDetallesEnInterfaz(compraActualizada: any) {
         });
         this.iva = this.subtotal > 0 ? this.impuestoTotal / this.subtotal : 0;
         this.total = this.subtotal + this.impuestoTotal - this.descuento;
+        console.log('Impuestos calculados por detalle:', resultados);
       },
       error: (err) => {
         console.error('Error al procesar impuestos:', err);

@@ -4,9 +4,9 @@ export interface AgendarOrdenTrabajo {
     idVehiculo: number;
     idMecanico: number;
     detalle: string;
-    prioridad: string;
+    prioridad: number;
     estado: number;
-    fechaProgramada: Date;
+    fechaProgramada: string;
     observacion: string;
 }
 
