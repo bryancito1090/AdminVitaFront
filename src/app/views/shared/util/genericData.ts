@@ -30,7 +30,7 @@ export const EstadoTarea = [
     {name: 'Cancelado', code: 3}, //(La tarea se ha cancelado)
     {name: 'Finalizado', code: 4}, //Finalizado (La tarea se ha finalizado con exito)
     {name: 'Finalizado sin exito', code: 5}, //(La tarea se ha finalizado sin exito)
-    {name: 'Espera', code: 6}, //(Espera (repuesto))
-    {name: 'Espera', code: 7}, //(Espera (Mecanicos/equipo))
-    {name: 'Espera', code: 8}, //(Espera (aprob. Cliente)(Posible tabla config)(icon, color, tipo)
+    {name: 'Espera Repuesto', code: 6}, //(Espera (repuesto))
+    {name: 'Espera Mecanico', code: 7}, //(Espera (Mecanicos/equipo))
+    {name: 'Espera Autorizacion', code: 8}, //(Espera (aprob. Cliente)(Posible tabla config)(icon, color, tipo)
 ]

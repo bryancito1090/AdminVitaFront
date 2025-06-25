@@ -28,4 +28,8 @@ export class TareasService {
     const headers = this.auth.getAuthHeaders();
     return this.http.get<ObservacionesOTDetalle[]>(`${environment.domain}${environment.apiEndpoint}/Observacion/ObtenerObservaciones/${code}`, {headers})
   }
+  createTarea(data: any, token: any): Observable<any> {
+    const headers = { Authorization: `Bearer ${token}` };
+    return this.http.post(`${this.apiURL}/CreateTarea`, data, { headers });
+  }
 }

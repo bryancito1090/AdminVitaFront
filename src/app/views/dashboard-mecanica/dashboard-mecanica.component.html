@@ -34,13 +34,15 @@
         </div>
         <div class="flex flex-col-reverse sm:flex-row sm:justify-between gap-2 !border-0 w-full">
             <p-button label="Limpiar" severity="secondary" icon="pi pi-filter-slash" (click)="clear(dt1)" />
-            <p-iconfield iconPosition="left" class="mr-1">
+            <p-iconfield iconPosition="left">
                 <p-inputicon>
                     <i class="pi pi-search"></i>
                 </p-inputicon>
-                <input pInputText type="text" class="w-full" (input)="filterGlobal($event, dt1)" placeholder="Busca por una palabra clave" />
-            </p-iconfield>              
-                <p-button class="" fluid icon="pi pi-plus" label="Nueva Orden de Trabajo" (onClick)="irANuevaOrden()"/>
+                <input pInputText fluid type="text" class="w-full" (input)="filterGlobal($event, dt1)" placeholder="Busca por una palabra clave" />
+            </p-iconfield>      
+            <div class="w-48">
+                <p-button class="w-full" fluid icon="pi pi-plus" label="Crear OT" (onClick)="irANuevaOrden()"/>
+            </div>        
         </div>
     </ng-template>
         <ng-template pTemplate="header" let-columns>

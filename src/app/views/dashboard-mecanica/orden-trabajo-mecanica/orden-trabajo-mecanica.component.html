@@ -45,7 +45,7 @@
 <div class="card py-4 px-8 bg-primary-700">
     <div class="flex justify-between items-center">
         <div class="flex gap-3">
-            <p-button fluid severity="danger" label="Finalizar OT"></p-button>
+            <p-button fluid severity="danger" label="Finalizar OT" (onClick)="confirmarFinalizarOT()"></p-button>
             <p-button fluid severity="warn" label="Anular OT" (onClick)="confirmarAnularOT()"></p-button>        </div>
         <p-button 
             fluid 
@@ -221,4 +221,6 @@
     </form>
 </p-dialog>
 <!-- Diálogo de confirmación para anular OT -->
+<p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
+<!--Dialog de confirmacion para finalizar OT-->
 <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>

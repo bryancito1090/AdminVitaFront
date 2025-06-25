@@ -17,6 +17,7 @@ import { TableModule } from 'primeng/table';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { AuthMecanicaComponent } from '../../../auth/components/auth-mecanica/auth-mecanica.component';
 import { ToastrService } from 'ngx-toastr';
+import { TareasService } from '../../../services/tareas.service';
 
 @Component({
   selector: 'app-crud-tarea-mecanica',
@@ -76,7 +77,7 @@ export class CrudTareaMecanicaComponent implements OnInit{
   requ_auth: boolean = true;
   requ_repuestos: boolean = true;
   list_repuestos: { idItem: number; cantidad: number }[] = [];
-  list_mecanicos: { idMecanico: number; duracion: number }[] = [];
+  list_mecanicos: { idMecanico: number; duracionEstimada: number }[] = [];
 
   estados_tarea!: any [];
   
@@ -87,7 +88,8 @@ export class CrudTareaMecanicaComponent implements OnInit{
     private itemService: ItemService,
     private mecanicoService: MecanicoService,
     private dialogService: DialogService,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private tareaService: TareasService,
   ) {}
 
   ngOnInit(): void {
@@ -126,19 +128,19 @@ export class CrudTareaMecanicaComponent implements OnInit{
       dismissableMask: false, 
       closable: false,
       data: {
-        accion: 'Agregar Tarea'
+        accion: 'AgregarTareaOT'
       }
     });
 
 
-    this.dialogRef.onClose.subscribe((result: { acceso: boolean, id: number | null }) => {
+    this.dialogRef.onClose.subscribe((result: { acceso: boolean, id: number | null, token: any }) => {
       if (result.acceso) {
         this.toastr.success('Tarea creada correctamente', 'Éxito');
 
         const nuevaTarea = {
           codigoOrdenTrabajo: this.codigoOT,
           detalle: this.detalleTarea.trim(),
-          idUsuario: result.id,
+          idMecanico: result.id,
           estado: this.estado_tarea,
           esManual: true,
           requiereRepuesto: this.requ_repuestos,
@@ -150,12 +152,31 @@ export class CrudTareaMecanicaComponent implements OnInit{
           mecanicos: this.list_mecanicos,
         };
 
-        console.log('Tarea creada:', nuevaTarea); 
+        this.tareaService.createTarea(nuevaTarea, result.token).subscribe({
+          next: (response) => {
+            console.log('Tarea creada:', response);
+            this.toastr.success('Tarea creada correctamente', 'Éxito');
+            this.resetForm();
+          }
+        });
           
       } else {
         this.toastr.error('Código incorrecto', 'Error');
       }
     });
+  }
+  resetForm() {
+    this.codigoOT = '';
+    this.detalleTarea = '';
+    this.estado_tarea = 0;
+    this.requ_repuestos = true;
+    this.tipo_tarea = 'interna';
+    this.requ_auth = true;
+    this.tipo_mantenimiento = 'preventivo';
+    this.duracion_tarea = 0;
+    this.list_repuestos = [];
+    this.list_mecanicos = [];
+    this.onClose.emit({ action: this.action, color: this.color });
   }
 
   showDialogRepuestos() {
@@ -239,7 +260,7 @@ export class CrudTareaMecanicaComponent implements OnInit{
 
     this.list_mecanicos.push({
       idMecanico: this.selectedMecanicoId,
-      duracion: this.duracionEstimada
+      duracionEstimada: this.duracionEstimada
     });
 
     this.selectedMecanicoId = null;
@@ -255,7 +276,7 @@ export class CrudTareaMecanicaComponent implements OnInit{
   guardarDuracionMecanico() {
     const index = this.list_mecanicos.findIndex(m => m.idMecanico === this.editingMecanico.idMecanico);
     if (index !== -1) {
-      this.list_mecanicos[index].duracion = this.editingMecanico.duracion;
+      this.list_mecanicos[index].duracionEstimada = this.editingMecanico.duracion;
     }
     this.displayEditMecanico = false;
   }

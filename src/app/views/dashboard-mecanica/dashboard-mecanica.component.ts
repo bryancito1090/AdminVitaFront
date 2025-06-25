@@ -19,6 +19,8 @@ import { ToastModule } from 'primeng/toast';
 import { ValidarAccionMecanicoComponent } from '../shared/components/validar-accion-mecanico/validar-accion-mecanico.component';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { AuthMecanicaComponent } from '../auth/components/auth-mecanica/auth-mecanica.component';
 
 interface TableColumn {
   field: string;
@@ -51,7 +53,7 @@ interface Mecanico {
     ValidarAccionMecanicoComponent,
     ToastModule
   ],
-  providers: [DatePipe, MecanicoService, OrdenMecanicoService, MessageService],
+  providers: [DatePipe, MecanicoService, OrdenMecanicoService, MessageService, DialogService],
   templateUrl: './dashboard-mecanica.component.html',
   styleUrls: ['./dashboard-mecanica.component.scss']
 })
@@ -76,13 +78,17 @@ export class DashboardMecanicaComponent implements OnInit {
   isDarkModeEnabled = false;
   permisosRequeridos: string[] = []; 
   rutaPendiente: string = ''; 
+  
+  //Dialgo Dinamic
+  dialogRef: DynamicDialogRef | undefined;
 
   constructor(
     private datePipe: DatePipe,
     private mecanicoService: MecanicoService,
     private ordenMecanicoService: OrdenMecanicoService,
     private router: Router,
-    private messageService: MessageService
+    private messageService: MessageService,
+    private dialogService: DialogService
   ) {}
 
   ngOnInit(): void {
@@ -263,7 +269,30 @@ export class DashboardMecanicaComponent implements OnInit {
     this.permisosRequeridos = [];
     this.rutaPendiente = '';
     }
-     irANuevaOrden() {
-    this.router.navigate(['/mecanica/agregar-orden']);
+  irANuevaOrden() {
+    this.dialogRef = this.dialogService.open(AuthMecanicaComponent, {
+      header: 'Código de Autenticación',
+      width: '400px',
+      modal: true,
+      dismissableMask: false, 
+      closable: false,
+      data: {
+        accion: 'AgregarOT'
+      }
+    });
+    
+    this.dialogRef.onClose.subscribe((result: { acceso: boolean,  token: any }) => {
+      if(result.acceso){
+        this.router.navigate(['/mecanica/agregar-orden']);
+      }
+      else{
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Código incorrecto',
+          detail: 'No se pudo autenticar el acceso a esta página',
+          life: 5000
+        });
+      }
+    });
   }
 }

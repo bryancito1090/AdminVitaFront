@@ -36,6 +36,8 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
   fechaProgramada: Date;
   observacion?: string;
 }import { TareasService } from '../../services/tareas.service';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { AuthMecanicaComponent } from '../../auth/components/auth-mecanica/auth-mecanica.component';
 
 @Component({
   selector: 'app-orden-trabajo-mecanica',
@@ -61,7 +63,7 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA], 
   standalone: true,
-  providers: [ConfirmationService],
+  providers: [ConfirmationService, DialogService],
   templateUrl: './orden-trabajo-mecanica.component.html',
   styleUrl: './orden-trabajo-mecanica.component.scss'
 })
@@ -92,6 +94,9 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
   // Lista de supervisores
   supervisor: genericT[] = [];
 
+  //Dialgo Dinamic
+  dialogRef: DynamicDialogRef | undefined;
+
   constructor(
     private route: ActivatedRoute, 
     private router: Router,
@@ -100,7 +105,8 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
     private tareaService: TareasService,
     private mecanicoService: MecanicoService,
     private fb: FormBuilder,
-    private confirmationService: ConfirmationService
+    private confirmationService: ConfirmationService,
+    private dialogService: DialogService
   ) {
     // Inicializar el formulario
      this.fb_editOt = this.fb.group({
@@ -251,21 +257,74 @@ updateOT() {
 }
   // Método para confirmar anulación de OT
   confirmarAnularOT() {
-    this.confirmationService.confirm({
-      message: 'Esta acción no se puede deshacer. ¿Desea anular esta orden de trabajo?',
-      header: 'Confirmación para anular orden de trabajo',
-      icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Sí, anular orden',
-      rejectLabel: 'Cancelar',
-      accept: () => {
-        this.anularOT();
+    this.dialogRef = this.dialogService.open(AuthMecanicaComponent, {
+        header: 'Código de Autenticación',
+        width: '400px',
+        modal: true,
+        dismissableMask: false, 
+        closable: false,
+        data: {
+          accion: 'AnularOT'
+        }
+      });
+
+    this.dialogRef.onClose.subscribe((result: { acceso: boolean,  token: any }) => {
+      if (result.acceso) {
+        this.confirmationService.confirm({
+          message: 'Esta acción no se puede deshacer. ¿Desea anular esta orden de trabajo?',
+          header: 'Confirmación para anular orden de trabajo',
+          icon: 'pi pi-exclamation-triangle',
+          acceptLabel: 'Sí, anular orden',
+          rejectLabel: 'Cancelar',
+          accept: () => {
+            this.anularOT(result.token);
+          }
+    });
+      } else {
+        this.toastr.error('Código incorrecto', 'Error');
       }
     });
   }
 
   // Método para anular la OT
-  anularOT() {
+  anularOT(token: any) {
     this.toastr.info('Procesando su solicitud...', 'Anulando orden');
    
   }
+
+  confirmarFinalizarOT() {
+    this.dialogRef = this.dialogService.open(AuthMecanicaComponent, {
+      header: 'Código de Autenticación',
+      width: '400px',
+      modal: true,
+      dismissableMask: false,
+      closable: false,
+      data: {
+        accion: 'FinalizarOT'
+      }
+    });
+
+    this.dialogRef.onClose.subscribe((result: { acceso: boolean, token: any }) => {
+      if (result?.acceso) {
+        this.confirmationService.confirm({
+          message: '¿Está seguro de finalizar esta orden de trabajo? Esta acción no se puede revertir.',
+          header: 'Confirmación para finalizar orden de trabajo',
+          icon: 'pi pi-check-circle',
+          acceptLabel: 'Sí, finalizar orden',
+          rejectLabel: 'Cancelar',
+          accept: () => {
+            this.finalizarOT(result.token);
+          }
+        });
+      } else {
+        this.toastr.error('Código incorrecto o cancelado', 'Error');
+      }
+    });
+  }
+
+  finalizarOT(token: any) {
+    this.toastr.info('Procesando su solicitud...', 'Finalizada orden de Trabajo!');
+   
+  }
+
 }
