@@ -31,17 +31,28 @@ export class AuthMecanicaComponent {
   }
 
   onSubmit() {
-
     this.authService.auth_mecanica(this.value).subscribe({
       next: (response) => {
         if (response.token) {
-          const result = {
-            acceso: true,
-            id: 1
-          };
-          this.ref.close(result);
+          const token = this.authService.DecodedTokenAuth(response.token) as JwtPayload & { [key: string]: any };
+          switch (this.tipoAccion){
+            case 'AgregarOT':
+              this.authService.saveToken(response.token);
+              this.ref.close({ acceso: true });
+              break;
+            case 'AgregarTareaOT':
+              if (!token) return;
+              const nameIdentifier = token["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+              this.ref.close({ acceso: true, id: nameIdentifier, token: response.token });
+              break;
+            case 'AnularOT':
+              break;
+            default:
+              this.ref.close({ acceso: true, token: response.token });
+          }
+
         } else {
-          this.ref.close({ acceso: false, id: null });
+          this.ref.close({ acceso: false });
         }
       },
       error: (error) => {
