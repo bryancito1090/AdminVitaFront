@@ -318,7 +318,7 @@
             </div>
             <div class="flex justify-end gap-2 mt-4">
                 <p-button label="Cancelar" severity="secondary" (click)="visibleAdd = false; fb_addVehiculo.reset(); uploadedFiles = []" />
-                <p-button label="Agregar Vehiculo" (onClick)="createVehicle()" [disabled]="fb_addVehiculo.invalid || uploadedFiles.length != 4" />
+                <p-button label="Agregar Vehiculo" (onClick)="createVehicle()" [disabled]="fb_addVehiculo.invalid" />
             </div>
         </div>
     </form>
@@ -460,7 +460,7 @@ closeOnEscape="false">
                         <ng-container *ngIf="col.field === 'fechaInicio'"><p class="text-center">{{ formatDate(rowData[col.field]) }}</p></ng-container>
                         <ng-container *ngIf="col.field === 'fechaFin'"><p class="text-center">{{ rowData[col.field] ? formatDate(rowData[col.field]):'Sin fecha fin' }}</p></ng-container>
                         <ng-container *ngIf="col.field === 'estadoPropiedad'">
-                            <p-tag fluid class="w-full" [value]="rowData[col.field]===1 ? 'Activo':'No activo'" [severity]="rowData[col.field]===1 ? 'success':'danger'"/>
+                        <p-tag fluid class="w-full" [value]="rowData[col.field] == 1 ? 'Activo' : 'No activo'" [severity]="rowData[col.field] == 1 ? 'success' : 'danger'"/>
                         </ng-container>
                     </td>
                 </tr>
@@ -473,20 +473,22 @@ closeOnEscape="false">
 </p-dialog>
 
 <p-dialog 
-[visible]="visibleAddPropietario && visiblePropietarios"
-[modal]="true" 
-closeOnEscape="true"
-[style]="{ width: '30rem' }"
-[contentStyle]="{ 'max-height': '100vh', 'overflow': 'auto' }"
+  [visible]="visibleAddPropietario && visiblePropietarios"
+  [modal]="true" 
+  closeOnEscape="true"
+  [style]="{ width: '30rem' }"
+  [contentStyle]="{ 'max-height': '100vh', 'overflow': 'auto' }"
 >
-<ng-template #headless>
+  <ng-template #headless>
     <div class="flex flex-col px-6 py-6 gap-6 rounded-2xl h-full max-h-[80vh] overflow-hidden">
       <h5 class="text-2xl text-center text-black">Cambiar Propietario</h5>
-  
       <div class="overflow-y-auto grow pr-2">
-        <app-formulario-persona (formSubmitted)="responseDialogPropietariosForm($event)" personaVariante="propietario" [initialData]="idVehiculoPropietario"></app-formulario-persona>
+        <app-formulario-persona 
+          (formSubmitted)="responseDialogPropietariosForm($event)" 
+          personaVariante="propietario" 
+          [initialData]="idVehiculoPropietario">
+        </app-formulario-persona>
       </div>
     </div>
   </ng-template>
-  
 </p-dialog>

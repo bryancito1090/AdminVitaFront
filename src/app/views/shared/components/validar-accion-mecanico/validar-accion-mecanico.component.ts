@@ -55,15 +55,9 @@ validarPin() {
       next: (mecanicoAuth) => {
         
         if (this.requiredPermissions.length > 0) {
-          console.log('🔍 Verificando permisos:', this.requiredPermissions);
-          console.log('🔍 Permisos del mecánico:', mecanicoAuth.permissions);
-          
           const hasPermission = this.authService.hasAnyPermission(this.requiredPermissions);
-          console.log('🔍 Tiene permisos:', hasPermission);
-          
           if (!hasPermission) {
             this.loading = false;
-            console.log('❌ Emitiendo evento validacionSinPermisos');
             this.validacionSinPermisos.emit(mecanicoAuth);
             this.onDialogHide();
             return;

@@ -108,6 +108,7 @@ export class OrdenTrabajoComponent implements OnInit {
   prioridad!: genericT[];
   supervisor!: genericT[];
   estadoVehiculo!: genericT[];
+  fechaProgramada: Date | string | null = null;
 
   selectedCodeObservacion!: string;
 
@@ -191,20 +192,7 @@ export class OrdenTrabajoComponent implements OnInit {
     this.prioridad = PrioridadesOT;
     this.estadoVehiculo = EstadosVehiculo;
     this.minDate = new Date();
-
-    this.otService.getOrdenesTrabajoListado().subscribe({
-      next: (response) => {
-        this.ordenes = response.ordenes.map(x => ({
-          ...x,
-          fechaProgramada: this.formatDate(x.fechaProgramada)
-        }));
-        this.loading = false;
-      },
-      error: (err: any) => {
-        console.log("Error al solicitar Ordenes de Trabajo: ", err);
-      },
-    });
-
+    this.GetOrdenesTrabajoList();
     this.mecService.getSupervisores().subscribe({
       next: (response) => {
         this.supervisor = response.map(x => ({
@@ -249,6 +237,20 @@ export class OrdenTrabajoComponent implements OnInit {
       this.fb_addOt.patchValue({vehiculoId: null})
       this.iconValidarPlaca = 'pi pi-search';
     })
+  }
+  GetOrdenesTrabajoList() {
+    this.otService.getOrdenesTrabajoListado().subscribe({
+      next: (response) => {
+        this.ordenes = response.ordenes.map(x => ({
+          ...x,
+          fechaProgramada: this.formatDate(x.fechaProgramada)
+        }));
+        this.loading = false;
+      },
+      error: (err: any) => {
+        console.log("Error al solicitar Ordenes de Trabajo: ", err);
+      },
+    });
   }
   formatDate(dateString: string): string {
     if(dateString === 'Vacío') return 'Vacío';
@@ -338,31 +340,33 @@ showDialogExpand(code: string){
       }
     })
   }
-  createOT():void{
-    //Contenido validacion
-    const ot: AgendarOrdenTrabajo = {
-      codigoUsuario: this.auth.getUserCode(),
-      idCliente: this.fb_addOt.get('clienteId')?.value,
-      idVehiculo: this.fb_addOt.get('vehiculoId')?.value,
-      idMecanico: this.fb_addOt.get('supervisor')?.value,
-      detalle: this.fb_addOt.get('detalle')?.value,
-      prioridad: this.fb_addOt.get('prioridad')?.value,
-      estado: 0, //Por defecto se pone en estado 'Activo'
-      fechaProgramada: this.fb_addOt.get('fechaProgramada')?.value,
-      observacion: this.fb_addOt.get('observacion')?.value,
-    }
-    this.otService.createOrdenTrabajo(ot).subscribe({
-      next: (response) => {
-        this.toastr.success(response.message, "Orden de Trabajo agendada exitosamente!");
-        this.visibleAdd = false;
-        console.log(response);
-      },
-      error: (err) => {
-        this.toastr.error(err.error, "Orden de Trabajo no pudo ser agendada!");
-        console.log(err);'' 
-      }
-    });
-  }
+  createOT(): void {
+  const fecha = this.fb_addOt.get('fechaProgramada')?.value;
+  const ot: AgendarOrdenTrabajo = {
+    codigoUsuario: this.auth.getUserCode() ?? '',
+    idCliente: Number(this.fb_addOt.get('clienteId')?.value),
+    idVehiculo: Number(this.fb_addOt.get('vehiculoId')?.value),
+    idMecanico: Number(this.fb_addOt.get('supervisor')?.value),
+    detalle: this.fb_addOt.get('detalle')?.value ?? '',
+    prioridad: Number(this.fb_addOt.get('prioridad')?.value),
+    estado: 0,
+    fechaProgramada: fecha instanceof Date
+      ? fecha.toISOString()
+      : (fecha ? fecha : ''),
+    observacion: this.fb_addOt.get('observacion')?.value ?? ''
+  };
+  console.log(ot);
+  this.otService.createOrdenTrabajo(ot).subscribe({
+    next: (response) => {
+      this.toastr.success(response.message, "Orden de Trabajo agendada exitosamente!");
+      this.visibleAdd = false;
+      this.GetOrdenesTrabajoList();
+    },
+    error: (err) => {
+      this.toastr.error(err.error, "Orden de Trabajo no pudo ser agendada!");
+       }
+  });
+}
   updateOT():void{
     const ot: ActualizarOrdenRequest = {
       codigo: this.codeEditDialog,
@@ -372,13 +376,12 @@ showDialogExpand(code: string){
       fechaProgramada: this.fb_editOt.get('fechaProgramada')?.value,
       observacion: this.fb_editOt.get('observacion')?.value,
     }
-    console.log(ot);
     
     this.otService.updateOrdenTrabajo(ot).subscribe({
       next: (response) => {
         this.toastr.success(response.message, "Actualización exitosa!");
         this.visibleEdit = false;
-        console.log(response);
+        this.GetOrdenesTrabajoList();
         
       },
       error: (err) => {

@@ -1,154 +1,154 @@
-<div class="card"  [style]="{'width': '100%'}">
+<div class="card" [style]="{'width': '100%'}">
     <h3 class="text-2xl font-bold text-black pb-4">Orden de Trabajo {{codigo}}</h3>
-        <p-button icon="pi pi-pencil" label="Editar datos generales" severity="secondary" (onClick)="showEditDialog()"></p-button>
+    <p-button icon="pi pi-pencil" label="Editar datos generales" severity="secondary"
+        (onClick)="showEditDialog()"></p-button>
     <div *ngIf="OrdenTrabajo" [ngClass]="loadingGeneral ? 'loading': ''">
         <p><strong>Detalle:</strong> {{ OrdenTrabajo.detalle || ""}}</p>
-    <div class="grid grid-cols-3 gap-4 p-4">
-        <!-- Columna izquierda -->
-        <div class="space-y-2">
+        <div class="grid grid-cols-3 gap-4 p-4">
+            <!-- Columna izquierda -->
+            <div class="space-y-2">
 
-          <p>
-            <strong>Prioridad: </strong>
-            <p-tag severity="warn" value="Advertencia"></p-tag>
-          </p>
-      
-          <p>
-            <strong>Estado: </strong>
-            <p-tag severity="info" class="mr-2" value="En progreso"></p-tag>
-          </p>
-      
-          <p><strong>Fecha Creada:</strong> {{ OrdenTrabajo.fechaCreada }}</p>
-          <p><strong>Fecha Programada:</strong> {{ OrdenTrabajo.fechaProgramada }}</p>
-          <p><strong>Fecha Finalización:</strong> {{ OrdenTrabajo.fechaFinalizacion || 'Pendiente' }}</p>
-          <p><strong>Observación:</strong> {{ OrdenTrabajo.observacion }}</p>
+                <p>
+                    <strong>Prioridad: </strong>
+                    <p-tag [severity]="getPrioridadSeverity(OrdenTrabajo.prioridad)"
+                        [value]="getPrioridadTexto(OrdenTrabajo.prioridad)"></p-tag>
+                </p>
+
+                <p>
+                    <strong>Estado: </strong>
+                    <p-tag [severity]="getEstadoSeverity(OrdenTrabajo.estado)"
+                        [value]="getEstadoTexto(OrdenTrabajo.estado)" class="mr-2"></p-tag>
+                </p>
+
+                <p><strong>Fecha Creada:</strong> {{ OrdenTrabajo.fechaCreada }}</p>
+                <p><strong>Fecha Programada:</strong> {{ OrdenTrabajo.fechaProgramada }}</p>
+                <p><strong>Fecha Finalización:</strong> {{ OrdenTrabajo.fechaFinalizacion || 'Pendiente' }}</p>
+                <p><strong>Observación:</strong> {{ OrdenTrabajo.observacion }}</p>
+            </div>
+            <!-- Columna derecha -->
+            <div class="space-y-2">
+                <p><strong>Vehículo</strong> </p>
+                <p><strong>Placa:</strong> {{ OrdenTrabajo.placa }}</p>
+                <p><strong>Kilometraje:</strong> {{ OrdenTrabajo.kilometraje }} km</p>
+                <p><strong># Vehículo:</strong> {{ OrdenTrabajo.numeroVehiculo }}</p>
+                <p><strong>Año:</strong> {{ OrdenTrabajo.anio }}</p>
+                <p><strong>Estado Vehículo:</strong> {{ OrdenTrabajo.estadoVehiculo === '0' ? 'Operativo' : 'Inactivo'
+                    }}</p>
+            </div>
+            <div class="space-y-2">
+                <p><strong>Propietario</strong></p>
+                <p><strong>Cliente:</strong> {{ OrdenTrabajo.nombreCliente }}</p>
+                <p><strong>Celular:</strong> {{ OrdenTrabajo.celular }}</p>
+                <p><strong>Correo:</strong> {{ OrdenTrabajo.correo }}</p>
+                <p><strong>Dirección:</strong> {{ OrdenTrabajo.direccion }}</p>
+                <p><strong>Supervisor:</strong> {{ OrdenTrabajo.supervisor}}</p>
+            </div>
         </div>
-        <!-- Columna derecha -->
-        <div class="space-y-2">
-            <p><strong>Vehículo</strong> </p>
-            <p><strong>Placa:</strong> {{ OrdenTrabajo.placa }}</p>
-            <p><strong>Kilometraje:</strong> {{ OrdenTrabajo.kilometraje }} km</p>
-            <p><strong># Vehículo:</strong> {{ OrdenTrabajo.numeroVehiculo }}</p>
-            <p><strong>Año:</strong> {{ OrdenTrabajo.anio }}</p>
-            <p><strong>Estado Vehículo:</strong> {{ OrdenTrabajo.estadoVehiculo === '0' ? 'Operativo' : 'Inactivo' }}</p>
-        </div>
-        <div class="space-y-2">
-            <p><strong>Propietario</strong></p>
-            <p><strong>Cliente:</strong> {{ OrdenTrabajo.nombreCliente }}</p>
-            <p><strong>Celular:</strong> {{ OrdenTrabajo.celular }}</p>
-            <p><strong>Correo:</strong> {{ OrdenTrabajo.correo }}</p>
-            <p><strong>Dirección:</strong> {{ OrdenTrabajo.direccion }}</p>
-            <p><strong>Supervisor ID:</strong> {{ OrdenTrabajo.supervisor }}</p>
-        </div>
-      </div>  
-    </div>    
+    </div>
 </div>
 <div class="card py-4 px-8 bg-primary-700">
     <div class="flex justify-between items-center">
         <div class="flex gap-3">
             <p-button fluid severity="danger" label="Finalizar OT" (onClick)="confirmarFinalizarOT()"></p-button>
-            <p-button fluid severity="warn" label="Anular OT" (onClick)="confirmarAnularOT()"></p-button>        </div>
-        <p-button 
-            fluid 
-            [icon]="agregar_tarea_card ? 'pi pi-chevron-down':'pi pi-chevron-up'"
-            [raised]="agregar_tarea_card ? false: true"
-            severity="secondary"
-            (onClick)="agregar_tarea_card = !agregar_tarea_card" 
-            label="Agregar Tarea"></p-button>
+            <p-button fluid severity="warn" label="Anular OT" (onClick)="confirmarAnularOT()"></p-button>
+        </div>
+        <p-button fluid [icon]="agregar_tarea_card ? 'pi pi-chevron-down':'pi pi-chevron-up'"
+            [raised]="agregar_tarea_card ? false: true" severity="secondary"
+            (onClick)="agregar_tarea_card = !agregar_tarea_card" label="Agregar Tarea"></p-button>
     </div>
 </div>
-<div 
-  class="card p-2 transition-all duration-300 ease-in-out overflow-hidden"
-  [ngClass]="{
+<div class="card p-2 transition-all duration-300 ease-in-out overflow-hidden" [ngClass]="{
     'max-h-0 opacity-0 p-0 m-0': agregar_tarea_card,
     'max-h-[auto] opacity-100': !agregar_tarea_card
   }">
-  <div class="w-full p-4">
-    <app-crud-tarea-mecanica [codigoOT]="codigo" [action]="'agregar'"></app-crud-tarea-mecanica>
-  </div>
+    <div class="w-full p-4">
+        <app-crud-tarea-mecanica [codigoOT]="codigo" [action]="'agregar'"></app-crud-tarea-mecanica>
+    </div>
 </div>
 
 <div class="card m-0 ">
-  <p-table 
-    #dt2
-    [columns]="cols" 
-    [value]="TareasOT" 
-    [paginator]="true"
-    [rows]="5"
-    [loading]="loadingTable"
-    [tableStyle]="{ 'min-width': '50rem' }"
-    [rowsPerPageOptions]="[5, 10, 20]"
-    stripedRows
-    >
-    <ng-template #header let-columns>
-        <tr>
-            <th [pSortableColumn]="col.field" *ngFor="let col of columns">
-                <div [class]="col.field =='actions' || col.field == 'detalle' ? 'w-full':'flex items-center justify-center'">
-                    {{ col.header }}
-                    <p-columnFilter [type]="col.type" *ngIf="col.sort === true" [field]="col.field" display="menu" />
+    <p-table #dt2 [columns]="cols" [value]="TareasOT" [paginator]="true" [rows]="5" [loading]="loadingTable"
+        [tableStyle]="{ 'min-width': '50rem' }" [rowsPerPageOptions]="[5, 10, 20]" stripedRows>
+        <ng-template #header let-columns>
+            <tr>
+                <th [pSortableColumn]="col.field" *ngFor="let col of columns">
+                    <div
+                        [class]="col.field =='actions' || col.field == 'detalle' ? 'w-full':'flex items-center justify-center'">
+                        {{ col.header }}
+                        <p-columnFilter [type]="col.type" *ngIf="col.sort === true" [field]="col.field"
+                            display="menu" />
 
-                    <p-columnFilter field="estado" *ngIf="col.field === 'estado'" matchMode="equals" display="menu">
-                        <ng-template #filter let-filter="filterCallback">
-                            <p-dropdown [(ngModel)]="selectedEstadoFilter" [options]="estadosFilter" (onChange)="filter(selectedEstadoFilter)" placeholder="Seleccione un estado" optionLabel="name" optionValue="code">
-                                <ng-template let-option pTemplate="item">
-                                    <p-tag [value]="option.name" [severity]="getSeverityEstado(option.code)"/>
-                                </ng-template>
-                            </p-dropdown>
-                        </ng-template>
-                    </p-columnFilter>
-                </div>
-            </th>
-        </tr>
-        
-    </ng-template>
-    <ng-template #body let-rowData let-columns="columns">
-        <tr>
-            <td  *ngFor="let col of columns">
+                        <p-columnFilter field="estado" *ngIf="col.field === 'estado'" matchMode="equals" display="menu">
+                            <ng-template #filter let-filter="filterCallback">
+                                <p-dropdown [(ngModel)]="selectedEstadoFilter" [options]="estadosFilter"
+                                    (onChange)="filter(selectedEstadoFilter)" placeholder="Seleccione un estado"
+                                    optionLabel="name" optionValue="code">
+                                    <ng-template let-option pTemplate="item">
+                                        <p-tag [value]="option.name" [severity]="getSeverityEstado(option.code)" />
+                                    </ng-template>
+                                </p-dropdown>
+                            </ng-template>
+                        </p-columnFilter>
+                    </div>
+                </th>
+            </tr>
 
-                <ng-container 
-                *ngIf="col.field === 'estado' 
+        </ng-template>
+        <ng-template #body let-rowData let-columns="columns">
+            <tr>
+                <td *ngFor="let col of columns">
+
+                    <ng-container *ngIf="col.field === 'estado' 
                 || col.field === 'duracion' 
                 || col.field === 'requiereServicioExterno'
                 || col.field === 'requiereRepuesto';
                 else normalData">
-                    <div class="flex justify-center">
-                        <p-tag *ngIf="col.field === 'estado'" [value]="GetEstado(rowData[col.field])" [severity]="getSeverityEstado(rowData[col.field])"></p-tag>
-                        <p-tag *ngIf="col.field === 'requiereServicioExterno' || col.field === 'requiereRepuesto'" value="{{rowData[col.field] ? 'Si' : 'No'}}" [severity]="rowData[col.field] ? 'success':'warn'"></p-tag>
-                        <p-tag *ngIf="col.field === 'duracion'" [value]="rowData[col.field] + ' Unidades'"></p-tag>
+                        <div class="flex justify-center">
+                            <p-tag *ngIf="col.field === 'estado'" [value]="GetEstado(rowData[col.field])"
+                                [severity]="getSeverityEstado(rowData[col.field])"></p-tag>
+                            <p-tag *ngIf="col.field === 'requiereServicioExterno' || col.field === 'requiereRepuesto'"
+                                value="{{rowData[col.field] ? 'Si' : 'No'}}"
+                                [severity]="rowData[col.field] ? 'success':'warn'"></p-tag>
+                            <p-tag *ngIf="col.field === 'duracion'" [value]="rowData[col.field] + ' Unidades'"></p-tag>
+                        </div>
+                    </ng-container>
+
+                    <ng-template #normalData>
+                        <p *ngIf="col.field === 'detalle'">{{ rowData[col.field] }}</p>
+                        <ng-container *ngIf="col.field === 'mecanicos'">
+                            <ng-container *ngFor="let item of rowData['mecanicos']; let last = last">
+                                <p>
+                                    {{ item.nombreCompleto }}<span *ngIf="!last">, </span>
+                                </p>
+                            </ng-container>
+                        </ng-container>
+                        <ng-container *ngIf="col.field === 'observaciones'">
+                            <ng-container *ngFor="let item of rowData['observaciones']; let last = last">
+                                <p>
+                                    {{ item.detalle }}<span *ngIf="!last">, </span>
+                                </p>
+                            </ng-container>
+                        </ng-container>
+                    </ng-template>
+
+                    <div *ngIf="col.field =='actions'" class="flex justify-start w-full gap-2">
+                        <p-button icon="pi pi-times" [rounded]="true" [text]="true" [raised]="true" severity="danger" />
+                        <p-button icon="pi pi-pen-to-square" [rounded]="true" [text]="true" [raised]="true"
+                            severity="secondary" />
+                        <p-button icon="pi pi-check" [rounded]="true" [text]="true" [raised]="true"
+                            severity="success" />
+                        <p-button icon="pi pi-exclamation-triangle" [rounded]="true" [text]="true" [raised]="true"
+                            severity="warn" />
                     </div>
-                </ng-container>
-
-                <ng-template #normalData>
-                    <p *ngIf="col.field === 'detalle'">{{ rowData[col.field] }}</p>
-                    <ng-container *ngIf="col.field === 'mecanicos'">
-                        <ng-container *ngFor="let item of rowData['mecanicos']; let last = last">
-                            <p >
-                                {{ item.nombreCompleto }}<span *ngIf="!last">, </span>
-                            </p>
-                        </ng-container>
-                    </ng-container>
-                    <ng-container *ngIf="col.field === 'observaciones'">
-                        <ng-container *ngFor="let item of rowData['observaciones']; let last = last">
-                            <p >
-                                {{ item.detalle }}<span *ngIf="!last">, </span>
-                            </p>
-                        </ng-container>
-                    </ng-container>
-                </ng-template>
-
-                <div *ngIf="col.field =='actions'" class="flex justify-start w-full gap-2"> 
-                    <p-button icon="pi pi-times"  [rounded]="true" [text]="true" [raised]="true" severity="danger" />
-                    <p-button icon="pi pi-pen-to-square"  [rounded]="true" [text]="true" [raised]="true" severity="secondary" />
-                    <p-button icon="pi pi-check"  [rounded]="true" [text]="true" [raised]="true" severity="success" />
-                    <p-button icon="pi pi-exclamation-triangle"  [rounded]="true" [text]="true" [raised]="true" severity="warn" />
-                </div>
-            </td>
-        </tr>
-    </ng-template>
+                </td>
+            </tr>
+        </ng-template>
     </p-table>
 </div>
 
 <!-- Diálogo para editar datos generales -->
-<p-dialog [header]="'Editar Orden de Trabajo: '+codigo" [modal]="true" [(visible)]="visibleEdit" [styleClass]="'custom-dialog'" [breakpoints]="{'768px': '95vw'}">
+<p-dialog [header]="'Editar Orden de Trabajo: '+codigo" [modal]="true" [(visible)]="visibleEdit"
+    [styleClass]="'custom-dialog'" [breakpoints]="{'768px': '95vw'}">
     <span class="p-text-secondary block mb-4">Actualiza los campos disponibles de la Orden de Trabajo (OT):</span>
     <form [formGroup]="fb_editOt">
         <div *ngIf="loadingEditDialog" class="flex justify-center p-4">
@@ -163,51 +163,48 @@
                         {{ OrdenTrabajo?.detalle || 'Sin detalle' }}
                     </div>
                 </div>
-                
+
                 <div class="p-field mb-3">
                     <label class="block font-medium text-gray-700 mb-1">Nombre Cliente:</label>
                     <div class="p-2 bg-gray-100 border border-gray-300 rounded text-gray-700">
                         {{ OrdenTrabajo?.nombreCliente || 'Sin cliente' }}
                     </div>
                 </div>
-                
+
                 <div class="p-field mb-3">
                     <label class="block font-medium text-gray-700 mb-1">Placa del vehículo:</label>
                     <div class="p-2 bg-gray-100 border border-gray-300 rounded text-gray-700">
                         {{ OrdenTrabajo?.placa || 'Sin placa' }}
                     </div>
                 </div>
-                
+
                 <!-- Campos editables -->
                 <p-floatlabel variant="on" class="my-1 w-full">
-                    <p-select formControlName="estado" [options]="estado" optionValue="code" optionLabel="name" class="w-full" />
+                    <p-select formControlName="estado" [options]="estado" optionValue="code" optionLabel="name"
+                        class="w-full" />
                     <label>Estado</label>
                 </p-floatlabel>
-                
+
                 <p-floatlabel variant="on" class="my-1 w-full">
-                    <p-select formControlName="prioridad" [options]="prioridad" optionValue="code" optionLabel="name" class="w-full" />
+                    <p-select formControlName="prioridad" [options]="prioridad" optionValue="code" optionLabel="name"
+                        class="w-full" />
                     <label>Nivel de prioridad</label>
                 </p-floatlabel>
-                
+
                 <p-floatlabel variant="on" class="my-1 w-full">
-                    <p-select formControlName="supervisor" [options]="supervisor" optionValue="code" optionLabel="name" class="w-full" />
+                    <p-select formControlName="supervisor" [options]="supervisor" optionValue="code" optionLabel="name"
+                        class="w-full" />
                     <label>Supervisor</label>
                 </p-floatlabel>
-                
+
                 <p-floatlabel variant="on" class="my-1 w-full">
-    <div class="p-inputgroup">
-        <p-calendar 
-            formControlName="fechaProgramada" 
-            dateFormat="dd/mm/yy" 
-            [minDate]="minDate"
-            [showIcon]="true"
-            [readonlyInput]="true"
-            [showButtonBar]="true"
-            class="w-full">
-        </p-calendar>
-    </div>
-    <label>Fecha programa de inicio OT</label>
-</p-floatlabel>
+                    <div class="p-inputgroup">
+                        <p-calendar formControlName="fechaProgramada" dateFormat="dd/mm/yy" [minDate]="minDate"
+                            [showIcon]="true" [readonlyInput]="true" [showButtonBar]="true" class="w-full">
+                        </p-calendar>
+                    </div>
+                    <label>Fecha programa de inicio OT</label>
+                </p-floatlabel>
                 <p-floatlabel variant="on" class="w-full my-1">
                     <textarea pTextarea formControlName="observacion" rows="2" cols="34.5"></textarea>
                     <label>Observaciones</label>

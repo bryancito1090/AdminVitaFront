@@ -205,33 +205,41 @@ export class InventarioComponent implements OnInit {
     this.fb_item.get('stockMin')?.setValue(null);
     this.fb_item.get('stockIdeal')?.setValue(null);
   }
-  crearteItem(){
-    const item: CreateUpdateItemRequest = {
-      idItem: 0,
-      idTipoItem: this.fb_item.value.idTipoItem.key,
-      idMagnitud: this.fb_item.value.idMagnitud,
-      nombre: this.fb_item.value.nombre,
-      descripcion: this.fb_item.value.descripcion,
-      valorUnitario: this.fb_item.value.valorUnitario,
-      stockMin: this.fb_item.value.stockMin || 0,
-      stockIdeal: this.fb_item.value.stockIdeal || 0, 
-    }
-
-    this.itemService.createUpdateItem(item).subscribe({
-      next: (response) => {
-        console.log('Item creado/actualizado:', response);
-        this.visibleCrearItem = false;
-        this.fb_item.reset();
-        this.getItems();
-      }, 
-      error: (err) => {
-        console.error('Error al crear item:', err);
-        this.visibleCrearItem = false;
-        this.fb_item.reset();
-      }
-    });
-    
+ crearteItem() {
+  const item: CreateUpdateItemRequest = {
+    idItem: 0, 
+    idTipoItem: this.fb_item.value.idTipoItem.key,
+    idMagnitud: this.fb_item.value.idMagnitud || null, 
+    nombre: this.fb_item.value.nombre,
+    descripcion: this.fb_item.value.descripcion,
+    valorUnitario: this.fb_item.value.valorUnitario,
+    stockMin: this.fb_item.value.stockMin || 0,
+    stockIdeal: this.fb_item.value.stockIdeal || 0, 
   }
+
+  this.itemService.createUpdateItem(item).subscribe({
+    next: (response) => {
+      this.visibleCrearItem = false;
+      this.fb_item.reset();
+      this.getItems();
+      // this.messageService.add({severity:'success', summary:'Éxito', detail:'Item creado correctamente'});
+    }, 
+    error: (err) => {
+      console.error('Error al crear item:', err);
+      let errorMessage = 'Error desconocido';
+      if (err.error?.message) {
+        errorMessage = err.error.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      console.error('Mensaje de error:', errorMessage);
+      
+      // this.messageService.add({severity:'error', summary:'Error', detail: errorMessage});
+      this.visibleCrearItem = false;
+      this.fb_item.reset();
+    }
+  });
+}
   exportCSV() {
     if (!this.dt5) {
       console.error('La tabla no está lista para exportar. Intente nuevamente en unos segundos.');
@@ -360,14 +368,7 @@ export class InventarioComponent implements OnInit {
     if (count <= 5) return '#91baff';
     return '#4285f4';
   }
-  handleMonthChange(monthValue: string): void {
-    if (this.selectedMonths.includes(monthValue)) {
-      this.selectedMonths = this.selectedMonths.filter(m => m !== monthValue);
-    } else {
-      this.selectedMonths = [...this.selectedMonths, monthValue];
-    }
-    this.processCalendarData();
-  }
+
   handleSelectAll(select: boolean): void {
     if (select) {
       this.selectedMonths = this.availableMonths.map(m => m.value);
@@ -379,39 +380,63 @@ export class InventarioComponent implements OnInit {
   generateEmptySpaces(length: number): number[] {
     return Array(length).fill(0).map((_, i) => i);
   }
-  configurarMesActual() {
-    const fechaActual = new Date();
-    this.fechaSeleccionada = new Date(fechaActual);
-    this.seleccionarMes();
+configurarMesActual() {
+  const fechaActual = new Date();
+  // Configurar al primer día del mes actual para evitar problemas con fechas
+  this.fechaSeleccionada = new Date(fechaActual.getFullYear(), fechaActual.getMonth(), 1);
+  this.seleccionarMes();
+}
+
+seleccionarMes() {
+  if (!this.fechaSeleccionada) return;
+  
+  const año = this.fechaSeleccionada.getFullYear();
+  const mes = this.fechaSeleccionada.getMonth();
+  
+  // Establecer fechas de inicio y fin del mes completo
+  this.fechaInicio = new Date(año, mes, 1);
+  this.fechaFin = new Date(año, mes + 1, 0);
+}
+
+aplicarFiltroMes() {
+  if (!this.fechaSeleccionada) return;
+  
+  this.mostrandoTodosLosMeses = false;
+  
+  const año = this.fechaSeleccionada.getFullYear();
+  const mes = this.fechaSeleccionada.getMonth() + 1; // JavaScript meses son 0-11
+  const mesValor = `${año}-${mes.toString().padStart(2, '0')}`;
+  
+  this.selectedMonths = [mesValor];
+  
+  this.processCalendarData();
+}
+
+limpiarFiltroMes() {
+  
+  this.configurarMesActual();
+  
+  const fechaActual = new Date();
+  const año = fechaActual.getFullYear();
+  const mes = fechaActual.getMonth() + 1; // JavaScript meses son 0-11
+  const mesActualValor = `${año}-${mes.toString().padStart(2, '0')}`;
+  
+  console.log('Configurando mes actual:', mesActualValor);
+  
+  this.selectedMonths = [mesActualValor];
+  this.mostrandoTodosLosMeses = false;
+  
+  this.processCalendarData();
+}
+
+handleMonthChange(monthValue: string): void {
+  if (this.selectedMonths.includes(monthValue)) {
+    this.selectedMonths = this.selectedMonths.filter(m => m !== monthValue);
+  } else {
+    this.selectedMonths = [...this.selectedMonths, monthValue];
   }
-  seleccionarMes() {
-    if (!this.fechaSeleccionada) return;
-    const año = this.fechaSeleccionada.getFullYear();
-    const mes = this.fechaSeleccionada.getMonth();
-    this.fechaInicio = new Date(año, mes, 1);
-    this.fechaFin = new Date(año, mes + 1, 0);
-  }
-  aplicarFiltroMes() {
-    if (!this.fechaSeleccionada) return;
-    this.mostrandoTodosLosMeses = false;
-    const año = this.fechaSeleccionada.getFullYear();
-    const mes = this.fechaSeleccionada.getMonth() + 1; // JavaScript meses son 0-11
-    const mesValor = `${año}-${mes.toString().padStart(2, '0')}`;
-    this.selectedMonths = [mesValor];
-    this.processCalendarData();
-  }
-  limpiarFiltroMes() {
-    console.log('Limpiando filtro y mostrando solo el mes actual');
-    this.configurarMesActual();
-    const fechaActual = new Date();
-    const año = fechaActual.getFullYear();
-    const mes = fechaActual.getMonth() + 1; // JavaScript meses son 0-11
-    const mesActualValor = `${año}-${mes.toString().padStart(2, '0')}`;
-    console.log('Filtrando por mes actual:', mesActualValor);
-    this.selectedMonths = [mesActualValor];
-    this.mostrandoTodosLosMeses = false;
-    this.processCalendarData();
-  }
+  this.processCalendarData();
+}
   getTooltipContent(day: Day): string {
     if (!day.movimientos || day.movimientos.length === 0) {
       return `<div class="tooltip-title">${this.datePipe.transform(day.date, 'dd/MM/yyyy')}</div>

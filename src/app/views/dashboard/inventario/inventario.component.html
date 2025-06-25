@@ -85,21 +85,24 @@
                 <p class="text-gray-500">No hay datos de movimientos disponibles.</p>
             </div>
             
-            <!-- Selector de mes con calendario - VERSIÓN COMPACTA -->
+            <!-- Selector de mes con calendario - VERSIÓN SOLO MESES -->
             <div class="filter-container compact-filter" *ngIf="movimientos && movimientos.length > 0">
                 <div class="filter-content">
                     <!-- Filtro de fecha -->
                     <div class="date-control">
-                        <label class="date-label">Fecha:</label>
+                        <label class="date-label">Mes:</label>
                         <div class="date-input-container">
                             <p-calendar [(ngModel)]="fechaSeleccionada"
                                     [showIcon]="true"
-                                    dateFormat="dd/mm/yy"
+                                    view="month"
+                                    dateFormat="mm/yy"
+                                    yearNavigator="true"
+                                    yearRange="2020:2030"
                                     styleClass="compact-calendar"
-                                    placeholder="Seleccionar"
+                                    placeholder="Seleccionar mes"
                                     (onSelect)="seleccionarMes()"></p-calendar>
-                            <span class="month-info" *ngIf="fechaInicio && fechaFin">
-                                {{ fechaInicio | date:'dd/MM/yy' }} - {{ fechaFin | date:'dd/MM/yy' }}
+                            <span class="month-info" *ngIf="fechaSeleccionada">
+                                {{ fechaSeleccionada | date:'MMMM yyyy':'es' }}
                             </span>
                         </div>
                     </div>

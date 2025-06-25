@@ -207,27 +207,33 @@ export class VehiculoComponent implements OnInit{
       licencias: []
     }
   }
-  convertFormToVehicle(): AddVehicleInstitucional {
-    return {
-      numeroChasis: this.fb_addVehiculo.get('num_chasis')?.value,
-      placa: this.fb_addVehiculo.get('placa')?.value,
-      idTipoVehiculo: this.fb_addVehiculo.get('tipoVehiculo')?.value,
-      idLicencias: this.fb_addVehiculo.get('licencia')?.value,
-      numeroVehiculo: this.fb_addVehiculo.get('numeroVehiculo')?.value,
-      marca: this.fb_addVehiculo.get('marca')?.value,
-      modelo: this.fb_addVehiculo.get('modelo')?.value,
-      version: this.fb_addVehiculo.get('version')?.value,
-      color: this.fb_addVehiculo.get('color')?.value,
-      anio: this.fb_addVehiculo.get('anio')?.value,
-      estado: 0,
-      ultimoAnioRTV: this.fb_addVehiculo.get('ultimoAnioRTV')?.value,
-      ultimoAnioMatriculacion: this.fb_addVehiculo.get('ultimoAnioMatriculacion')?.value,
-      idCliente: this.fb_addVehiculo.get('propietarioId')?.value,
-      archivos: this.uploadedFiles
-    };
-  }
+convertFormToVehicle(): AddVehicleInstitucional {
+  const getYear = (controlName: string) => {
+    const val = this.fb_addVehiculo.get(controlName)?.value;
+    return val instanceof Date ? val.getFullYear() : Number(val);
+  };
+
+  return {
+    numeroChasis: this.fb_addVehiculo.get('num_chasis')?.value,
+    placa: this.fb_addVehiculo.get('placa')?.value,
+    idTipoVehiculo: this.fb_addVehiculo.get('tipoVehiculo')?.value,
+    idLicencias: this.fb_addVehiculo.get('licencia')?.value,
+    numeroVehiculo: this.fb_addVehiculo.get('numeroVehiculo')?.value,
+    marca: this.fb_addVehiculo.get('marca')?.value,
+    modelo: this.fb_addVehiculo.get('modelo')?.value,
+    version: this.fb_addVehiculo.get('version')?.value,
+    color: this.fb_addVehiculo.get('color')?.value,
+    anio: getYear('anio'),
+    estado: 0,
+    ultimoAnioRTV: getYear('ultimoAnioRTV'),
+    ultimoAnioMatriculacion: getYear('ultimoAnioMatriculacion'),
+    idCliente: this.fb_addVehiculo.get('propietarioId')?.value,
+    archivos: this.uploadedFiles
+  };
+}
   createVehicle() {
     const vehicle: AddVehicleInstitucional = this.convertFormToVehicle();
+    console.log("Vehículo a crear: ", vehicle);
     this.vehiculoService.postVehicleInstitucional(vehicle).subscribe({
       next: (response: any) => {
         this.toastr.success('Vehículo creado correctamente', 'Éxito!');
@@ -367,6 +373,7 @@ export class VehiculoComponent implements OnInit{
   }
   closeDialogAddPropietario(){
     this.visibleAddPropietario = false;
+    this.visiblePropietarios = false;
   }
   filterGlobal(event: Event, dt: any) { //filtro para barra de busqueda
     const inputValue = (event.target as HTMLInputElement)?.value || '';
