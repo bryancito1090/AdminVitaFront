@@ -22,6 +22,7 @@ import { VehiculoService } from '../../../services/vehiculo.service';
 import { ArchivosService } from '../../../services/archivos.service';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
+import { AuthService } from '../../../auth/service/auth.service';
 
 @Component({
   selector: 'app-agregar-orden-trabajo-mecanico',
@@ -41,6 +42,9 @@ import { ConfirmationService } from 'primeng/api';
   styleUrl: './agregar-orden-trabajo-mecanico.component.scss'
 })
 export class AgregarOrdenTrabajoMecanicoComponent implements OnInit{
+
+  NameIdentifier: any;
+
   nombreUsuario: string = '';
   documento: string = '';
   clienteActual: any | null = null;
@@ -189,7 +193,8 @@ idAdjuntoTrasera: number | null = null;
     private tipoVehiculoService: TipoVehiculoService,
     private vehiculoService: VehiculoService,
     private archivoService : ArchivosService,
-    private confirmationService: ConfirmationService
+    private confirmationService: ConfirmationService,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {
@@ -197,6 +202,7 @@ idAdjuntoTrasera: number | null = null;
     this.cargarSupervisores();
     this.GetTipoVehiculo();
     this.generarListaAnios();
+    this.NameIdentifier = this.authService.getNameIdentifier();
   }
   generarListaAnios(): void {
   const anioActual = new Date().getFullYear();

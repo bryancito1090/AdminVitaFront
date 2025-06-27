@@ -35,17 +35,22 @@ export class AuthMecanicaComponent {
       next: (response) => {
         if (response.token) {
           const token = this.authService.DecodedTokenAuth(response.token) as JwtPayload & { [key: string]: any };
+          const idIdentifier = token["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+          const nameidentifier = token["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"];
           switch (this.tipoAccion){
             case 'AgregarOT':
               this.authService.saveToken(response.token);
-              this.ref.close({ acceso: true });
+              this.ref.close({ acceso: true, token: response.token });
               break;
             case 'AgregarTareaOT':
               if (!token) return;
-              const nameIdentifier = token["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
-              this.ref.close({ acceso: true, id: nameIdentifier, token: response.token });
+              this.ref.close({ acceso: true, id: idIdentifier, token: response.token });
               break;
             case 'AnularOT':
+              this.ref.close({ acceso: true, token: response.token });
+              break;
+            case 'AccederEditarOT':
+              this.ref.close({ acceso: true, token: response.token });
               break;
             default:
               this.ref.close({ acceso: true, token: response.token });

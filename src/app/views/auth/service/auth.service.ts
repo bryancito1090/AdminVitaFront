@@ -64,6 +64,20 @@ export class AuthService {
     }
   }
 
+  getNameIdentifier(): any {
+    const token = this.getToken();
+    if (!token) return null;
+
+    try {
+      const decoded: any = jwtDecode(token);
+      console.log('Token decodificado:', decoded);
+      return decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'];
+    } catch (error) {
+      console.error('Error al decodificar el token:', error);
+      return null;
+    }
+  }
+
   getDecodedToken(): JwtPayload | null {
     const token = this.getToken();
     if (!token) return null;

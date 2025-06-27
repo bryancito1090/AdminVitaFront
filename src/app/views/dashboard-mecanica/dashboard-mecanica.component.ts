@@ -16,11 +16,11 @@ import { IconField } from 'primeng/iconfield';
 import { InputIcon } from 'primeng/inputicon';
 import { DividerModule } from 'primeng/divider';
 import { ToastModule } from 'primeng/toast';
-import { ValidarAccionMecanicoComponent } from '../shared/components/validar-accion-mecanico/validar-accion-mecanico.component';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { AuthMecanicaComponent } from '../auth/components/auth-mecanica/auth-mecanica.component';
+import { ToastrService } from 'ngx-toastr';
 
 interface TableColumn {
   field: string;
@@ -50,7 +50,6 @@ interface Mecanico {
     IconField,
     InputIcon,
     DividerModule,
-    ValidarAccionMecanicoComponent,
     ToastModule
   ],
   providers: [DatePipe, MecanicoService, OrdenMecanicoService, MessageService, DialogService],
@@ -88,7 +87,8 @@ export class DashboardMecanicaComponent implements OnInit {
     private ordenMecanicoService: OrdenMecanicoService,
     private router: Router,
     private messageService: MessageService,
-    private dialogService: DialogService
+    private dialogService: DialogService,
+    private toastr: ToastrService,
   ) {}
 
   ngOnInit(): void {
@@ -217,9 +217,25 @@ export class DashboardMecanicaComponent implements OnInit {
   }
 
   validarYEditarOT(codigo: any) {
-    this.codigoOTPendiente = codigo;
-    this.permisosRequeridos = ['Ordenes de Trabajo.Editar'];
-    this.mostrarValidacion = true;
+    this.dialogRef = this.dialogService.open(AuthMecanicaComponent, {
+        header: 'Código de Autenticación',
+        width: '400px',
+        modal: true,
+        dismissableMask: false, 
+        closable: false,
+        data: {
+          accion: 'AccederEditarOT'
+        }
+      });
+
+    this.dialogRef.onClose.subscribe((result: { acceso: boolean,  token: any }) => {
+      if (result.acceso) {
+        this.codigoOTPendiente = codigo;
+        this.onValidacionExitosa(result.token);
+      } else {
+        this.toastr.error('Código incorrecto', 'Error');
+      }
+    });
   }
 
   verDetallesOT(codigo: any) {

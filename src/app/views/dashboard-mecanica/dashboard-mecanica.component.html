@@ -112,11 +112,3 @@
         </ng-template>
     </p-table>
 </div>
-
-<app-validar-accion-mecanico
-  [(visible)]="mostrarValidacion"
-  [requiredPermissions]="permisosRequeridos"
-  (validacionExitosa)="onValidacionExitosa($event)"
-  (validacionSinPermisos)="onValidacionSinPermisos($event)"
-  (onCerrar)="onCerrarValidacion()">
-</app-validar-accion-mecanico>
