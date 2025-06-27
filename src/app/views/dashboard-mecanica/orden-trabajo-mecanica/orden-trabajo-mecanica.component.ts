@@ -22,8 +22,12 @@ import { FloatLabelModule } from 'primeng/floatlabel';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { MecanicoService } from '../../services/mecanico.service';
-import { SkeletonSimpleComponent } from '../../shared/components/skeleton/skeleton-simple.component';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { TareasService } from '../../services/tareas.service';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { AuthMecanicaComponent } from '../../auth/components/auth-mecanica/auth-mecanica.component';
+import { OrdenMecanicoService } from '../../services/ordenMecanico.service';
+import { DialogAutorizacionOTComponent } from './dialog-autorizacion-ot/dialog-autorizacion-ot.component';
 
 interface ActualizarOrdenRequest {
   idOrden: number;
@@ -35,10 +39,7 @@ interface ActualizarOrdenRequest {
   supervisor: number;
   fechaProgramada: Date;
   observacion?: string;
-}import { TareasService } from '../../services/tareas.service';
-import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
-import { AuthMecanicaComponent } from '../../auth/components/auth-mecanica/auth-mecanica.component';
-import { OrdenMecanicoService } from '../../services/ordenMecanico.service';
+}
 
 @Component({
   selector: 'app-orden-trabajo-mecanica',
@@ -97,6 +98,16 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
 
   //Dialgo Dinamic
   dialogRef: DynamicDialogRef | undefined;
+  modalActivo: boolean = false;
+
+  //Editar Tarea
+  selectedTarea: any = null;
+
+  mecanicosDisponibles: any[] = [];
+
+  displayModal = false;
+  formEstado: number | null = null;
+  formMecanicos: any[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -123,6 +134,14 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
   ngOnInit() {
     this.initData();
     this.cargarSupervisores();
+    this.mecanicoService.getMecanicos().subscribe({
+    next: (mecanicos: any) => {
+      this.mecanicosDisponibles = mecanicos;
+    },
+    error: (error) => {
+      console.error('Error al cargar mecánicos:', error);
+    }
+  })
   }
 
   initData() {
@@ -305,19 +324,24 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
   }
   // Método para confirmar anulación de OT
   confirmarAnularOT() {
-    this.dialogRef = this.dialogService.open(AuthMecanicaComponent, {
-        header: 'Código de Autenticación',
-        width: '400px',
-        modal: true,
-        dismissableMask: false, 
-        closable: false,
-        data: {
-          accion: 'AnularOT'
-        }
-      });
+    if (this.modalActivo) return;
+    this.modalActivo = true;
 
-    this.dialogRef.onClose.subscribe((result: { acceso: boolean,  token: any }) => {
-      if (result.acceso) {
+    const dialogRef = this.dialogService.open(AuthMecanicaComponent, {
+      header: 'Código de Autenticación',
+      width: '400px',
+      modal: true,
+      dismissableMask: false,
+      closable: false,
+      data: {
+        accion: 'AnularOT'
+      }
+    });
+
+    dialogRef.onClose.subscribe((result: { acceso: boolean, token: any }) => {
+      this.modalActivo = false;
+
+      if (result?.acceso) {
         this.confirmationService.confirm({
           message: 'Esta acción no se puede deshacer. ¿Desea anular esta orden de trabajo?',
           header: 'Confirmación para anular orden de trabajo',
@@ -327,30 +351,34 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
           accept: () => {
             this.anularOT(result.token);
           }
-    });
+        });
       } else {
-        this.toastr.error('Código incorrecto', 'Error');
+        this.toastr.error('Código incorrecto o cancelado', 'Error');
       }
     });
   }
-anularOT(token: any) {
-  this.toastr.info('Procesando su solicitud...', 'Anulando orden');
 
-  this.ordenMecanicoService.actualizarEstadoOrdenTrabajo(this.codigo!, 3).subscribe({
-    next: (response) => {
-      this.toastr.success('Orden de trabajo anulada exitosamente', 'Éxito');
-      // Recargar los datos para mostrar el nuevo estado
-      this.getOrdenTrabajo();
-    },
-    error: (error) => {
-      console.error('Error al anular la orden de trabajo:', error);
-      this.toastr.error('No se pudo anular la orden de trabajo', 'Error');
-    }
-  });
-}
+  anularOT(token: any) {
+    this.toastr.info('Procesando su solicitud...', 'Anulando orden');
+
+    this.ordenMecanicoService.actualizarEstadoOrdenTrabajo(this.codigo!, 3).subscribe({ //3anular, 1 finalizar, 2 finalizar sin exito
+      next: (response) => {
+        this.toastr.success('Orden de trabajo anulada exitosamente', 'Éxito');
+        // Recargar los datos para mostrar el nuevo estado
+        this.getOrdenTrabajo();
+      },
+      error: (error) => {
+        console.error('Error al anular la orden de trabajo:', error);
+        this.toastr.error('No se pudo anular la orden de trabajo', 'Error');
+      }
+    });
+  }
 
   confirmarFinalizarOT() {
-    this.dialogRef = this.dialogService.open(AuthMecanicaComponent, {
+    if (this.modalActivo) return;
+    this.modalActivo = true;
+
+    const dialogRef = this.dialogService.open(AuthMecanicaComponent, {
       header: 'Código de Autenticación',
       width: '400px',
       modal: true,
@@ -361,7 +389,9 @@ anularOT(token: any) {
       }
     });
 
-    this.dialogRef.onClose.subscribe((result: { acceso: boolean, token: any }) => {
+    dialogRef.onClose.subscribe((result: { acceso: boolean, token: any }) => {
+      this.modalActivo = false;
+
       if (result?.acceso) {
         this.confirmationService.confirm({
           message: '¿Está seguro de finalizar esta orden de trabajo? Esta acción no se puede revertir.',
@@ -382,6 +412,72 @@ anularOT(token: any) {
   finalizarOT(token: any) {
     this.toastr.info('Procesando su solicitud...', 'Finalizada orden de Trabajo!');
    
+    this.ordenMecanicoService.actualizarEstadoOrdenTrabajo(this.codigo!, 1).subscribe({ //3anular, 1 finalizar, 2 finalizar sin exito
+      next: (response) => {
+        this.toastr.success('Orden de trabajo Finalizada exitosamente', 'Éxito');
+        // Recargar los datos para mostrar el nuevo estado
+        this.getOrdenTrabajo();
+      },
+      error: (error) => {
+        console.error('Error al finalizar la orden de trabajo:', error);
+        this.toastr.error('No se pudo finalizar la orden de trabajo', 'Error');
+      }
+    });
+  }
+
+  abrirModalEdicion(codigo: string) {
+    this.selectedTarea = this.TareasOT.find(t => t.codigo === codigo);
+    if (!this.selectedTarea) return;
+
+    this.formEstado = this.selectedTarea.estado;
+    this.formMecanicos = [...this.selectedTarea.mecanicos];
+    this.displayModal = true;
+  }
+
+  guardarCambios() {
+    console.log('Enviar al backend:', {
+      codigo: this.selectedTarea.codigo,
+      estado: this.formEstado,
+      mecanicos: this.formMecanicos
+    });
+
+    this.cerrarModalEditTarea();
+  }
+
+  cerrarModalEditTarea() {
+    this.displayModal = false;
+    this.selectedTarea = null;
+    this.formEstado = null;
+    this.formMecanicos = [];
+  }
+
+  autorizacionTareaOT(codigo: string) {
+    const tarea = this.TareasOT.find(t => t.codigo === codigo);
+    if (!tarea) {
+      this.toastr.error('No se encontró la tarea', 'Error');
+      return;
+    }
+    const estado = tarea.estado;   
+
+    const dialogRef = this.dialogService.open(DialogAutorizacionOTComponent, {
+      header: 'Estado de Autorización',
+      width: '450px',
+      modal: true,
+      data: {
+        estado,
+        codigo
+      }
+    });
+
+    dialogRef.onClose.subscribe((autorizado: boolean) => {
+      if (autorizado) {
+        this.autorizarTareaOT(codigo);
+      }
+    });
+  }
+  
+  autorizarTareaOT(codigo: string) { //modificar cuando haya una funciuon para cambiar el estado
+    this.toastr.info('Procesando su solicitud...', 'Autorizando tarea');
   }
 
 }

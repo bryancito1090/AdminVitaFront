@@ -132,13 +132,20 @@
                     </ng-template>
 
                     <div *ngIf="col.field =='actions'" class="flex justify-start w-full gap-2">
-                        <p-button icon="pi pi-times" [rounded]="true" [text]="true" [raised]="true" severity="danger" />
-                        <p-button icon="pi pi-pen-to-square" [rounded]="true" [text]="true" [raised]="true"
-                            severity="secondary" />
-                        <p-button icon="pi pi-check" [rounded]="true" [text]="true" [raised]="true"
-                            severity="success" />
-                        <p-button icon="pi pi-exclamation-triangle" [rounded]="true" [text]="true" [raised]="true"
-                            severity="warn" />
+                        <p-button 
+                            icon="pi pi-pen-to-square"
+                            [rounded]="true"
+                            [text]="true"
+                            [raised]="true"
+                            severity="secondary"
+                            (onClick)="abrirModalEdicion(rowData['codigo'])">
+                        </p-button>
+                        <!-- <p-button icon="pi pi-times" [rounded]="true" [text]="true" [raised]="true" severity="danger" />
+                        <p-button icon="pi pi-check" [rounded]="true" [text]="true" [raised]="true" severity="success" />
+                        -->
+                        <ng-container *ngIf="rowData['estado'] == 6 || rowData['estado'] == 7 || rowData['estado'] == 8">
+                            <p-button icon="pi pi-exclamation-triangle" [rounded]="true" [text]="true" [raised]="true" severity="warn" (onClick)="autorizacionTareaOT(rowData['codigo'])"/> 
+                        </ng-container>
                     </div>
                 </td>
             </tr>
@@ -221,3 +228,49 @@
 <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
 <!--Dialog de confirmacion para finalizar OT-->
 <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
+
+<!-- Dialog para editar tarea -->
+ <p-dialog header="Editar Tarea" [(visible)]="displayModal" [modal]="true" [style]="{width: '450px'}">
+  <div class="flex flex-col gap-4">
+
+    <div>
+      <label class="block font-medium mb-2">Estado</label>
+      <p-dropdown 
+        [options]="estado"
+        [(ngModel)]="formEstado"
+        optionLabel="name"
+        optionValue="code"
+        placeholder="Selecciona un estado"
+        class="w-full">
+      </p-dropdown>
+    </div>
+
+    <div>
+      <label class="block font-medium mb-2">Mecánicos Asignados</label>
+      <p-multiSelect 
+        [options]="mecanicosDisponibles" 
+        [(ngModel)]="formMecanicos"
+        optionLabel="nombre"
+        optionValue="idMecanico"
+        display="chip"
+        placeholder="Selecciona mecánicos"
+        class="w-full">
+      </p-multiSelect>
+    </div>
+
+    <div class="flex justify-end gap-2 mt-4">
+      <p-button 
+        label="Cancelar" 
+        severity="secondary"
+        (onClick)="cerrarModalEditTarea()">
+      </p-button>
+      <p-button 
+        label="Guardar cambios" 
+        severity="primary" 
+        (onClick)="guardarCambios()">
+      </p-button>
+    </div>
+  </div>
+</p-dialog>
+
+
