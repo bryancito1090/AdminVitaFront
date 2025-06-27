@@ -31,7 +31,7 @@ export class AuthMecanicaComponent {
   }
 
   onSubmit() {
-    this.authService.auth_mecanica(this.value).subscribe({
+    this.authService.loginMecanico(this.value).subscribe({
       next: (response) => {
         if (response.token) {
           const token = this.authService.DecodedTokenAuth(response.token) as JwtPayload & { [key: string]: any };

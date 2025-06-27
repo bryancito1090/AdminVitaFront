@@ -162,6 +162,10 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
         this.OrdenTrabajo = response;
         this.loadingGeneral = false;
         this.getTareaOT();
+        if (this.OrdenTrabajo.estado === 6 || this.OrdenTrabajo.estado === 7 || this.OrdenTrabajo.estado === 8) {
+          this.toastr.error('La orden de trabajo no está disponible', 'Error');
+          this.router.navigate(['mecanico']);
+        }
       },
       error: (error) => {
         console.error('Error al obtener la orden de trabajo:', error);
