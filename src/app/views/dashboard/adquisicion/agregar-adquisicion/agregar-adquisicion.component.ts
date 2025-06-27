@@ -110,6 +110,13 @@ export class AgregarAdquisicionComponent implements OnInit {
   loadingMagnitudes: boolean = false;
   impuestos: any[] = [];
   impuestoSeleccionado: any;
+  idCompraActual: number | null = null;
+  selectedItemId: number | null = null;
+  loadingItems: boolean = false;
+  mostrarMagnitudes: boolean = false;
+  magnitudesCompatibles: any[] = [];
+  selectedMagnitudId: number | null = null;
+  magnitudOrigen: any = null;
   constructor(
     private validacionService: ValidacionService,
     private toastr: ToastrService,
@@ -133,6 +140,7 @@ export class AgregarAdquisicionComponent implements OnInit {
 this.compraService.getCompraDetallada(id).subscribe({
   next: (response) => {
     console.log('Compra detallada:', response);
+     this.idCompraActual = response.idCompra;
     this.fb_adquisicion.patchValue({
       codigo: response.numeroFactura,
       doc_proveedor: response.documento,
@@ -447,61 +455,94 @@ this.compraService.getCompraDetallada(id).subscribe({
       }
     }
   }
-  onItemChange(selectedCode: any) {
-    this.selectedItem = this.items.find(item => item.codigo === selectedCode)!;
-    console.log('Item seleccionado:', this.selectedItem);
-    if (!this.selectedItem) return;
+  onItemSelectionChange(itemId: number) {
+  console.log('Item ID seleccionado:', itemId);
+  
+  // Buscar el item completo por ID
+  this.selectedItem = this.items.find(item => item.idItem === itemId)!;
+  this.selectedItemId = itemId;
+  
+  if (!this.selectedItem) {
+    console.error('Item no encontrado');
+    return;
+  }
+  
+  console.log('Item seleccionado:', this.selectedItem);
+  
+  // Actualizar el formulario con los datos del item
+  this.fb_detalleAdquisicion.patchValue({
+    codigo: this.selectedItem.codigo,
+    nombre: this.selectedItem.nombre,
+    valorUnitario: this.selectedItem.valorUnitario,
+    id_magnitud: null
+  });
+  
+  // Configurar impuesto predeterminado
+  const impuestoPredeterminado = this.impuestos.find(imp => imp.idImpuesto === 4);
+  if (impuestoPredeterminado) {
+    this.impuestoSeleccionado = impuestoPredeterminado;
+    this.fb_adquisicion.get('id_impuesto')?.setValue(impuestoPredeterminado.idImpuesto);
+    this.iva = impuestoPredeterminado.porcentaje / 100;
+    this.detalleCompraHandler();
+  }
+  
+  // Cargar magnitudes si es necesario
+  if (itemId) {
+    this.loadingMagnitudes = true;
+    this.mostrarMagnitudes = true;
+    this.magnitudOrigenItem = null;
     
-    this.fb_detalleAdquisicion.patchValue({
-      codigo: this.selectedItem.codigo,
-      nombre: this.selectedItem.nombre,
-      valorUnitario: this.selectedItem.valorUnitario,
-      id_magnitud: null
-    });
-    const impuestoPredeterminado = this.impuestos.find(imp => imp.idImpuesto === 4); // IVA 15%
-    if (impuestoPredeterminado) {
-      this.impuestoSeleccionado = impuestoPredeterminado;
-      this.fb_adquisicion.get('id_impuesto')?.setValue(impuestoPredeterminado.idImpuesto);
-      this.iva = impuestoPredeterminado.porcentaje / 100;
-      this.detalleCompraHandler(); 
-    }
-    if (this.selectedItem.idItem) {
-      this.loadingMagnitudes = true;
-      this.magnitudOrigenItem = null; 
-      this.magnitudService.GetMagnitudCompatibleByItem(this.selectedItem.idItem).subscribe({
-        next: (response) => {
-          console.log('Magnitudes disponibles:', response);
-          let magnitudesDisponibles: any[] = [];
-          if (response && response.magnitudOrigen) {
-            this.magnitudOrigenItem = response.magnitudOrigen;
-            magnitudesDisponibles.push(response.magnitudOrigen);
-            if (response.magnitudesCompatibles && Array.isArray(response.magnitudesCompatibles)) {
-              magnitudesDisponibles = magnitudesDisponibles.concat(response.magnitudesCompatibles);
-            }
-          }
-          if (magnitudesDisponibles.length === 0) {
-            this.toastr.info('Este ítem no requiere una magnitud', 'Información');
-            this.fb_detalleAdquisicion.get('id_magnitud')?.disable();
-            this.fb_detalleAdquisicion.patchValue({ id_magnitud: null });
-            this.magnitudes = [];
-          } else {
-            this.fb_detalleAdquisicion.get('id_magnitud')?.enable();
-            this.magnitudes = magnitudesDisponibles;
-          }
+    this.magnitudService.GetMagnitudCompatibleByItem(itemId).subscribe({
+      next: (response: any) => {
+        console.log('Magnitudes disponibles:', response);
+        
+        if (response && response.magnitudOrigen) {
+          this.magnitudOrigen = response.magnitudOrigen;
+          this.magnitudOrigenItem = response.magnitudOrigen;
           
-          this.loadingMagnitudes = false;
-        },
-        error: (err) => {
-          this.toastr.info('Este ítem no posee una magnitud asociada', 'Información');
+          // Combinar magnitud origen con compatibles
+          const todasLasMagnitudes = [
+            response.magnitudOrigen,
+            ...(response.magnitudesCompatibles || [])
+          ];
+          
+          this.magnitudes = todasLasMagnitudes;
+          this.magnitudesCompatibles = todasLasMagnitudes;
+          this.selectedMagnitudId = response.magnitudOrigen.idMagnitud;
+          
+          // Habilitar el campo de magnitud
+          this.fb_detalleAdquisicion.get('id_magnitud')?.enable();
+          this.fb_detalleAdquisicion.patchValue({ 
+            id_magnitud: response.magnitudOrigen.idMagnitud 
+          });
+        } else {
+          // No hay magnitudes disponibles
+          this.toastr.info('Este ítem no requiere una magnitud', 'Información');
           this.fb_detalleAdquisicion.get('id_magnitud')?.disable();
           this.fb_detalleAdquisicion.patchValue({ id_magnitud: null });
           this.magnitudes = [];
-          this.loadingMagnitudes = false;
-          this.magnitudOrigenItem = null;
+          this.mostrarMagnitudes = false;
         }
-      });
-    }
+        
+        this.loadingMagnitudes = false;
+      },
+      error: (error) => {
+        console.error('Error al cargar magnitudes:', error);
+        this.toastr.info('Este ítem no posee una magnitud asociada', 'Información');
+        this.fb_detalleAdquisicion.get('id_magnitud')?.disable();
+        this.fb_detalleAdquisicion.patchValue({ id_magnitud: null });
+        this.magnitudes = [];
+        this.loadingMagnitudes = false;
+        this.mostrarMagnitudes = false;
+        this.magnitudOrigenItem = null;
+      }
+    });
+  } else {
+    this.mostrarMagnitudes = false;
+    this.magnitudesCompatibles = [];
+    this.selectedMagnitudId = null;
   }
+}
   cargarTodasMagnitudes() {
   this.magnitudService.getMagnitudes().subscribe({
     next: (response) => {
@@ -632,14 +673,15 @@ private actualizarCompra() {
     idCompra = detalleConId?.idCompra;
   }
   
-  if (!idCompra) {
-    const idFromUrl = this.route.snapshot.paramMap.get('factura');
-    if (!idFromUrl) {
-      this.toastr.error('No se pudo identificar la compra actual', 'Error');
-      return;
-    }
-    console.log('Obteniendo idCompra de la URL:', idFromUrl);
-    idCompra = parseInt(idFromUrl);
+ if (this.idCompraActual) {
+    idCompra = this.idCompraActual;
+    console.log('idCompra obtenido de la propiedad guardada:', idCompra);
+  }
+  // Fallback: verificar en detalles existentes
+  else if (this.detallesCompraPeticion && this.detallesCompraPeticion.length > 0) {
+    const detalleConId = this.detallesCompraPeticion.find(d => d.idCompra);
+    idCompra = detalleConId?.idCompra;
+    console.log('idCompra obtenido de detalles existentes:', idCompra);
   }
   
   // Asegurar que todos los detalles tengan un idCompra y un idImpuesto válido
@@ -657,7 +699,10 @@ private actualizarCompra() {
   console.log('Solo nuevos detalles a enviar:', soloNuevosDetalles);
   
   if (soloNuevosDetalles.length === 0) {
-    this.toastr.info('No hay nuevos detalles para agregar a la compra', 'Información');
+    this.toastr.info('No existen nuevos detalles agregados a la compra', 'Información');
+    setTimeout(() => {
+        this.router.navigate(['/panel/Adquisiciones']);
+      }, 1500); // Esperar 1.5 segundos para que el usuario vea el mensaje de éxito
     return;
   }
   
@@ -669,17 +714,25 @@ private actualizarCompra() {
       console.log('Nuevos detalles agregados con éxito:', respuesta);
       this.toastr.success('Nuevos detalles agregados exitosamente', 'Éxito');
       
+      setTimeout(() => {
+        this.router.navigate(['/panel/Adquisiciones']);
+      }, 1500); // Esperar 1.5 segundos para que el usuario vea el mensaje de éxito
+      
       // Recargar la compra completa para actualizar la interfaz
-      this.compraService.getCompraDetallada(idCompra.toString()).subscribe({
-        next: (compraActualizada) => {
-          console.log('Compra recargada después de actualizar:', compraActualizada);
-          this.actualizarDetallesEnInterfaz(compraActualizada);
-        },
-        error: (errorRecarga) => {
-          console.error('Error al recargar la compra:', errorRecarga);
-          this.toastr.error('No se pudieron recargar los detalles actualizados', 'Error');
-        }
-      });
+      if (idCompra !== undefined) {
+        this.compraService.getCompraDetallada(idCompra.toString()).subscribe({
+          next: (compraActualizada) => {
+            console.log('Compra recargada después de actualizar:', compraActualizada);
+            this.actualizarDetallesEnInterfaz(compraActualizada);
+          },
+          error: (errorRecarga) => {
+            console.error('Error al recargar la compra:', errorRecarga);
+          }
+        });
+      } else {
+        console.error('idCompra es undefined, no se puede recargar la compra.');
+        this.toastr.error('No se pudo identificar la compra para recargar los detalles', 'Error');
+      }
     },
     error: (error) => {
       console.error('Error al agregar nuevos detalles:', error);
@@ -722,9 +775,21 @@ private actualizarDetallesEnInterfaz(compraActualizada: any) {
     idImpuesto: detalle.idImpuesto
   }));
   
-  this.subtotal = this.detallesCompra.reduce((acc, item) => acc + item.subtotal, 0);
+  this.recalcularTotalesCompletos();
+}
+private recalcularTotalesCompletos() {
+  this.subtotal = 0;
+  this.impuestoTotal = 0;
+  this.total = 0;
+  
+  if (this.detallesCompra.length === 0) {
+    console.log('No hay detalles, totales en 0');
+    return;
+  }
+  
+  this.subtotal = this.detallesCompra.reduce((acc, item) => acc + (item.subtotal || 0), 0);
   this.calcularImpuestosPorDetalle(this.detallesCompra);
-}  
+}
   limpiarFormulario() {
     this.fb_adquisicion.reset();
     this.fb_detalleAdquisicion.reset();
@@ -768,50 +833,61 @@ private actualizarDetallesEnInterfaz(compraActualizada: any) {
     this.detalleCompraHandler();
   }
   calcularImpuestosPorDetalle(detalles: any[]) {
-    if (!detalles || detalles.length === 0) {
-      return;
-    }
-    detalles.forEach(detalle => {
-      if (!detalle.idImpuesto) {
-        detalle.idImpuesto = 4; 
-      }
-    });
-    const peticionesImpuestos = detalles.map(detalle => {
-      return this.impuestoService.getPorcentajeImpuesto(detalle.idImpuesto).pipe(
-        map(respuesta => {
-          return {
-            detalle,
-            porcentaje: respuesta.porcentaje  
-          };
-        }),
-        catchError(error => {
-          console.error(`Error al obtener porcentaje para detalle ${detalle.codigo}:`, error);
-          return [{ detalle, porcentaje: 15 }]; 
-        })
-      );
-    });
-    forkJoin(peticionesImpuestos).subscribe({
-      next: (resultados) => {
-        this.impuestoTotal = 0; 
-        resultados.forEach(resultado => {
-          const { detalle, porcentaje } = resultado;
-          const porcentajeDecimal = porcentaje / 100;
-          detalle.porcentajeImpuesto = porcentaje;
-          detalle.impuestoCalculado = detalle.subtotal * porcentajeDecimal;
-          this.impuestoTotal += detalle.impuestoCalculado;
-        });
-        this.iva = this.subtotal > 0 ? this.impuestoTotal / this.subtotal : 0;
-        this.total = this.subtotal + this.impuestoTotal - this.descuento;
-        console.log('Impuestos calculados por detalle:', resultados);
-      },
-      error: (err) => {
-        console.error('Error al procesar impuestos:', err);
-        this.toastr.error('No se pudieron calcular los impuestos correctamente', 'Error');
-        this.impuestoTotal = this.subtotal * 0.15; // Asumir 15%
-        this.total = this.subtotal + this.impuestoTotal - this.descuento;
-      }
-    });
+  if (!detalles || detalles.length === 0) {
+    this.impuestoTotal = 0;
+    this.total = this.subtotal;
+    return;
   }
+  
+  detalles.forEach(detalle => {
+    if (!detalle.idImpuesto) {
+      detalle.idImpuesto = 4; 
+    }
+  });
+  
+  const peticionesImpuestos = detalles.map(detalle => {
+    return this.impuestoService.getPorcentajeImpuesto(detalle.idImpuesto).pipe(
+      map(respuesta => {
+        return {
+          detalle,
+          porcentaje: respuesta.porcentaje  
+        };
+      }),
+      catchError(error => {
+        console.error(`Error al obtener porcentaje para detalle ${detalle.codigo}:`, error);
+        return [{ detalle, porcentaje: 15 }]; 
+      })
+    );
+  });
+  
+  forkJoin(peticionesImpuestos).subscribe({
+    next: (resultados) => {
+      this.impuestoTotal = 0; 
+      
+      resultados.forEach(resultado => {
+        const { detalle, porcentaje } = resultado;
+        const porcentajeDecimal = porcentaje / 100;
+        detalle.porcentajeImpuesto = porcentaje;
+        detalle.impuestoCalculado = detalle.subtotal * porcentajeDecimal;
+        this.impuestoTotal += detalle.impuestoCalculado;
+        
+      });
+      
+      this.iva = this.subtotal > 0 ? this.impuestoTotal / this.subtotal : 0;
+      this.total = this.subtotal + this.impuestoTotal - this.descuento;
+      
+      setTimeout(() => {
+        console.log('Forzando actualización de vista...');
+      }, 50);
+    },
+    error: (err) => {
+      console.error('Error al calcular impuestos:', err);
+      this.toastr.error('No se pudieron calcular los impuestos correctamente', 'Error');
+      this.impuestoTotal = this.subtotal * 0.15; // Fallback 15%
+      this.total = this.subtotal + this.impuestoTotal - this.descuento;
+    }
+  });
+}
   cargarArchivo(fileName: string) {
   this.archivosService.getArchivo(fileName).subscribe({
     next: (blob: Blob) => {

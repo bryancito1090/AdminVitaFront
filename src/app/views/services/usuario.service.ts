@@ -14,7 +14,8 @@ export class UsuarioService {
   constructor(private http: HttpClient ,private auth: AuthService) { }
 
   getUsuarios(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/GetUsuarios`);
+  const headers = this.auth.getAuthHeaders();
+    return this.http.get<any[]>(`${this.apiUrl}/GetUsuarios` , { headers });
   }
   registrarUsuario(userData: any): Observable<string> {
     const headers = this.auth.getAuthHeaders();

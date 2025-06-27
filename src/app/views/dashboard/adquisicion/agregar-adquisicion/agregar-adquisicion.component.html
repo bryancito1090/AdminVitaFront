@@ -143,20 +143,27 @@
 								<p-select 
 									[options]="items" 
 									formControlName="codigo" 
-									(onChange)="onItemChange($event.value)" 
-									optionLabel="codigo" 
-									optionValue="codigo" 
+									optionLabel="nombre" 
+									optionValue="idItem"
+									(onChange)="onItemSelectionChange($event.value)" 
+									placeholder="Selecciona un ítem"
 									[filter]="true" 
-									filterBy="name" 
-									placeholder="Código" 
-									class="w-full sm:max-w-32">
+									filterBy="nombre"
+									[loading]="loadingItems"
+									class="w-full sm:max-w-32"
+									appendTo="body">
 									
-									<ng-template #selectedItems let-selectedOption>
-										{{ selectedItem.codigo }}
+									<ng-template let-item pTemplate="item">
+										<div class="flex flex-col">
+											<span class="font-semibold">{{ item.codigo }} - {{ item.nombre }}</span>
+											<small class="text-sm italic text-gray-500">{{ item.descripcion }}</small>
+										</div>
 									</ng-template>
 									
-									<ng-template let-item #item>
-										{{ item.codigo }}
+									<ng-template pTemplate="selectedItem">
+										<div *ngIf="selectedItem" class="flex align-items-center">
+											<span>{{ selectedItem.codigo }} - {{ selectedItem.nombre }}</span>
+										</div>
 									</ng-template>
 								</p-select>
 								<p-floatlabel variant="on" class="w-full sm:max-w-64 lg:max-w-80">
@@ -184,7 +191,10 @@
 										type="number" 
 										pInputText 
 										formControlName="cantidad" 
-										class="w-full" >
+										class="w-full"
+										min="0"
+										step="0.01"
+										[ngClass]="{'ng-invalid ng-dirty': fb_detalleAdquisicion.get('cantidad')?.invalid && fb_detalleAdquisicion.get('cantidad')?.touched}">
 									<label>Cantidad</label>
 								</p-floatlabel>
 								<p-floatlabel variant="on" class="w-full sm:max-w-24">

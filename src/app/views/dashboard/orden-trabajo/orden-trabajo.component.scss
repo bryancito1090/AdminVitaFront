@@ -24,3 +24,228 @@
     object-fit: contain; /* Ajusta la imagen sin recortar */
   }
   
+.export-btn-container {
+  position: absolute;
+  top: 15px;
+  right: 60px; /* ✅ Mover hacia la izquierda para no tapar la X */
+  z-index: 10;
+}
+
+.btn-export-pdf-prime {
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  font-size: 0.875rem !important;
+  padding: 6px 12px !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.3s ease !important;
+  
+  &:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+  }
+  
+  &:active {
+    transform: translateY(0) !important;
+  }
+}
+
+/* ✅ Ajustes específicos para el header del diálogo */
+::ng-deep .p-dialog .p-dialog-header {
+  position: relative;
+  padding-right: 120px !important; /* Dar espacio para el botón */
+}
+
+/* ✅ Asegurar que la X de cerrar esté visible */
+::ng-deep .p-dialog .p-dialog-header .p-dialog-header-close {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 15;
+}
+
+/* ✅ Responsive design */
+@media (max-width: 768px) {
+  .export-btn-container {
+    position: relative;
+    top: auto;
+    right: auto;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: flex-end;
+  }
+  
+  ::ng-deep .p-dialog .p-dialog-header {
+    padding-right: 60px !important;
+  }
+  
+  .btn-export-pdf-prime {
+    font-size: 0.8rem !important;
+    padding: 8px 16px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .export-btn-container {
+    justify-content: center;
+    margin-bottom: 15px;
+  }
+  
+  .btn-export-pdf-prime {
+    width: 100%;
+    justify-content: center;
+  }
+}
+/* Contenedor principal del selectbutton */
+.flex.justify-center {
+  margin: 1rem 0;
+}
+
+/* Estilos para el p-selectbutton */
+::ng-deep .p-selectbutton {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  
+  .p-button {
+    min-width: 120px !important;
+    max-width: 160px !important;
+    height: auto !important;
+    padding: 0.75rem 1rem !important;
+    border-radius: 8px !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    transition: all 0.3s ease !important;
+    border: 2px solid #e5e7eb !important;
+    background: #ffffff !important;
+    color: #374151 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+    
+    /* Flexbox para alinear contenido */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.5rem !important;
+    
+    /* Hover state */
+    &:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+      border-color: #3b82f6 !important;
+      background: #f8fafc !important;
+    }
+    
+    /* Active/Selected state */
+    &.p-button-outlined {
+      background: #3b82f6 !important;
+      border-color: #3b82f6 !important;
+      color: white !important;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+      
+      .p-badge {
+        background: rgba(255, 255, 255, 0.2) !important;
+        color: white !important;
+      }
+    }
+    
+    /* Badge dentro del botón */
+    .p-badge {
+      background: #ef4444 !important;
+      color: white !important;
+      font-size: 0.75rem !important;
+      min-width: 20px !important;
+      height: 20px !important;
+      border-radius: 50% !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-weight: 600 !important;
+      margin-left: auto !important;
+    }
+    
+    /* Texto del botón */
+    .p-button-label {
+      flex: 1 !important;
+      text-align: left !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+    }
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  ::ng-deep .p-selectbutton {
+    gap: 0.25rem;
+    justify-content: center;
+    
+    .p-button {
+      min-width: 100px !important;
+      max-width: 130px !important;
+      padding: 0.5rem 0.75rem !important;
+      font-size: 0.8rem !important;
+      
+      .p-badge {
+        font-size: 0.7rem !important;
+        min-width: 18px !important;
+        height: 18px !important;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  ::ng-deep .p-selectbutton {
+    flex-direction: column;
+    width: 100%;
+    
+    .p-button {
+      width: 100% !important;
+      max-width: none !important;
+      justify-content: space-between !important;
+    }
+  }
+}
+
+/* Animaciones adicionales */
+::ng-deep .p-selectbutton .p-button {
+  &:active {
+    transform: translateY(0) !important;
+    transition: transform 0.1s ease !important;
+  }
+  
+  &:focus {
+    outline: 2px solid #3b82f6 !important;
+    outline-offset: 2px !important;
+  }
+}
+
+/* Mejoras para el badge cuando no hay datos */
+::ng-deep .p-selectbutton .p-button .p-badge[ng-reflect-value="0"] {
+  background: #6b7280 !important;
+  opacity: 0.7;
+}
+/* Versión más compacta */
+::ng-deep .p-selectbutton {
+  .p-button {
+    min-width: 90px !important;
+    max-width: 120px !important;
+    padding: 0.6rem 0.8rem !important;
+    font-size: 0.8rem !important;
+    
+    /* Para que "Trab. Externos" se vea en una línea */
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    
+    .p-badge {
+      font-size: 0.7rem !important;
+      min-width: 18px !important;
+      height: 18px !important;
+    }
+  }
+}

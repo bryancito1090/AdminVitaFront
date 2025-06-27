@@ -170,6 +170,16 @@ export class OrdenTrabajoComponent implements OnInit {
     observaciones: [],
     solicitudes: []
   };
+estadosTarea = [
+  { name: 'Pendiente', code: 1 },
+  { name: 'En Progreso', code: 2 },
+  { name: 'Cancelado', code: 3 },
+  { name: 'Finalizado', code: 4 },
+  { name: 'Finalizado sin éxito', code: 5 },
+  { name: 'Espera Repuesto', code: 6 },
+  { name: 'Espera Mecánico', code: 7 },
+  { name: 'Espera Aprobación', code: 8 }
+];
 
   constructor(
     private otService: OrdenTrabajoService,
@@ -327,7 +337,7 @@ showDialogExpand(code: string){
               {code: response.totalTareas, name: 'Tareas'},
               {code: response.totalRepuestos, name: 'Repuestos'},
               {code: response.totalRepuestos, name: 'Mecanicos'},
-              {code: response.totalTrabajosExternos, name: 'Trabajos Externos'},
+              {code: response.totalTrabajosExternos, name: 'Trab. Externos'},
               {code: response.totalObservaciones, name: 'Observaciones'},
               {code: response.totalSolicitudes, name: 'Solicitudes'}
             ];
@@ -577,6 +587,7 @@ showDialogExpand(code: string){
       case 'Tareas':
         this.tareaService.getTareasByOT(this.codeExpandDialog).subscribe({
           next: (response) => {
+            console.log(response);
             this.expandDataTables = response;
             this.expandCols = HeadersTables.TareasList;
           },
@@ -612,9 +623,10 @@ showDialogExpand(code: string){
           }
         });
         break;
-      case 'Trabajos Externos':
+      case 'Trab. Externos':
         this.tareaService.getTareaExternaByOT(this.codeExpandDialog).subscribe({
           next: (response) => {
+            console.log(response);
             this.expandDataTables = response;
             this.expandCols = HeadersTables.TrabajoExternoList;
           },
@@ -1388,5 +1400,36 @@ rechazarSolicitud(codigo: string) {
       this.toastr.error('Error al rechazar la solicitud', 'Error');
     }
   });
+}
+getEstadoTareaTexto(estado: number | undefined | null): string {
+  if (estado === undefined || estado === null) return 'Cargando...';
+  
+  switch (estado) {
+    case 1: return 'Pendiente';
+    case 2: return 'En Progreso';
+    case 3: return 'Cancelado';
+    case 4: return 'Finalizado';
+    case 5: return 'Finalizado sin éxito';
+    case 6: return 'Espera Repuesto';
+    case 7: return 'Espera Mecánico';
+    case 8: return 'Espera Aprobación';
+    default: return 'Sin definir';
+  }
+}
+
+getEstadoTareaSeverity(estado: number | undefined | null): "success" | "info" | "warn" | "danger" | "secondary" | "contrast" {
+  if (estado === undefined || estado === null) return 'secondary';
+  
+  switch (estado) {
+    case 1: return 'info';      
+    case 2: return 'warn';      
+    case 3: return 'danger';    
+    case 4: return 'success';   
+    case 5: return 'danger';    
+    case 6: return 'warn';      
+    case 7: return 'warn';      
+    case 8: return 'info';      
+    default: return 'secondary';
+  }
 }
 }
