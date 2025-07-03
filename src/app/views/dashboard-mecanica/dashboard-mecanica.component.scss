@@ -1,3 +1,159 @@
 p-divider {
   margin: 0;
 }
+/* Estilos para el diálogo responsive */
+::ng-deep .responsive-dialog {
+  .p-dialog-content {
+    padding: 0.75rem !important;
+    
+    @media (min-width: 768px) {
+      padding: 1.5rem !important;
+    }
+  }
+  
+  .p-dialog-header {
+    padding: 1rem !important;
+    
+    .p-dialog-title {
+      font-size: 1rem !important;
+      
+      @media (min-width: 768px) {
+        font-size: 1.25rem !important;
+      }
+    }
+  }
+}
+
+/* Select button responsive mejorado */
+::ng-deep .responsive-select-button {
+  .p-selectbutton {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    
+    .p-button {
+      @media (max-width: 768px) {
+        font-size: 0.75rem !important;
+        padding: 0.375rem 0.5rem !important;
+        
+        .p-badge {
+          font-size: 0.625rem !important;
+        }
+      }
+    }
+  }
+}
+
+/* Tabla responsive */
+::ng-deep .responsive-table {
+  .p-datatable-wrapper {
+    font-size: 0.875rem;
+  }
+  
+  .p-datatable-thead > tr > th {
+    padding: 0.5rem !important;
+    font-size: 0.75rem !important;
+  }
+  
+  .p-datatable-tbody > tr > td {
+    padding: 0.5rem !important;
+    font-size: 0.75rem !important;
+  }
+}
+
+/* Cards móviles */
+.mobile-item-card {
+  transition: all 0.2s ease;
+  
+  &:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+  }
+}
+
+/* Diálogo de imagen responsive */
+::ng-deep .image-dialog {
+  .p-dialog-content {
+    padding: 0 !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+}
+
+/* Utilidades responsive */
+@media (max-width: 768px) {
+  .data-container {
+    .p-tag {
+      font-size: 0.625rem !important;
+    }
+    
+    .p-button {
+      font-size: 0.75rem !important;
+      
+      &.p-button-sm {
+        padding: 0.25rem 0.5rem !important;
+      }
+    }
+  }
+}
+/* Botones móviles personalizados */
+.mobile-select-button {
+  min-height: 4rem;
+  transition: all 0.2s ease-in-out;
+  
+  &:active {
+    transform: scale(0.98);
+  }
+  
+  &.selected {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Responsive grid mejorado */
+@media (max-width: 640px) {
+  .mobile-category-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    
+    /* Si hay muchas opciones, usar 2 columnas en vertical */
+    &.many-options {
+      grid-template-columns: 1fr;
+      
+      .mobile-select-button {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem;
+        text-align: left;
+        
+        .option-name {
+          flex: 1;
+        }
+        
+        .option-badge {
+          margin-left: 0.5rem;
+        }
+      }
+    }
+  }
+}
+
+/* Para muy pocas opciones, usar diseño horizontal */
+@media (max-width: 480px) {
+  .few-options {
+    .mobile-category-grid {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+      
+      .mobile-select-button {
+        padding: 0.75rem;
+        min-height: 3rem;
+      }
+    }
+  }
+}

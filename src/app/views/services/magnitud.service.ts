@@ -22,6 +22,10 @@ export class MagnitudService{
     const headers = this.auth.getAuthHeaders();
     return this.http.get<any>(`${this.apiURL}/GetMagnitudesCompatibles/${idItem}`, {headers});
   }
+   GetMagnitudCompatibleByItemMec(idItem: number): Observable<any> {
+    const headers = this.auth.getMecanicoAuthHeaders();
+    return this.http.get<any>(`${this.apiURL}/GetMagnitudesCompatibles/${idItem}`, {headers});
+  }
   convertirUnidad(
     idMagnitudOrigen: number, 
     unidadOrigen: number, 

@@ -108,6 +108,9 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
   displayModal = false;
   formEstado: number | null = null;
   formMecanicos: any[] = [];
+  displayMecanicosDialog: boolean = false;
+  mecanicosTareaSeleccionada: any[] = [];
+  codigoTareaSeleccionada: string = '';
 
   constructor(
     private route: ActivatedRoute,
@@ -483,5 +486,18 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
   autorizarTareaOT(codigo: string) { //modificar cuando haya una funciuon para cambiar el estado
     this.toastr.info('Procesando su solicitud...', 'Autorizando tarea');
   }
-
+ mostrarMecanicos(mecanicos: any[], codigoTarea: string) {
+    this.mecanicosTareaSeleccionada = mecanicos;
+    this.codigoTareaSeleccionada = codigoTarea;
+    this.displayMecanicosDialog = true;
+  }
+  getDuracionTotalMecanicos(): string {
+  if (!this.mecanicosTareaSeleccionada || this.mecanicosTareaSeleccionada.length === 0) {
+    return '0 hrs';
+  }
+  const total = this.mecanicosTareaSeleccionada
+    .map(m => Number(m.duracionEstimada) || 0)
+    .reduce((a, b) => a + b, 0);
+  return total + ' hrs';
+}
 }

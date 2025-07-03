@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { ordenTrabajoList } from '../../../domain/response/OrdenTrabajoResponse.model';
+import { OrdenTrabajo, ordenTrabajoList } from '../../../domain/response/OrdenTrabajoResponse.model';
 import { EstadosOTs, EstadosVehiculo, genericT, PrioridadesOT } from '../shared/util/genericData';
-import { HeadersTables } from '../shared/util/tables';
+import { Column, HeadersTables } from '../shared/util/tables';
 import { Table, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -21,6 +21,20 @@ import { MessageService } from 'primeng/api';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { AuthMecanicaComponent } from '../auth/components/auth-mecanica/auth-mecanica.component';
 import { ToastrService } from 'ngx-toastr';
+import { DialogModule } from 'primeng/dialog';
+import { SelectButtonModule } from 'primeng/selectbutton';
+import { BadgeModule } from 'primeng/badge';
+import { TooltipModule } from 'primeng/tooltip';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { Adjunto } from '../../../domain/adjunto.model';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { OrdenTrabajoService } from '../services/orden-trabajo.service';
+import { TareasService } from '../services/tareas.service';
+import { RepuestoService } from '../services/repuesto.service';
+import { SolicitudService } from '../services/solicitud.service';
+import { AdjuntoService } from '../services/adjunto.service';
+import { ArchivosService } from '../services/archivos.service';
+import { SkeletonExpandInfoComponent } from "../shared/components/skeleton/skeleton-expand-info.component";
 
 interface TableColumn {
   field: string;
@@ -50,8 +64,14 @@ interface Mecanico {
     IconField,
     InputIcon,
     DividerModule,
-    ToastModule
-  ],
+    ToastModule,
+    DialogModule,
+    SelectButtonModule,
+    BadgeModule,
+    TooltipModule,
+    ProgressSpinnerModule,
+    SkeletonExpandInfoComponent
+],
   providers: [DatePipe, MecanicoService, OrdenMecanicoService, MessageService, DialogService],
   templateUrl: './dashboard-mecanica.component.html',
   styleUrls: ['./dashboard-mecanica.component.scss']
@@ -80,7 +100,78 @@ export class DashboardMecanicaComponent implements OnInit {
   
   //Dialgo Dinamic
   dialogRef: DynamicDialogRef | undefined;
-
+// Variables para el diálogo
+  visibleExpand: boolean = false;
+  loadingExpandDialog: boolean = true;
+  codeExpandDialog: string = '';
+  
+  // Variables para las tablas
+  expandDataTables: any[] = [];
+  expandCols: Column[] = [];
+  ExpandOptionsValue: string = '';
+  ExpandOptions: genericT[] = [];
+  selectedCodeObservacion: string = '';
+  
+  // Variables para los datos
+  ExpandItem: OrdenTrabajo = {
+    codigo: '',
+    detalle: '',
+    prioridad: 0,
+    estado: 0,
+    fechaCreada: new Date(),
+    fechaProgramada: new Date(),
+    fechaFinalizacion: new Date(),
+    observacion: '',
+    codigoVehiculo: '',
+    kilometraje: 0,
+    numeroVehiculo: 0,
+    anio: new Date(),
+    estadoVehiculo: '',
+    propietario: '',
+    placa: '',
+    nombreCliente: '',
+    celular: '',
+    correo: '',
+    direccion: '',
+    supervisor: 0
+  };
+  
+  // Variables para adjuntos
+  adjuntoImages: { id: number, dataUrl: string }[] = [];
+  adjuntos: Adjunto[] = [];
+  archivoUrl: SafeResourceUrl | null = null;
+  tipoArchivo: string = '';
+  displayImage: boolean = false;
+  
+  // Variables para datos de tablas
+  allTablesData: {
+    tareas: any[];
+    repuestos: any[];
+    mecanicos: any[];
+    trabajosExternos: any[];
+    observaciones: any[];
+    solicitudes: any[];
+  } = {
+    tareas: [],
+    repuestos: [],
+    mecanicos: [],
+    trabajosExternos: [],
+    observaciones: [],
+    solicitudes: []
+  };
+  
+  supervisor: genericT[] = [];
+  
+  estadosTarea = [
+    { name: 'Pendiente', code: 1 },
+    { name: 'En Progreso', code: 2 },
+    { name: 'Cancelado', code: 3 },
+    { name: 'Finalizado', code: 4 },
+    { name: 'Finalizado sin éxito', code: 5 },
+    { name: 'Espera Repuesto', code: 6 },
+    { name: 'Espera Mecánico', code: 7 },
+    { name: 'Espera Aprobación', code: 8 }
+  ];
   constructor(
     private datePipe: DatePipe,
     private mecanicoService: MecanicoService,
@@ -89,6 +180,14 @@ export class DashboardMecanicaComponent implements OnInit {
     private messageService: MessageService,
     private dialogService: DialogService,
     private toastr: ToastrService,
+    private otService: OrdenTrabajoService,
+    private tareaService: TareasService,
+    private repuestoService: RepuestoService,
+    private mecService: MecanicoService,
+    private solicitudService: SolicitudService,
+    private adjuntoService: AdjuntoService,
+    private archivoService: ArchivosService,
+    private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit(): void {
@@ -97,6 +196,17 @@ export class DashboardMecanicaComponent implements OnInit {
     this.prioridad = PrioridadesOT;
     this.estadoVehiculo = EstadosVehiculo;
     this.minDate = new Date();
+    this.mecService.getSupervisores().subscribe({
+      next: (response) => {
+        this.supervisor = response.map(x => ({
+          name: x.nombre,
+          code: x.idMecanico
+        }));        
+      },
+      error: (err) => {
+        console.log("Error al solicitar Supervisores: ", err);
+      }
+    });
     this.cargarMecanicos();
   }
 
@@ -148,13 +258,6 @@ export class DashboardMecanicaComponent implements OnInit {
       },
     });
   }
-
-  formatDate(dateString: string): string {
-    if(dateString === 'Vacío') return 'Vacío';
-    const formattedDate = this.datePipe.transform(dateString, 'dd/MM/yyyy');
-    return formattedDate || 'Fecha inválida';
-  }
-
   filterGlobal(event: Event, dt: any) { 
     const inputValue = (event.target as HTMLInputElement)?.value || '';
     dt.filterGlobal(inputValue, 'contains');
@@ -183,39 +286,6 @@ export class DashboardMecanicaComponent implements OnInit {
     this.mostrarValidacion = true;
   }
 
-  GetEstado(id: number)  {
-    const item = this.estado.find(x => x.code === id);  
-    return item?.name;
-  }
-
-  GetPrioridad(id: number)  {
-    const item = this.prioridad.find(x => x.code === id);  
-    return item?.name;
-  }
-
-  getSeverityEstado(status: number) {
-    switch (status) {
-      case 0: return undefined;
-      case 1: return 'success';
-      case 2: return 'warn';
-      case 3: return 'danger';
-      default:
-        return 'secondary';
-    }
-  }
-
-  getSeverityPrioridad(status: number) {
-    switch (status) {
-      case 4: return 'secondary';
-      case 3: return 'info';
-      case 2: return 'contrast';
-      case 1: return 'warn';
-      case 0: return 'danger';  
-      default: 
-        return undefined;
-    }
-  }
-
   validarYEditarOT(codigo: any) {
     this.dialogRef = this.dialogService.open(AuthMecanicaComponent, {
         header: 'Código de Autenticación',
@@ -236,10 +306,6 @@ export class DashboardMecanicaComponent implements OnInit {
         this.toastr.error('Código incorrecto', 'Error');
       }
     });
-  }
-
-  verDetallesOT(codigo: any) {
-    // Lógica para ver detalles
   }
 
   onValidacionExitosa(mecanicoAuth: any) {
@@ -312,4 +378,278 @@ export class DashboardMecanicaComponent implements OnInit {
       }
     });
   }
+   showDialogExpand(code: string) {
+    this.visibleExpand = true;
+    this.loadingExpandDialog = true;
+    this.codeExpandDialog = code;
+    this.expandDataTables = [];
+    this.expandCols = [];
+    this.ExpandOptionsValue = '';
+    this.selectedCodeObservacion = '';
+    
+    this.adjuntoImages = [];
+    this.adjuntos = [];
+    this.allTablesData = {
+      tareas: [],
+      repuestos: [],
+      mecanicos: [],
+      trabajosExternos: [],
+      observaciones: [],
+      solicitudes: []
+    };
+    
+    this.otService.getOrdenTrabajoCodigo(code).subscribe({
+      next: (response) => {
+        this.ExpandItem = response;
+        this.otService.getResumen(code).subscribe({
+          next: (response) => {        
+            this.ExpandOptions = [
+              {code: response.totalTareas, name: 'Tareas'},
+              {code: response.totalRepuestos, name: 'Repuestos'},
+              {code: response.totalRepuestos, name: 'Mecanicos'},
+              {code: response.totalTrabajosExternos, name: 'Trab. Externos'},
+              {code: response.totalObservaciones, name: 'Observaciones'},
+              {code: response.totalSolicitudes, name: 'Solicitudes'}
+            ];
+            this.loadingExpandDialog = false;
+          },
+          error: (err) => {
+            console.log("Error al solicitar Resumen de Orden de Trabajo: ", err);
+            this.loadingExpandDialog = false;
+          }
+        });
+      },
+      error: (err) => {
+        console.log("Error al solicitar Orden de Trabajo: ", err);
+        this.loadingExpandDialog = false;
+      }
+    });
+  }
+
+  // Copia todos los métodos necesarios del componente original
+  formatDate(dateString: string): string {
+    if(dateString === 'Vacío') return 'Vacío';
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+
+  GetEstado(id: number) {
+    const item = this.estado.find(x => x.code === id);  
+    return item?.name;
+  }
+
+  GetPrioridad(id: number) {
+    const item = this.prioridad.find(x => x.code === id);  
+    return item?.name;
+  }
+
+  getSeverityEstado(status: number) {
+    switch (status) {
+      case 0: return undefined;
+      case 1: return 'success';
+      case 2: return 'warn';
+      case 3: return 'danger';
+      default: return 'secondary';
+    }
+  }
+
+  getSeverityPrioridad(status: number) {
+    switch (status) {
+      case 4: return 'secondary';
+      case 3: return 'info';
+      case 2: return 'contrast';
+      case 1: return 'warn';
+      case 0: return 'danger';  
+      default: return undefined;
+    }
+  }
+
+  getEstadoVehiculo(id: string) {
+    return this.estadoVehiculo.find(e => e.code.toString() == id)?.name;
+  }
+
+  getSupervisor(id: number) {
+    return this.supervisor.find(s => s.code === id)?.name;
+  }
+
+  tablesOptionHandler() {
+    this.selectedCodeObservacion = '';
+    this.expandDataTables = [];
+    this.expandCols = [];
+    
+    switch(this.ExpandOptionsValue) {
+      case 'Tareas':
+        this.tareaService.getTareasByOT(this.codeExpandDialog).subscribe({
+          next: (response) => {
+            this.expandDataTables = response;
+            this.expandCols = HeadersTables.TareasList;
+          },
+          error: (err) => {
+            this.expandDataTables = [];
+            this.expandCols = [];
+          }
+        });
+        break;
+      case 'Repuestos':
+        this.repuestoService.getRepuestosInsumosByOT(this.codeExpandDialog).subscribe({
+          next: (response) => {
+            this.expandDataTables = response;            
+            this.expandCols = HeadersTables.RepuestoseInsumosList;
+          },
+          error: (err) => {
+            this.expandDataTables = [];
+            this.expandCols = [];
+          }
+        });
+        break;
+      case 'Mecanicos':
+        this.mecService.getManoObraOT(this.codeExpandDialog).subscribe({
+          next: (response) => {
+            this.expandDataTables = response;
+            this.expandCols = HeadersTables.ManoDeObraList;
+          },
+          error: (err) => {
+            this.expandDataTables = [];
+            this.expandCols = [];
+          }
+        });
+        break;
+      case 'Trab. Externos':
+        this.tareaService.getTareaExternaByOT(this.codeExpandDialog).subscribe({
+          next: (response) => {
+            this.expandDataTables = response;
+            this.expandCols = HeadersTables.TrabajoExternoList;
+          },
+          error: (err) => {
+            this.expandDataTables = [];
+            this.expandCols = [];
+          }
+        });
+        break;
+      case 'Observaciones': 
+        this.tareaService.getObservacionesTarea(this.codeExpandDialog).subscribe({
+          next: (response) => {
+            this.expandDataTables = response;
+            this.expandCols = HeadersTables.ObservacionesTareaList;
+          },
+          error: (err) => {
+            this.expandDataTables = [];
+            this.expandCols = [];
+          }
+        });
+        break;
+      case 'Solicitudes':
+        this.solicitudService.getSolicitudRepuestoTablaExpandOT(this.codeExpandDialog).subscribe({
+          next: (response) => {
+            this.expandDataTables = response;
+            // ✅ Filtrar las columnas para excluir el campo 'actions'
+            this.expandCols = HeadersTables.SolicitudTareaList.filter(col => col.field !== 'actions');
+          },
+          error: (err) => {
+            this.expandDataTables = [];
+            this.expandCols = [];
+          }
+        });
+        break;
+    }
+  }
+
+  redirectObservaciones(code: string) {
+    this.ExpandOptionsValue = 'Observaciones';
+    this.selectedCodeObservacion = code;
+    this.tareaService.getObservacionesTarea(this.codeExpandDialog).subscribe({
+      next: (response) => {
+        this.expandDataTables = response;
+        this.expandCols = HeadersTables.ObservacionesTareaList;
+      },
+      error: (err) => console.log(err)
+    });
+  }
+
+  getAdjuntoNameById(id: number) {
+    this.adjuntoService.getAdjuntoById(id).subscribe({
+      next: (response) => {
+        this.cargarArchivo(response.ruta);
+      }
+    });
+  }
+
+  cargarArchivo(fileName: string) {
+    this.archivoService.getArchivo(fileName).subscribe(blob => {
+      const mimeType = blob.type;
+
+      if (mimeType.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          this.archivoUrl = this.sanitizer.bypassSecurityTrustUrl(reader.result as string);
+          this.tipoArchivo = 'imagen';
+        };
+        reader.readAsDataURL(blob);
+      } else if (mimeType === 'application/pdf') {
+        const url = URL.createObjectURL(blob);
+        this.archivoUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+        this.tipoArchivo = 'pdf';
+      }
+    });
+  }
+
+  showExpandImage() {
+    this.archivoUrl = '';
+    this.displayImage = true;
+  }
+
+  getEstadoAprobacion(aprobado: boolean | null): string {
+    if (aprobado === null) return 'Pendiente';
+    return aprobado ? 'Aprobado' : 'Rechazado';
+  }
+
+  getSeverityAprobacion(aprobado: boolean | null): "success" | "info" | "warn" | "danger" | "secondary" | "contrast" | undefined {
+    if (aprobado === null) return 'warn';
+    return aprobado ? 'success' : 'danger';
+  }
+
+  getEstadoTareaTexto(estado: number | undefined | null): string {
+    if (estado === undefined || estado === null) return 'Cargando...';
+    
+    switch (estado) {
+      case 1: return 'Pendiente';
+      case 2: return 'En Progreso';
+      case 3: return 'Cancelado';
+      case 4: return 'Finalizado';
+      case 5: return 'Finalizado sin éxito';
+      case 6: return 'Espera Repuesto';
+      case 7: return 'Espera Mecánico';
+      case 8: return 'Espera Aprobación';
+      default: return 'Sin definir';
+    }
+  }
+
+  getEstadoTareaSeverity(estado: number | undefined | null): "success" | "info" | "warn" | "danger" | "secondary" | "contrast" {
+    if (estado === undefined || estado === null) return 'secondary';
+    
+    switch (estado) {
+      case 1: return 'info';      
+      case 2: return 'warn';      
+      case 3: return 'danger';    
+      case 4: return 'success';   
+      case 5: return 'danger';    
+      case 6: return 'warn';      
+      case 7: return 'warn';      
+      case 8: return 'info';      
+      default: return 'secondary';
+    }
+  }
+   abrirDialogoOrdenTrabajo(codigoOT: string) {
+    this.showDialogExpand(codigoOT);
+  }
+  formatCurrency(value: any): number {
+  if (value === null || value === undefined || value === '') {
+    return 0;
+  }
+  return typeof value === 'number' ? value : parseFloat(value) || 0;
+}
+
 }

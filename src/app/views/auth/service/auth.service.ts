@@ -228,4 +228,22 @@ loginMecanico(pin: string): Observable<MecanicoAuth> {
   });
 }
 
+getUsuarioData(): any {
+  const token = this.getToken();
+  if (token) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return {
+        id: payload.nameid || payload.sub || payload.id || payload.userId,
+        idUsuario: payload.nameid || payload.sub || payload.id || payload.userId,
+        nombre: payload.name || payload.nombre || payload.unique_name,
+        email: payload.email || payload.emailaddress
+      };
+    } catch (error) {
+      console.error('Error al decodificar token:', error);
+      return null;
+    }
+  }
+  return null;
+}
 }

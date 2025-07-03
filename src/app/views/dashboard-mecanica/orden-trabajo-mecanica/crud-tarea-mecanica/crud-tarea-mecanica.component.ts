@@ -19,6 +19,10 @@ import { AuthMecanicaComponent } from '../../../auth/components/auth-mecanica/au
 import { ToastrService } from 'ngx-toastr';
 import { MagnitudService } from '../../../services/magnitud.service';
 import { TareasService } from '../../../services/tareas.service';
+import { SolicitudService } from '../../../services/solicitud.service';
+import { AdjuntoService } from '../../../services/adjunto.service';
+import { AuthService } from '../../../auth/service/auth.service';
+import { CheckboxModule } from 'primeng/checkbox';
 
 @Component({
   selector: 'app-crud-tarea-mecanica',
@@ -34,6 +38,8 @@ import { TareasService } from '../../../services/tareas.service';
     ButtonModule,
     Dialog,
     TableModule,
+    CheckboxModule,
+    InputTextModule
   ],
   providers: [ItemService, DialogService],
   templateUrl: './crud-tarea-mecanica.component.html',
@@ -94,13 +100,25 @@ export class CrudTareaMecanicaComponent implements OnInit{
   selectedMagnitudId: number | null = null;
   loadingMagnitudes: boolean = false;
   mostrarMagnitudes: boolean = false;
+
+    solicitudRepuesto: boolean = false;
+  displaySolicitudRepuestoDialog: boolean = false;
+  datosSolicitudRepuesto = {
+    detalle: '',
+    archivo: null as File | null,
+    archivoNombre: '',
+    idAdjunto: null as number | null
+  };
   constructor(
     private itemService: ItemService,
     private mecanicoService: MecanicoService,
     private dialogService: DialogService,
     private toastr: ToastrService,
     private tareaService: TareasService,
-    private magnitudService: MagnitudService
+    private magnitudService: MagnitudService,
+    private solicitudService: SolicitudService,
+    private adjuntoService: AdjuntoService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -151,13 +169,15 @@ onTipoItemChange() {
   }
 }
 onItemSelectionChange(itemId: number) {
+  
   this.selectedItemId = itemId;
   
   if (this.tipoItemSeleccionado === 'insumo' && itemId) {
+    
     this.loadingMagnitudes = true;
     this.mostrarMagnitudes = true;
     
-    this.magnitudService.GetMagnitudCompatibleByItem(itemId).subscribe({
+    this.magnitudService.GetMagnitudCompatibleByItemMec(itemId).subscribe({
       next: (response: any) => {
         this.magnitudOrigen = response.magnitudOrigen;
         this.magnitudesCompatibles = response.magnitudesCompatibles;
@@ -176,6 +196,7 @@ onItemSelectionChange(itemId: number) {
         console.error('Error al cargar magnitudes:', error);
         this.loadingMagnitudes = false;
         this.mostrarMagnitudes = false;
+        this.toastr.error('Error al cargar las magnitudes disponibles', 'Error');
       }
     });
   } else {
@@ -184,10 +205,16 @@ onItemSelectionChange(itemId: number) {
     this.selectedMagnitudId = null;
   }
 }
-  agregarTarea() {
+agregarTarea() {
     // Validaciones mínimas
     if (!this.detalleTarea || this.duracion_tarea <= 0) {
-      console.warn('Los campos Detalle de Tarea y Duración son obligatorios.');
+      this.toastr.error('Los campos Detalle de Tarea y Duración son obligatorios.', 'Error de validación');
+      return;
+    }
+
+    // Validar que tenga mecánicos asignados
+    if (this.list_mecanicos.length === 0) {
+      this.toastr.error('Debe asignar al menos un mecánico a la tarea.', 'Error de validación');
       return;
     }
 
@@ -202,52 +229,256 @@ onItemSelectionChange(itemId: number) {
       }
     });
 
-
     this.dialogRef.onClose.subscribe((result: { acceso: boolean, id: number | null, token: any }) => {
-      if (result.acceso) {
-        this.toastr.success('Tarea creada correctamente', 'Éxito');
-
-        const nuevaTarea = {
-          codigoOrdenTrabajo: this.codigoOT,
-          detalle: this.detalleTarea.trim(),
-          idMecanico: result.id,
-          estado: this.estado_tarea,
-          esManual: true,
-          requiereRepuesto: this.requ_repuestos,
-          requiereServicioExterno: this.tipo_tarea === 'externa' ? true : false,
-          requiereAutorizacion: this.requ_auth,
-          tipoMantenimiento: this.tipo_mantenimiento === 'preventivo' ? true : false,
-          duracion: this.duracion_tarea,
-          repuestos: this.list_repuestos,
-          mecanicos: this.list_mecanicos,
-        };
-
-        this.tareaService.createTarea(nuevaTarea, result.token).subscribe({
-          next: (response) => {
-            console.log('Tarea creada:', response);
-            this.toastr.success('Tarea creada correctamente', 'Éxito');
-            this.resetForm();
-          }
-        });
+      if (result.acceso && result.id) {
+        
+        // Decidir si crear tarea normal o con solicitud
+        if (this.solicitudRepuesto) {
+          this.crearTareaConSolicitud(result);
+        } else {
+          this.crearTareaNormal(result);
+        }
           
       } else {
-        this.toastr.error('Código incorrecto', 'Error');
+        this.toastr.error('Código incorrecto o no se pudo obtener el ID del usuario', 'Error');
       }
     });
   }
-  resetForm() {
-    this.codigoOT = '';
-    this.detalleTarea = '';
-    this.estado_tarea = 0;
-    this.requ_repuestos = true;
-    this.tipo_tarea = 'interna';
-    this.requ_auth = true;
-    this.tipo_mantenimiento = 'preventivo';
-    this.duracion_tarea = 0;
-    this.list_repuestos = [];
-    this.list_mecanicos = [];
-    this.onClose.emit({ action: this.action, color: this.color });
+
+// ✅ MÉTODO PARA TAREAS NORMALES - CORREGIDO
+crearTareaNormal(result: { acceso: boolean, id: number | null, token: any }) {
+  
+  // ✅ VALIDAR CONSISTENCIA DE REPUESTOS
+  const tieneRepuestos = this.list_repuestos.length > 0;
+  const requiereRepuestos = this.requ_repuestos;
+
+  // Si el usuario marcó que requiere repuestos pero no agregó ninguno
+  if (requiereRepuestos && !tieneRepuestos) {
+    this.toastr.warning('Has marcado que requiere repuestos pero no has agregado ninguno', 'Advertencia');
+    return;
   }
+
+  // ✅ PREPARAR REPUESTOS CON VALIDACIÓN DE TIPOS
+  const repuestosFormateados = this.list_repuestos.map(repuesto => ({
+    idItem: Number(repuesto.idItem),
+    cantidad: Number(repuesto.cantidad)
+  }));
+
+  // ✅ PREPARAR MECÁNICOS CON VALIDACIÓN DE TIPOS
+  const mecanicosFormateados = this.list_mecanicos.map(mecanico => ({
+    idMecanico: Number(mecanico.idMecanico),
+    duracionEstimada: Number(mecanico.duracionEstimada)
+  }));
+
+  // ✅ PREPARAR DATOS DE LA TAREA - FORMATO CORRECTO
+  const nuevaTarea = {
+    codigoOrdenTrabajo: this.codigoOT,
+    idUsuario: Number(result.id), // ✅ CORRECTO: usar idUsuario en lugar de idMecanico
+    detalle: this.detalleTarea.trim(),
+    estado: Number(this.estado_tarea),
+    esManual: true,
+    requiereRepuesto: tieneRepuestos, // ✅ Basado en si realmente tiene repuestos
+    requiereServicioExterno: this.tipo_tarea === 'externa' ? true : false,
+    requiereAutorizacion: this.requ_auth,
+    tipoMantenimiento: this.tipo_mantenimiento === 'preventivo' ? true : false,
+    duracion: Number(this.duracion_tarea),
+    mecanicos: mecanicosFormateados,
+    repuestos: repuestosFormateados,
+  };
+
+  this.tareaService.createTarea(nuevaTarea, result.token).subscribe({
+    next: (response) => {
+      this.toastr.success('Tarea creada correctamente', 'Éxito');
+      this.resetForm();
+    },
+    error: (error) => {
+      // ✅ MOSTRAR ERRORES DE VALIDACIÓN ESPECÍFICOS
+      if (error.error?.errors) {
+        console.error('❌ Errores de validación:', error.error.errors);
+        
+        // Mostrar cada error de validación
+        Object.keys(error.error.errors).forEach(campo => {
+          const errores = error.error.errors[campo];
+          console.error(`❌ Campo "${campo}":`, errores);
+          
+          // Mostrar el primer error de cada campo
+          if (Array.isArray(errores) && errores.length > 0) {
+            this.toastr.error(`${campo}: ${errores[0]}`, 'Error de validación');
+          }
+        });
+      } else if (error.error?.message) {
+        console.error('❌ Mensaje de error:', error.error.message);
+        this.toastr.error(error.error.message, 'Error del servidor');
+      } else {
+        this.toastr.error('Error al crear la tarea', 'Error');
+      }
+    }
+  });
+}
+
+// ✅ MÉTODO PARA TAREAS CON SOLICITUD DE REPUESTO - TAMBIÉN CORREGIDO
+async crearTareaConSolicitud(authResult: { acceso: boolean, id: number | null, token: any }) {
+  try {
+    // Buscar el estado "Espera repuesto" 
+    const estadoEsperaRepuesto = this.estados_tarea.find(estado => 
+      estado.name.toLowerCase().includes('espera') && 
+      estado.name.toLowerCase().includes('repuesto')
+    );
+    const estadoTarea = estadoEsperaRepuesto ? estadoEsperaRepuesto.code : 6; // Fallback
+
+    // ✅ PREPARAR MECÁNICOS CON VALIDACIÓN DE TIPOS
+    const mecanicosFormateados = this.list_mecanicos.map(mecanico => ({
+      idMecanico: Number(mecanico.idMecanico),
+      duracionEstimada: Number(mecanico.duracionEstimada)
+    }));
+
+    const nuevaTarea = {
+      codigoOrdenTrabajo: this.codigoOT,
+      idUsuario: Number(authResult.id), 
+      detalle: this.detalleTarea.trim(),
+      estado: estadoTarea,
+      esManual: true,
+      requiereRepuesto: true, 
+      requiereServicioExterno: this.tipo_tarea === 'externa' ? true : false,
+      requiereAutorizacion: this.requ_auth,
+      tipoMantenimiento: this.tipo_mantenimiento === 'preventivo' ? true : false,
+      duracion: Number(this.duracion_tarea),
+      mecanicos: mecanicosFormateados,
+      repuestos: [],
+    };
+    
+    // Crear la tarea primero
+    this.tareaService.createTarea(nuevaTarea, authResult.token).subscribe({
+      next: async (tareaResponse) => {
+        this.toastr.success('Tarea creada correctamente', 'Éxito');
+
+        const idTarea = tareaResponse.idTareaOt || 
+                       tareaResponse.id || 
+                       tareaResponse.idTarea || 
+                       tareaResponse.codigoTarea ||
+                       tareaResponse.IdTareaOT ||
+                       tareaResponse.IdTarea ||
+                       tareaResponse.tareaId ||
+                       tareaResponse.ID ||
+                       tareaResponse.Id ||
+                       tareaResponse.identificador ||
+                       tareaResponse.codigo;
+
+
+        if (idTarea) {
+          // Crear la solicitud de repuesto
+          await this.crearSolicitudRepuesto(idTarea);
+        } else {
+          this.toastr.error('No se pudo crear la solicitud de repuesto: ID de tarea no encontrado', 'Error');
+        }
+        
+        this.resetForm();
+      },
+      error: (error) => {
+        this.toastr.error('Error al crear la tarea', 'Error');
+      }
+    });
+
+  } catch (error) {
+    this.toastr.error('Error en el proceso de creación', 'Error');
+  }
+}
+async crearSolicitudRepuesto(idTareaOt: string | number) {
+  try {
+    
+    let idAdjunto: number | null = null;
+
+    // Subir archivo si existe
+    if (this.datosSolicitudRepuesto.archivo) {
+      try {
+        const adjuntoResponse = await this.adjuntoService.createAdjunto(
+          this.datosSolicitudRepuesto.archivo, 
+          0
+        ).toPromise();
+        idAdjunto = adjuntoResponse.id || adjuntoResponse.idAdjunto;
+      } catch (error) {
+        console.warn('⚠️ Error al subir archivo, continuando sin adjunto:', error);
+        this.toastr.warning('No se pudo subir el archivo adjunto, pero la solicitud se creará', 'Advertencia');
+      }
+    }
+
+    let idUsuario: number | null = null;
+    
+    const mecanicoActual = this.authService.getCurrentMecanico();
+    if (mecanicoActual) {
+      idUsuario = parseInt(mecanicoActual.id);
+    } else {
+      const userData = this.authService.getUsuarioData();
+      idUsuario = userData?.id || userData?.idUsuario;
+    }
+
+    if (!idUsuario) {
+      this.toastr.error('No se pudo obtener la información del usuario', 'Error');
+      return;
+    }
+
+    let idTareaFinal: number;
+    
+    if (typeof idTareaOt === 'string') {
+      // Si es un código alfanumérico, usar como está
+      if (isNaN(parseInt(idTareaOt))) {
+        idTareaFinal = idTareaOt as any; // Mantener como string
+      } else {
+        idTareaFinal = parseInt(idTareaOt, 10);
+      }
+    } else {
+      idTareaFinal = idTareaOt;
+    }
+
+    const solicitudData = {
+      idTareaOt: idTareaFinal,
+      idUsuario: idUsuario,
+      detalle: this.datosSolicitudRepuesto.detalle.trim(),
+      ...(idAdjunto && { idAdjunto: idAdjunto })
+    };
+
+
+    this.solicitudService.crearSolicitudRepuesto(solicitudData).subscribe({
+      next: (solicitudResponse) => {
+        this.toastr.success(
+          `Solicitud de repuesto ${solicitudResponse.codigo} creada exitosamente`, 
+          'Solicitud Creada'
+        );
+      },
+      error: (error) => {
+        this.toastr.error('Error al crear la solicitud de repuesto', 'Error');
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error en crearSolicitudRepuesto:', error);
+    this.toastr.error('Error al procesar la solicitud de repuesto', 'Error');
+  }
+}
+
+
+ resetForm() {
+  this.codigoOT = '';
+  this.detalleTarea = '';
+  this.estado_tarea = EstadoTarea[0].code;
+  this.requ_repuestos = true;
+  this.tipo_tarea = 'interna';
+  this.requ_auth = true;
+  this.tipo_mantenimiento = 'preventivo';
+  this.duracion_tarea = 0;
+  this.list_repuestos = [];
+  this.list_mecanicos = [];
+  this.solicitudRepuesto = false;
+  this.displaySolicitudRepuestoDialog = false;
+  this.datosSolicitudRepuesto = {
+    detalle: '',
+    archivo: null,
+    archivoNombre: '',
+    idAdjunto: null
+  };
+  
+  this.onClose.emit({ action: this.action, color: this.color });
+}
 
   showDialogRepuestos() {
     this.displayAddDialogRepuestos = true;
@@ -269,45 +500,68 @@ agregarRepuesto() {
     return;
   }
 
-  if (this.cantidadSeleccionada > item.stock) {
-    this.toastr.error(`La cantidad excede el stock disponible: ${item.stock}`, 'Stock insuficiente');
-    return;
-  }
-
   const yaExiste = this.list_repuestos.some(r => r.idItem === this.selectedItemId);
   if (yaExiste) {
     this.toastr.warning('Este ítem ya fue agregado.', 'Ítem duplicado');
     return;
   }
 
+  // ✅ VALIDACIÓN DE STOCK MEJORADA
   if (this.tipoItemSeleccionado === 'insumo' && this.mostrarMagnitudes && this.selectedMagnitudId) {
-    this.procesarConversionYAgregar();
+    // Para insumos con conversión de magnitudes
+    this.validarStockConConversion(item);
   } else {
+    // Para repuestos o insumos sin conversión
+    if (this.cantidadSeleccionada > item.stock) {
+      this.toastr.error(`La cantidad excede el stock disponible: ${item.stock}`, 'Stock insuficiente');
+      return;
+    }
     this.agregarItemALista(this.cantidadSeleccionada);
   }
 }
-
-procesarConversionYAgregar() {
+validarStockConConversion(item: any) {
+  // Si la magnitud seleccionada es la misma que la magnitud origen, no hay conversión
   if (this.selectedMagnitudId === this.magnitudOrigen.idMagnitud) {
+    if (this.cantidadSeleccionada! > item.stock) {
+      this.toastr.error(`La cantidad excede el stock disponible: ${item.stock} ${this.magnitudOrigen.unidad}`, 'Stock insuficiente');
+      return;
+    }
     this.agregarItemALista(this.cantidadSeleccionada!);
     return;
   }
 
+  // ✅ CONVERTIR LA CANTIDAD INGRESADA A LA UNIDAD BASE PARA VALIDAR STOCK
   this.magnitudService.convertirUnidad(
-    this.magnitudOrigen.idMagnitud,
-    this.cantidadSeleccionada!,
-    this.selectedMagnitudId!
+    this.selectedMagnitudId!, // Desde la magnitud seleccionada por el usuario
+    this.cantidadSeleccionada!, // Cantidad ingresada por el usuario
+    this.magnitudOrigen.idMagnitud // Hacia la magnitud base del ítem
   ).subscribe({
     next: (response: any) => {
-      console.log('Conversión realizada:', response);
-      this.agregarItemALista(response.unidadDestino);
+      const cantidadEnUnidadBase = response.unidadDestino;
+      
+      // ✅ VALIDAR STOCK EN LA UNIDAD BASE
+      if (cantidadEnUnidadBase > item.stock) {
+        const magnitudSeleccionada = this.magnitudesCompatibles.find(m => m.idMagnitud === this.selectedMagnitudId);
+        this.toastr.error(
+          `La cantidad solicitada (${this.cantidadSeleccionada} ${magnitudSeleccionada?.unidad}) equivale a ${cantidadEnUnidadBase} ${this.magnitudOrigen.unidad}, pero solo hay ${item.stock} ${this.magnitudOrigen.unidad} disponibles.`, 
+          'Stock insuficiente'
+        );
+        return;
+      }
+
+      // ✅ STOCK SUFICIENTE - GUARDAR LA CANTIDAD EN UNIDAD BASE
+      this.agregarItemALista(cantidadEnUnidadBase);
     },
     error: (error) => {
-      console.error('Error en la conversión:', error);
-      alert('Error al convertir la unidad. Se usará la cantidad original.');
-      this.agregarItemALista(this.cantidadSeleccionada!);
+      console.error('Error al validar stock con conversión:', error);
+      this.toastr.error('Error al validar el stock. Intenta nuevamente.', 'Error');
     }
   });
+}
+
+getMagnitudNombre(idMagnitud: number): string {
+  const magnitud = this.magnitudesCompatibles.find(m => m.idMagnitud === idMagnitud);
+  return magnitud ? magnitud.unidad : '';
 }
 
 agregarItemALista(cantidadFinal: number) {
@@ -315,7 +569,6 @@ agregarItemALista(cantidadFinal: number) {
     idItem: this.selectedItemId!,
     cantidad: cantidadFinal
   });
-  console.log(`Ítem agregado - ID: ${this.selectedItemId}, Cantidad final: ${cantidadFinal}`);
   this.limpiarFormulario();
 }
 
@@ -407,17 +660,79 @@ limpiarFormularioAlCerrar() {
     this.list_mecanicos = this.list_mecanicos.filter(m => m.idMecanico !== idMecanico);
   }
 
-  headerDialog(){
-    switch(this.action){
-      case 'agregar':
-        this.header_dialog = 'Agregar Tarea';
-        break;
-      case 'editar':
-        this.header_dialog = 'Editar Tarea';
-        break;
-      case 'eliminar':
-        this.header_dialog = 'Eliminar Tarea';
-        break;
+  headerDialog(): void {
+  switch (this.action) {
+    case 'agregar':
+      this.header_dialog = 'Agregar Nueva Tarea';
+      break;
+    case 'editar':
+      this.header_dialog = 'Editar Tarea';
+      break;
+    case 'eliminar':
+      this.header_dialog = 'Eliminar Tarea';
+      break;
+    default:
+      this.header_dialog = 'Gestión de Tarea';
+  }
+}
+
+onSolicitudRepuestoChange(): void {
+  if (!this.solicitudRepuesto) {
+    // Si se desactiva el checkbox, limpiar los datos de solicitud
+    this.datosSolicitudRepuesto = {
+      detalle: '',
+      archivo: null,
+      archivoNombre: '',
+      idAdjunto: null
+    };
+    this.displaySolicitudRepuestoDialog = false;
+  } else {
+    // ✅ Si se activa la solicitud, limpiar la lista de repuestos y establecer requ_repuestos en false
+    this.list_repuestos = [];
+    this.requ_repuestos = false;
+  }
+}
+
+  abrirDialogSolicitudRepuesto(): void {
+  this.displaySolicitudRepuestoDialog = true;
+}
+
+  onFileSelected(event: any): void {
+  const file = event.target.files[0];
+  if (file) {
+    // Validar que sea una imagen
+    if (file.type.startsWith('image/')) {
+      this.datosSolicitudRepuesto.archivo = file;
+      this.datosSolicitudRepuesto.archivoNombre = file.name;
+    } else {
+      this.toastr.warning('Solo se permiten archivos de imagen', 'Tipo de archivo no válido');
+      event.target.value = ''; // Limpiar el input
     }
   }
+}
+
+  cancelarSolicitudRepuesto(): void {
+  this.datosSolicitudRepuesto = {
+    detalle: '',
+    archivo: null,
+    archivoNombre: '',
+    idAdjunto: null
+  };
+  this.displaySolicitudRepuestoDialog = false;
+}
+
+  confirmarSolicitudRepuesto(): void {
+  if (!this.datosSolicitudRepuesto.detalle.trim()) {
+    this.toastr.warning('El detalle de la solicitud es obligatorio', 'Campo requerido');
+    return;
+  }
+
+  // Guardar el nombre del archivo para mostrar en la UI
+  if (this.datosSolicitudRepuesto.archivo) {
+    this.datosSolicitudRepuesto.archivoNombre = this.datosSolicitudRepuesto.archivo.name;
+  }
+
+  this.displaySolicitudRepuestoDialog = false;
+  this.toastr.success('Solicitud de repuesto configurada correctamente', 'Configuración guardada');
+}
 }

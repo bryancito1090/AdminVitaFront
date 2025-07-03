@@ -4,6 +4,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { AuthService } from '../auth/service/auth.service';
 import { SolicitudDetalleTableExpandOT } from '../../../domain/response/Solicitud.model';
 import { Observable } from 'rxjs';
+import { CrearSolicitudRepuestoRequest, SolicitudRepuestoDetalleResponse } from '../../../domain/request/Solicitud.model';
 
 @Injectable({
   providedIn: 'root'
@@ -26,5 +27,9 @@ export class SolicitudService {
       aprobado: aprobado
     };
     return this.http.put(`${this.apiURL}/ActualizarAprobacion`, body, { headers });
+  }
+    crearSolicitudRepuesto(solicitudData: CrearSolicitudRepuestoRequest): Observable<SolicitudRepuestoDetalleResponse> {
+    const headers = this.auth.getMecanicoAuthHeaders();
+    return this.http.post<SolicitudRepuestoDetalleResponse>(`${this.apiURL}/CrearSolicitud`, solicitudData, { headers });
   }
 }

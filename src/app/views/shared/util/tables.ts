@@ -145,6 +145,7 @@ export const HeadersTablesPersons = {
 }
 export const HeadersTablesMecanico = {
   Tareas: [
+    { field: 'codigo', header: 'Código', type: 'text', sort: true },
     { field: 'detalle', header: 'Detalle', sort: true},
     { field: 'duracion', header: 'Duración', sort: true},
     { field: 'estado', header: 'Estado',},
