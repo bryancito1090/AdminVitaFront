@@ -1,11 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
+import { ButtonModule } from 'primeng/button';
 import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 
 @Component({
   selector: 'app-dialog-autorizacion-ot',
   imports: [
-    CommonModule
+    CommonModule,
+    ButtonModule
   ],
   templateUrl: './dialog-autorizacion-ot.component.html',
   styleUrl: './dialog-autorizacion-ot.component.scss'
@@ -21,7 +23,9 @@ export class DialogAutorizacionOTComponent {
   ) {
     this.estado = this.config.data.estado;
 
+    console.log(this.estado); 
     switch (this.estado) {
+      
       case 6:
         this.mensaje = 'Esperando autorización administrativa para aprobación de la solicitud.';
         break;
