@@ -470,6 +470,7 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
       header: 'Estado de Autorización',
       width: '450px',
       modal: true,
+      dismissableMask: true,
       data: {
         estado,
         codigo
