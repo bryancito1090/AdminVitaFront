@@ -40,7 +40,7 @@
     </div>
 
     <!-- Contenido para Tareas Internas -->
-    <ng-container *ngIf="tipo_tarea === 'interna'">
+    <ng-container>
         
         <!-- Detalles de la Tarea -->
         <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6">
@@ -58,7 +58,7 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <p-floatlabel variant="in">
                     <p-inputnumber [(ngModel)]="duracion_tarea" inputId="duracion_tarea"/>
-                    <label for="duracion_tarea">Duración (Unidad de Trabajo)</label>
+                    <label for="duracion_tarea">Duración ( 1 Unidad = 20 minutos)</label>
                 </p-floatlabel>
                 
                 <p-select 
@@ -497,7 +497,7 @@
                 min="1" 
                 [(ngModel)]="duracionEstimada" 
                 class="p-inputtext p-component w-full" 
-                placeholder="Tiempo estimado en minutos" />
+                placeholder="Tiempo Estimado (1 unidad = 20 minutos)" />
         </div>
 
         <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">

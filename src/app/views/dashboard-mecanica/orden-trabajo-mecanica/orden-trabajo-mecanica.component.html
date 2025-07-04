@@ -258,19 +258,82 @@
 <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
 
 <!-- Dialog para editar tarea -->
- <p-dialog header="Editar Tarea" [(visible)]="displayModal" [modal]="true" [style]="{width: '450px'}">
+<p-dialog [(visible)]="displayModal" [modal]="true" [style]="{width: '500px'}">
+  <ng-template pTemplate="header">
+    <div class="flex items-center justify-between w-full">
+      <div class="flex flex-col">
+        <h3 class="text-lg font-semibold text-gray-900">Editar Tarea</h3>
+        <div *ngIf="selectedTarea" class="flex items-center gap-3 mt-1">
+          <p-tag 
+            [value]="selectedTarea.codigo" 
+            severity="info" 
+            size="small"
+            class="font-mono">
+          </p-tag>
+          <span class="text-sm text-gray-600">{{ selectedTarea.detalle }}</span>
+          <p-tag 
+            [value]="obtenerTextoEstadoTarea(selectedTarea.estado)"
+            [severity]="obtenerSeverityEstadoTarea(selectedTarea.estado)"
+            size="small">
+          </p-tag>
+        </div>
+      </div>
+    </div>
+  </ng-template>
   <div class="flex flex-col gap-4">
 
     <div>
       <label class="block font-medium mb-2">Estado</label>
-      <p-dropdown 
-        [options]="estado"
-        [(ngModel)]="formEstado"
-        optionLabel="name"
-        optionValue="code"
-        placeholder="Selecciona un estado"
-        class="w-full">
-      </p-dropdown>
+      <div class="flex gap-3 items-end">
+        <p-dropdown 
+          [options]="estadosTarea"
+          [(ngModel)]="formEstado"
+          optionLabel="name"
+          optionValue="code"
+          placeholder="Selecciona un estado"
+          class="flex-1"
+          [disabled]="loadingActualizarEstado"
+          appendTo="body"
+          [virtualScroll]="true"
+          [virtualScrollItemSize]="43"
+          [showClear]="true"
+          [filter]="true"
+          filterBy="name"
+          filterPlaceholder="Buscar estado..."
+          scrollHeight="300px">
+          
+          <!-- Template para las opciones -->
+          <ng-template let-option pTemplate="item">
+            <div class="flex items-center gap-2 p-2">
+              <p-tag 
+                [value]="option.name" 
+                [severity]="option.severity || 'secondary'"
+                size="small">
+              </p-tag>
+            </div>
+          </ng-template>
+          
+          <!-- Template para el valor seleccionado -->
+          <ng-template let-selectedOption pTemplate="selectedItem">
+            <div class="flex items-center gap-2" *ngIf="selectedOption">
+              <p-tag 
+                [value]="selectedOption.name" 
+                [severity]="selectedOption.severity || 'secondary'"
+                size="small">
+              </p-tag>
+            </div>
+          </ng-template>
+        </p-dropdown>
+        
+        <p-button 
+            label="Actualizar Estado" 
+            icon="pi pi-refresh"
+            severity="primary"
+            [loading]="loadingActualizarEstado"
+            [disabled]="!estadoHaCambiado()"
+            (onClick)="actualizarEstadoTarea(selectedTarea.idTarea)">
+        </p-button>
+      </div>
     </div>
 
     <div>
@@ -284,6 +347,79 @@
         placeholder="Selecciona mecánicos"
         class="w-full">
       </p-multiSelect>
+    </div>
+    <div class="border-t pt-4">
+      <h4 class="text-md font-semibold mb-3 text-gray-800">Agregar Observación</h4>
+      
+      <div class="space-y-3">
+        <!-- Campo de detalle -->
+        <div>
+          <label class="block font-medium mb-2 text-sm">Detalle de la observación *</label>
+          <textarea 
+            [(ngModel)]="observacionDetalle"
+            placeholder="Describe la observación de la tarea..."
+            rows="3"
+            class="w-full p-2 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            [disabled]="loadingCrearObservacion">
+          </textarea>
+        </div>
+
+        <!-- Subir imagen opcional -->
+        <div>
+          <label class="block font-medium mb-2 text-sm">Imagen (Opcional)</label>
+          <div class="flex items-center gap-3">
+            <input 
+              type="file" 
+              #fileInput
+              accept="image/*"
+              (change)="onFileSelected($event)"
+              class="hidden">
+            
+            <p-button 
+              label="Seleccionar imagen"
+              icon="pi pi-upload"
+              severity="secondary"
+              size="small"
+              [disabled]="loadingCrearObservacion"
+              (onClick)="fileInput.click()">
+            </p-button>
+
+            <!-- Preview de imagen seleccionada -->
+            <div *ngIf="selectedFile" class="flex items-center gap-2 text-sm">
+              <i class="pi pi-check text-green-600"></i>
+              <span class="text-gray-600">{{ selectedFile.name }}</span>
+              <p-button 
+                icon="pi pi-times"
+                severity="secondary"
+                size="small"
+                [text]="true"
+                [rounded]="true"
+                (onClick)="removeSelectedFile()"
+                [disabled]="loadingCrearObservacion">
+              </p-button>
+            </div>
+
+            <!-- Estado de carga de imagen -->
+            <div *ngIf="loadingSubirImagen" class="flex items-center gap-2 text-sm text-blue-600">
+              <i class="pi pi-spin pi-spinner"></i>
+              <span>Subiendo imagen...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botón para crear observación -->
+        <div class="flex justify-end">
+          <p-button 
+            label="Agregar Observación"
+            icon="pi pi-plus"
+            severity="success"
+            size="small"
+            [loading]="loadingCrearObservacion"
+            [disabled]="!observacionDetalle || observacionDetalle.trim().length === 0"
+            (onClick)="crearObservacionTarea()">
+          </p-button>
+        </div>
+      </div>
     </div>
 
     <div class="flex justify-end gap-2 mt-4">
@@ -300,7 +436,6 @@
     </div>
   </div>
 </p-dialog>
-
 
 <p-dialog 
   [header]="'Mecánicos asignados - Tarea: ' + codigoTareaSeleccionada"

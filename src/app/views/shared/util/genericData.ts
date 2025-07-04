@@ -25,12 +25,12 @@ export const EstadosVehiculo = [
 ];
 
 export const EstadoTarea = [
-    {name: 'Pendiente', code: 1}, //(Preparada para iniciar la tarea)
-    {name: 'Progreso', code: 2}, //(La tarea esta en progreso)
-    {name: 'Cancelado', code: 3}, //(La tarea se ha cancelado)
-    {name: 'Finalizado', code: 4}, //Finalizado (La tarea se ha finalizado con exito)
-    {name: 'Finalizado sin exito', code: 5}, //(La tarea se ha finalizado sin exito)
-    {name: 'Espera Repuesto', code: 6}, //(Espera (repuesto))
-    {name: 'Espera Mecanico', code: 7}, //(Espera (Mecanicos/equipo))
-    {name: 'Espera Autorizacion', code: 8}, //(Espera (aprob. Cliente)(Posible tabla config)(icon, color, tipo)
+  { name: 'Pendiente', code: 1, severity: 'info' },
+  { name: 'Progreso', code: 2, severity: 'warning' },
+  { name: 'Cancelado', code: 3, severity: 'danger' },
+  { name: 'Finalizado', code: 4, severity: 'success' },
+  { name: 'Finalizado sin éxito', code: 5, severity: 'danger' },
+  { name: 'Espera Repuesto', code: 6, severity: 'secondary' },
+  { name: 'Espera Mecánico', code: 7, severity: 'secondary' },
+  { name: 'Espera Autorización ', code: 8, severity: 'warning' }
 ]
