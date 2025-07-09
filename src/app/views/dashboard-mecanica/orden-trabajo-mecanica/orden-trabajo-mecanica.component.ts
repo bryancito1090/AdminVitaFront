@@ -473,7 +473,7 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
       dismissableMask: true,
       data: {
         estado,
-        codigo
+        codigo,
       }
     });
 
@@ -487,7 +487,7 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
   autorizarTareaOT(codigo: string) { //modificar cuando haya una funciuon para cambiar el estado
     this.toastr.info('Procesando su solicitud...', 'Autorizando tarea');
   }
- mostrarMecanicos(mecanicos: any[], codigoTarea: string) {
+  mostrarMecanicos(mecanicos: any[], codigoTarea: string) {
     this.mecanicosTareaSeleccionada = mecanicos;
     this.codigoTareaSeleccionada = codigoTarea;
     this.displayMecanicosDialog = true;
