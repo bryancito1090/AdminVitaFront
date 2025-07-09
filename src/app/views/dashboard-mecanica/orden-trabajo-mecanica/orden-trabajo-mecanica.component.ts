@@ -28,6 +28,8 @@ import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { AuthMecanicaComponent } from '../../auth/components/auth-mecanica/auth-mecanica.component';
 import { OrdenMecanicoService } from '../../services/ordenMecanico.service';
 import { DialogAutorizacionOTComponent } from './dialog-autorizacion-ot/dialog-autorizacion-ot.component';
+import { CreateObservacionRequest } from '../../../../domain/response/Observacion.model';
+import { AdjuntoService } from '../../services/adjunto.service';
 
 interface ActualizarOrdenRequest {
   idOrden: number;
@@ -112,6 +114,13 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
   mecanicosTareaSeleccionada: any[] = [];
   codigoTareaSeleccionada: string = '';
 
+  loadingActualizarEstado : boolean = false;
+  estadosTarea = EstadoTarea;
+  observacionDetalle: string = '';
+  selectedFile: File | null = null;
+  loadingCrearObservacion: boolean = false;
+  loadingSubirImagen: boolean = false;
+
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -122,7 +131,8 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
     private fb: FormBuilder,
     private confirmationService: ConfirmationService,
     private dialogService: DialogService,
-    private ordenMecanicoService : OrdenMecanicoService
+    private ordenMecanicoService : OrdenMecanicoService,
+    private adjuntoService : AdjuntoService
   ) {
     // Inicializar el formulario
     this.fb_editOt = this.fb.group({
@@ -456,6 +466,7 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
     this.selectedTarea = null;
     this.formEstado = null;
     this.formMecanicos = [];
+    this.limpiarFormularioObservacion();
   }
 
   autorizacionTareaOT(codigo: string) {
@@ -501,4 +512,205 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
     .reduce((a, b) => a + b, 0);
   return total + ' hrs';
 }
+obtenerTextoEstadoTarea(estado: number): string {
+  const estadoObj = this.estadosTarea.find(e => e.code === estado);
+  return estadoObj ? estadoObj.name : 'Sin definir';
+}
+
+// Método para obtener el severity del estado de la tarea
+obtenerSeverityEstadoTarea(estado: number): "success" | "info" | "warn" | "danger" | "secondary" | "contrast" {
+  const estadoObj = this.estadosTarea.find(e => e.code === estado);
+  return estadoObj?.severity as any || 'secondary';
+}
+
+actualizarEstadoTarea(idTarea?: number) {
+  if (!this.selectedTarea || this.formEstado === null) {
+    this.toastr.warning('Debe seleccionar un estado válido', 'Advertencia');
+    return;
+  }
+
+  // Verificar si realmente cambió el estado
+  if (this.formEstado === this.selectedTarea.estado) {
+    this.toastr.info('No se detectaron cambios en el estado', 'Información');
+    return;
+  }
+
+  const idTareaFinal = idTarea || 
+                      this.selectedTarea.idTarea || 
+                      this.selectedTarea.id || 
+                      this.selectedTarea.idTareaOt;
+
+  if (!idTareaFinal) {
+    this.toastr.error('No se pudo identificar la tarea para actualizar', 'Error');
+    return;
+  }
+
+  this.loadingActualizarEstado = true;
+
+  const datosActualizacion = {
+    idTareaOt: Number(idTareaFinal),
+    estado: Number(this.formEstado)
+  };
+
+  this.tareaService.actualizarTarea(datosActualizacion).subscribe({
+    next: (response) => {
+      this.toastr.success(
+        `Estado actualizado a: ${this.obtenerTextoEstadoTarea(this.formEstado!)}`, 
+        'Estado Actualizado'
+      );
+      this.loadingActualizarEstado = false;
+      this.actualizarTareaEnLista();
+      this.getTareaOT();
+      this.displayModal = false;
+    },
+    error: (error) => {
+      this.toastr.error('No se pudo actualizar el estado de la tarea', 'Error');
+      this.loadingActualizarEstado = false;
+    }
+  });
+}
+
+// Método para actualizar la tarea en la lista local
+actualizarTareaEnLista() {
+  const index = this.TareasOT.findIndex(t => t.codigo === this.selectedTarea.codigo);
+  if (index !== -1) {
+    this.TareasOT[index].estado = this.formEstado;
+  }
+}
+
+estadoHaCambiado(): boolean {
+  return this.formEstado !== null && 
+         this.selectedTarea && 
+         this.formEstado !== this.selectedTarea.estado;
+}
+onFileSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      // Validar tipo de archivo
+      if (!file.type.startsWith('image/')) {
+        this.toastr.warning('Solo se permiten archivos de imagen', 'Archivo inválido');
+        return;
+      }
+
+      // Validar tamaño (ejemplo: máximo 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        this.toastr.warning('El archivo no puede superar los 5MB', 'Archivo muy grande');
+        return;
+      }
+
+      this.selectedFile = file;
+      console.log('Archivo seleccionado:', file.name, 'Tamaño:', file.size);
+    }
+  }
+
+  // ✅ MÉTODO PARA REMOVER ARCHIVO SELECCIONADO
+  removeSelectedFile() {
+    this.selectedFile = null;
+  }
+async subirImagen(): Promise<number | null> {
+  if (!this.selectedFile) {
+    return null;
+  }
+
+  this.loadingSubirImagen = true;
+
+  try {
+    // Llamar al servicio de adjuntos con idVehiculo como null (opcional)
+    const response = await this.adjuntoService.createAdjunto(this.selectedFile, null as any).toPromise();
+    
+    console.log('Imagen subida exitosamente:', response);
+    this.loadingSubirImagen = false;
+    
+    return response.idAdjunto;
+  } catch (error) {
+    console.error('Error al subir imagen:', error);
+    this.toastr.error('Error al subir la imagen', 'Error');
+    this.loadingSubirImagen = false;
+    return null;
+  }
+}
+
+  async crearObservacionTarea() {
+    if (!this.selectedTarea || !this.observacionDetalle.trim()) {
+      this.toastr.warning('Debe ingresar un detalle para la observación', 'Campos requeridos');
+      return;
+    }
+
+    // Obtener ID de la tarea (igual que en actualizar estado)
+    const tareaCompleta = this.TareasOT.find(t => t.codigo === this.selectedTarea.codigo);
+    const idTarea = tareaCompleta?.idTarea || 
+                   tareaCompleta?.id || 
+                   tareaCompleta?.idTareaOt ||
+                   this.selectedTarea.idTarea;
+
+    if (!idTarea) {
+      this.toastr.error('No se pudo identificar la tarea', 'Error');
+      return;
+    }
+
+    this.loadingCrearObservacion = true;
+
+    try {
+      let idAdjunto: number | null = null;
+
+      // Subir imagen si hay una seleccionada
+      if (this.selectedFile) {
+        idAdjunto = await this.subirImagen();
+        
+        if (idAdjunto === null) {
+          this.loadingCrearObservacion = false;
+          return; // Error al subir imagen
+        }
+      }
+
+      // Crear la observación
+      const observacionData: CreateObservacionRequest = {
+        IdTareaOt: Number(idTarea),
+        IdUsuario: 1, // Obtener del servicio de autenticación
+        Detalle: this.observacionDetalle.trim(),
+        IdAdjunto: idAdjunto
+      };
+
+      console.log('Datos de observación a enviar:', observacionData);
+
+      this.tareaService.crearObservacion(observacionData).subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.toastr.success('Observación creada exitosamente', 'Éxito');
+            
+            // Limpiar formulario
+            this.limpiarFormularioObservacion();
+            
+            // Opcional: recargar observaciones o actualizar vista
+            // this.cargarObservaciones();
+          }
+          this.loadingCrearObservacion = false;
+        },
+        error: (error) => {
+          console.error('Error al crear observación:', error);
+          
+          if (error.status === 400) {
+            this.toastr.error(error.error || 'Datos inválidos', 'Error de Validación');
+          } else {
+            this.toastr.error('No se pudo crear la observación', 'Error');
+          }
+          
+          this.loadingCrearObservacion = false;
+        }
+      });
+
+    } catch (error) {
+      console.error('Error general al crear observación:', error);
+      this.toastr.error('Error inesperado al crear la observación', 'Error');
+      this.loadingCrearObservacion = false;
+    }
+  }
+
+  // ✅ MÉTODO PARA LIMPIAR FORMULARIO DE OBSERVACIÓN
+  limpiarFormularioObservacion() {
+    this.observacionDetalle = '';
+    this.selectedFile = null;
+    this.loadingSubirImagen = false;
+  }
 }

@@ -33,7 +33,7 @@ export const HeadersTables = {
     {field: 'detalle', header: 'Detalle'},
     {field: 'estado', header: 'Estado'},
     {field: 'mecanicos', header: 'Mecánicos'},
-    {field: 'duracion', header: 'Duración (Unidades de Tiempo)'},
+    {field: 'duracion', header: 'Duración (1 Unidad = 20 minutos)'},
     {field: 'requiereServicioExterno', header: 'Servicio Externo'},
     {field: 'requiereRepuesto', header: 'Requiere Repuesto/s'},
     {field: 'observaciones', header: 'Observaciones'}

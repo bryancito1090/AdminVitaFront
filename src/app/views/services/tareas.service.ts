@@ -3,6 +3,7 @@ import { environment } from '../../../environments/environment.development';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ObservacionesOTDetalle, TareaDetalle, TrabajoExternoDetalle } from '../../../domain/response/Tarea.model';
+import { CreateObservacionRequest } from '../../../domain/response/Observacion.model';
 import { AuthService } from '../auth/service/auth.service';
 
 @Injectable({
@@ -37,5 +38,14 @@ getTareasByOT(code: string): Observable<TareaDetalle[]> {
   createTarea(data: any, token: any): Observable<any> {
     const headers = { Authorization: `Bearer ${token}` };
     return this.http.post(`${this.apiURL}/CreateTarea`, data, { headers });
+  }
+  
+  actualizarTarea(data: { idTareaOt: number; estado?: number | null; duracion?: number | null }): Observable<any> {
+    const headers = this.auth.getMecanicoAuthHeaders();
+    return this.http.put(`${this.apiURL}/actualizar-tarea`, data, { headers });
+  }
+   crearObservacion(data: CreateObservacionRequest): Observable<{ success: boolean }> {
+    const headers = this.auth.getMecanicoAuthHeaders();
+    return this.http.post<{ success: boolean }>(`${environment.domain}${environment.apiEndpoint}/Observacion/CrearObservacion`, data, { headers });
   }
 }
