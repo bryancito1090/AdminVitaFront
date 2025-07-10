@@ -70,7 +70,6 @@ export class AuthService {
 
     try {
       const decoded: any = jwtDecode(token);
-      console.log('Token decodificado:', decoded);
       return decoded['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'];
     } catch (error) {
       console.error('Error al decodificar el token:', error);

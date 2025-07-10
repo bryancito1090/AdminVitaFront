@@ -9,7 +9,7 @@ import { AgendarOrdenMecanicoRequest } from '../../../../../domain/request/Orden
 import { MecanicoService } from '../../../services/mecanico.service';
 import { OrdenTrabajoService } from '../../../services/orden-trabajo.service';
 import { AdjuntoService } from '../../../services/adjunto.service';
-import { lastValueFrom } from 'rxjs';
+import { firstValueFrom, lastValueFrom } from 'rxjs';
 import { Dialog } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -23,6 +23,8 @@ import { ArchivosService } from '../../../services/archivos.service';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { AuthService } from '../../../auth/service/auth.service';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { AuthMecanicaComponent } from '../../../auth/components/auth-mecanica/auth-mecanica.component';
 
 @Component({
   selector: 'app-agregar-orden-trabajo-mecanico',
@@ -37,7 +39,7 @@ import { AuthService } from '../../../auth/service/auth.service';
     CalendarModule,
     ConfirmDialogModule
     ],
-  providers: [ConfirmationService],
+  providers: [ConfirmationService, DialogService],
   templateUrl: './agregar-orden-trabajo-mecanico.component.html',
   styleUrl: './agregar-orden-trabajo-mecanico.component.scss'
 })
@@ -176,6 +178,7 @@ datosEmpresa = {
   idLicencias: [],
   archivos: []
 };
+dialogRef: DynamicDialogRef | undefined; // Referencia al diálogo de autenticación
 listaAnios: number[] = [];
 cargandoRegistroVehiculo: boolean = false;
 idAdjuntoFrontal: number | null = null;
@@ -194,7 +197,8 @@ idAdjuntoTrasera: number | null = null;
     private vehiculoService: VehiculoService,
     private archivoService : ArchivosService,
     private confirmationService: ConfirmationService,
-    private authService: AuthService
+    private authService: AuthService,
+    private dialogService: DialogService
   ) {}
 
   ngOnInit() {
@@ -312,7 +316,6 @@ validarVehiculo() {
   this.validacionService.validarVehiculoXPlacaMec(this.placa)
     .subscribe({
       next: (respuesta) => {
-        console.log('Respuesta de validación de vehículo:', respuesta);
         this.vehiculoActual = respuesta;
         this.mostrarInfoVehiculo = true;
         
@@ -372,30 +375,44 @@ validarVehiculo() {
     }
     return true;
   }
-  crearOrdenTrabajo() {
-    if (!this.validarDatosOrden()) {
-      return;
-    }
-    this.creandoOrden = true;
-    this.ordenData.fechaCreacion = new Date().toISOString();
-    console.log('Datos de la orden a enviar:', this.ordenData);
-    this.ordenTrabajoService.agendarOrdenMecanico(this.ordenData).subscribe({
-      next: async (response) => {
-        console.log('Orden de trabajo creada:', response);
-        this.toastr.success('Orden de trabajo creada exitosamente', 'Éxito');
-        if (this.hayImagenesParaSubir()) {
-          await this.subirImagenes();
+  async crearOrdenTrabajo() {
+    if (!this.validarDatosOrden()) return;
+
+    const dialogRef = this.dialogService.open(AuthMecanicaComponent, {
+      header: 'Código de Autenticación',
+      width: '400px',
+      modal: true,
+      dismissableMask: false,
+      closable: false,
+      data: { accion: 'CrearOrdenDeTrabajo' }
+    });
+
+    dialogRef.onClose.subscribe(async (result: { acceso: boolean }) => {
+      if (result?.acceso) {
+        this.creandoOrden = true;
+        this.ordenData.fechaCreacion = new Date().toISOString();
+
+        try {
+          const response = await firstValueFrom(this.ordenTrabajoService.agendarOrdenMecanico(this.ordenData));
+          this.toastr.success('Orden de trabajo creada exitosamente', 'Éxito');
+
+          if (this.hayImagenesParaSubir()) {
+            await this.subirImagenes(); // se asegura que las imágenes se suban antes de continuar
+          }
+
+          this.creandoOrden = false;
+          this.router.navigate([`/mecanica/${response.codigo}`]); // solo se ejecuta después
+        } catch (error) {
+          console.error('Error al crear la orden de trabajo:', error);
+          this.toastr.error('No se pudo crear la orden de trabajo', 'Error');
+          this.creandoOrden = false;
         }
-        this.creandoOrden = false;
-      },
-      error: (error) => {
-        console.error('Error al crear la orden de trabajo:', error);
-        this.creandoOrden = false;
-        const errorMsg = error.error?.message || 'No se pudo crear la orden de trabajo';
-        this.toastr.error(errorMsg, 'Error');
+      } else {
+        this.toastr.error('Código incorrecto o cancelado', 'Error');
       }
     });
   }
+
   onDragOver(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();
@@ -1237,7 +1254,6 @@ cargarImagenesVehiculo(idVehiculo: number) {
   this.adjuntoService.getAdjuntosByVehiculoMec(idVehiculo)
     .subscribe({
       next: (adjuntos) => {
-        console.log('Adjuntos del vehículo:', adjuntos);
         if (adjuntos && adjuntos.length > 0) {
           // Procesar cada adjunto
           adjuntos.forEach(adjunto => {

@@ -196,6 +196,7 @@ export class DashboardMecanicaComponent implements OnInit {
     this.prioridad = PrioridadesOT;
     this.estadoVehiculo = EstadosVehiculo;
     this.minDate = new Date();
+    localStorage.removeItem('mecanico-token');
     this.mecService.getSupervisores().subscribe({
       next: (response) => {
         this.supervisor = response.map(x => ({

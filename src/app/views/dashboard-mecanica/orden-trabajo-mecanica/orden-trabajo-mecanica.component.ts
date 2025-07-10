@@ -16,7 +16,7 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CrudTareaMecanicaComponent } from "./crud-tarea-mecanica/crud-tarea-mecanica.component";
 import { DialogModule } from 'primeng/dialog';
-import { InputTextarea } from 'primeng/inputtextarea';
+import { InputNumberModule } from 'primeng/inputnumber';
 import { CalendarModule } from 'primeng/calendar';
 import { FloatLabelModule } from 'primeng/floatlabel';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
@@ -30,6 +30,7 @@ import { OrdenMecanicoService } from '../../services/ordenMecanico.service';
 import { DialogAutorizacionOTComponent } from './dialog-autorizacion-ot/dialog-autorizacion-ot.component';
 import { CreateObservacionRequest } from '../../../../domain/response/Observacion.model';
 import { AdjuntoService } from '../../services/adjunto.service';
+import { ItemService } from '../../services/item.service';
 
 interface ActualizarOrdenRequest {
   idOrden: number;
@@ -63,7 +64,8 @@ interface ActualizarOrdenRequest {
     FloatLabelModule,
     ConfirmDialogModule,
     CrudTareaMecanicaComponent,
-    ProgressSpinnerModule
+    ProgressSpinnerModule,
+    InputNumberModule
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   standalone: true,
@@ -106,10 +108,20 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
   selectedTarea: any = null;
 
   mecanicosDisponibles: any[] = [];
+  mecanicosDisponiblesAux: any[] = [];
+  mecanicosTarea: any[] = [];
+
+  duracionEstimadaMecanicosDialogEdit: any;
+
+  formRepuesto: number | null = null;
+  cantidadRepuesto: any;
+  repuestosDisponibles: any[] = []; // llena desde tu backend
+  repuestosTarea: any[] = [];
+
 
   displayModal = false;
   formEstado: number | null = null;
-  formMecanicos: any[] = [];
+  formMecanico: any;
   displayMecanicosDialog: boolean = false;
   mecanicosTareaSeleccionada: any[] = [];
   codigoTareaSeleccionada: string = '';
@@ -132,7 +144,8 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
     private confirmationService: ConfirmationService,
     private dialogService: DialogService,
     private ordenMecanicoService : OrdenMecanicoService,
-    private adjuntoService : AdjuntoService
+    private adjuntoService : AdjuntoService,
+    private itemService: ItemService
   ) {
     // Inicializar el formulario
     this.fb_editOt = this.fb.group({
@@ -167,6 +180,14 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
     this.cols = HeadersTablesMecanico.Tareas;
     this.estadosFilter = EstadoTarea;
   }
+
+  getItemsDisponibles() {
+    this.itemService.getItemsTipoRespuestoMec().subscribe({
+      next: (items : any) => {
+        this.repuestosDisponibles = items;
+      }
+    });
+  };
 
   getOrdenTrabajo() {
     this.loadingGeneral = true;
@@ -442,30 +463,36 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
     });
   }
 
-  abrirModalEdicion(codigo: string) {
+  GetItemsByTarea(id: any) {
+    this.itemService.getItemsByTarea(id).subscribe({
+      next: (items: any[]) => {
+        this.repuestosTarea = items;
+      },
+      error: (error) => {
+        console.error('Error al obtener los items de la tarea:', error);
+        this.toastr.error('No se pudieron cargar los items de la tarea', 'Error');
+      }
+    });
+  }
+
+  abrirModalEdicion(codigo: string, mecanicos: any) {
+    this.mecanicosTarea = mecanicos || [];
     this.selectedTarea = this.TareasOT.find(t => t.codigo === codigo);
     if (!this.selectedTarea) return;
 
+    this.GetItemsByTarea(this.selectedTarea.idTareaOt);
+
     this.formEstado = this.selectedTarea.estado;
-    this.formMecanicos = [...this.selectedTarea.mecanicos];
+    this.formMecanico = [...this.selectedTarea.mecanicos];
     this.displayModal = true;
-  }
-
-  guardarCambios() {
-    console.log('Enviar al backend:', {
-      codigo: this.selectedTarea.codigo,
-      estado: this.formEstado,
-      mecanicos: this.formMecanicos
-    });
-
-    this.cerrarModalEditTarea();
+    this.getItemsDisponibles();
   }
 
   cerrarModalEditTarea() {
     this.displayModal = false;
     this.selectedTarea = null;
     this.formEstado = null;
-    this.formMecanicos = [];
+    this.formMecanico = null;
     this.limpiarFormularioObservacion();
   }
 
@@ -475,7 +502,10 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
       this.toastr.error('No se encontró la tarea', 'Error');
       return;
     }
-    const estado = tarea.estado;   
+    
+    const estado = tarea.estado; 
+    const duracion = tarea.duracionEstimada || 0; 
+    const idTarea = tarea.idTareaOt
 
     const dialogRef = this.dialogService.open(DialogAutorizacionOTComponent, {
       header: 'Estado de Autorización',
@@ -484,13 +514,15 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
       dismissableMask: true,
       data: {
         estado,
-        codigo,
+        idTarea,
+        duracion
       }
     });
 
     dialogRef.onClose.subscribe((autorizado: boolean) => {
       if (autorizado) {
         this.autorizarTareaOT(codigo);
+        this.getTareaOT();
       }
     });
   }
@@ -504,24 +536,24 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
     this.displayMecanicosDialog = true;
   }
   getDuracionTotalMecanicos(): string {
-  if (!this.mecanicosTareaSeleccionada || this.mecanicosTareaSeleccionada.length === 0) {
-    return '0 hrs';
+    if (!this.mecanicosTareaSeleccionada || this.mecanicosTareaSeleccionada.length === 0) {
+      return '0 hrs';
+    }
+    const total = this.mecanicosTareaSeleccionada
+      .map(m => Number(m.duracionEstimada) || 0)
+      .reduce((a, b) => a + b, 0);
+    return total + ' hrs';
   }
-  const total = this.mecanicosTareaSeleccionada
-    .map(m => Number(m.duracionEstimada) || 0)
-    .reduce((a, b) => a + b, 0);
-  return total + ' hrs';
-}
-obtenerTextoEstadoTarea(estado: number): string {
-  const estadoObj = this.estadosTarea.find(e => e.code === estado);
-  return estadoObj ? estadoObj.name : 'Sin definir';
-}
+  obtenerTextoEstadoTarea(estado: number): string {
+    const estadoObj = this.estadosTarea.find(e => e.code === estado);
+    return estadoObj ? estadoObj.name : 'Sin definir';
+  }
 
-// Método para obtener el severity del estado de la tarea
-obtenerSeverityEstadoTarea(estado: number): "success" | "info" | "warn" | "danger" | "secondary" | "contrast" {
-  const estadoObj = this.estadosTarea.find(e => e.code === estado);
-  return estadoObj?.severity as any || 'secondary';
-}
+  // Método para obtener el severity del estado de la tarea
+  obtenerSeverityEstadoTarea(estado: number): "success" | "info" | "warn" | "danger" | "secondary" | "contrast" {
+    const estadoObj = this.estadosTarea.find(e => e.code === estado);
+    return estadoObj?.severity as any || 'secondary';
+  }
 
 actualizarEstadoTarea(idTarea?: number) {
   if (!this.selectedTarea || this.formEstado === null) {
@@ -713,4 +745,151 @@ async subirImagen(): Promise<number | null> {
     this.selectedFile = null;
     this.loadingSubirImagen = false;
   }
+
+  agregarMecanicoTarea() {  
+    const dialogRef = this.dialogService.open(AuthMecanicaComponent, {
+      header: 'Código de Autenticación',
+      width: '400px',
+      modal: true,
+      dismissableMask: false,
+      closable: false,
+      data: {
+        accion: 'AgregarMecanicoTarea',
+      }
+    });
+
+    dialogRef.onClose.subscribe((result: { acceso: boolean }) => {
+      this.modalActivo = false;
+      if (result?.acceso) {
+        const peticion = {
+          idTareaOt: this.selectedTarea.idTareaOt,
+          mecanicos: [{
+            idMecanico: this.formMecanico,
+            duracionEstimada: this.duracionEstimadaMecanicosDialogEdit
+          }]
+        };
+        this.tareaService.agregarMecanicosTarea(peticion.idTareaOt, peticion.mecanicos).subscribe({
+          next: (response) => {
+            this.toastr.success('Mecánico agregado a la tarea exitosamente', 'Éxito');
+            const mecanico = this.mecanicosDisponibles.find(m => m.idMecanico == peticion.mecanicos[0].idMecanico);
+            this.getTareaOT(); 
+            
+            const mecanicoFormat = {
+              idMecanico: mecanico.idMecanico,
+              nombreCompleto: mecanico.nombre + ' ' + mecanico.apellidos || '',
+            }
+            this.mecanicosTarea.push(mecanicoFormat); 
+            this.duracionEstimadaMecanicosDialogEdit = null;
+            this.formMecanico = null;
+          },
+          error: (error) => {
+            console.error('Error al agregar mecánico a la tarea:', error);
+            this.toastr.error('No se pudo agregar el mecánico a la tarea', 'Error');
+            this.getTareaOT(); 
+          }
+        });
+      } else {
+        this.toastr.error('Código incorrecto o cancelado', 'Error');
+      }
+    });
+  }
+
+  eliminarMecanicoTarea(mecanico: any) {    
+    console.log(this.selectedTarea);
+    
+    const dialogRef = this.dialogService.open(AuthMecanicaComponent, {
+      header: 'Código de Autenticación',
+      width: '400px',
+      modal: true,
+      dismissableMask: false,
+      closable: false,
+      data: {
+        accion: 'EliminarMecanicoTarea',
+      }
+    });
+
+    dialogRef.onClose.subscribe((result: { acceso: boolean }) => {
+      this.modalActivo = false;
+      if (result.acceso) {
+        this.tareaService.eliminarMecanicoTarea(this.selectedTarea.idTareaOt, mecanico.idMecanico).subscribe({
+          next: (response) => {
+            this.toastr.success('Mecánico eliminado de la tarea', 'Éxito');
+            this.getTareaOT();
+            this.mecanicosTarea = this.mecanicosTarea.filter(m => m !== mecanico);
+          },
+          error: (err) => {
+            console.error('Error al eliminar mecánico:', err);
+            this.toastr.error('No se pudo eliminar el mecánico', 'Error');
+          }
+        });
+      } else {
+        this.toastr.error('Código incorrecto o cancelado', 'Error');
+      }
+    });
+  }
+
+  agregarRepuestoTarea() {
+    const dialogRef = this.dialogService.open(AuthMecanicaComponent, {
+      header: 'Código de Autenticación',
+      width: '400px',
+      modal: true,
+      dismissableMask: false,
+      closable: false,
+      data: { accion: 'AgregarRepuestoTarea' }
+    });
+
+    const repuesto = this.repuestosDisponibles.find(r => r.idRepuesto === this.formRepuesto);
+
+    dialogRef.onClose.subscribe((result: { acceso: boolean, idUsuario: any }) => {
+      if (result?.acceso) {
+        const repuestos = [{
+            idItem: this.formRepuesto,
+            cantidad: this.cantidadRepuesto
+          }];
+        
+        this.tareaService.agregarRepuestosTarea(this.selectedTarea.idTareaOt, parseInt(result.idUsuario, 10) , repuestos).subscribe({
+          next: () => {
+            this.toastr.success('Repuesto agregado exitosamente', 'Éxito');
+            this.GetItemsByTarea(this.selectedTarea.idTareaOt);
+            this.repuestosTarea.push({ ...repuesto, cantidad: this.cantidadRepuesto });
+          },
+          error: (err) => {
+            console.error('Error al agregar repuesto:', err);
+            this.toastr.error('No se pudo agregar el repuesto', 'Error');
+          }
+        });
+      } else {
+        this.toastr.error('Código incorrecto o cancelado', 'Error');
+      }
+    });
+  }
+
+  eliminarRepuestoTarea(repuesto: any) {
+    const dialogRef = this.dialogService.open(AuthMecanicaComponent, {
+      header: 'Código de Autenticación',
+      width: '400px',
+      modal: true,
+      dismissableMask: false,
+      closable: false,
+      data: { accion: 'EliminarRepuestoTarea' }
+    });
+    dialogRef.onClose.subscribe((result: { acceso: boolean }) => {
+      if (result?.acceso) {
+        console.log(this.selectedTarea.idTarea, repuesto.idRepuesto)
+        this.tareaService.eliminarRepuestoTarea(this.selectedTarea.idTareaOt, repuesto.idRepuestoOt).subscribe({
+          next: () => {
+            this.toastr.success('Repuesto eliminado de la tarea', 'Éxito');
+            this.repuestosTarea = this.repuestosTarea.filter(r => r.idRepuesto !== repuesto.idRepuesto);
+          },
+          error: (err) => {
+            console.error('Error al eliminar repuesto:', err);
+            this.toastr.error('No se pudo eliminar el repuesto', 'Error');
+          }
+        });
+      } else {
+        this.toastr.error('Código incorrecto o cancelado', 'Error');
+      }
+    });
+  }
+
 }

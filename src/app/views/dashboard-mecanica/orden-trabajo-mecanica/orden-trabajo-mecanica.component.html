@@ -166,7 +166,7 @@
                             [text]="true"
                             [raised]="true"
                             severity="secondary"
-                            (onClick)="abrirModalEdicion(rowData['codigo'])">
+                            (onClick)="abrirModalEdicion(rowData['codigo'], rowData['mecanicos'])">
                         </p-button>
                         <!-- <p-button icon="pi pi-times" [rounded]="true" [text]="true" [raised]="true" severity="danger" />
                         <p-button icon="pi pi-check" [rounded]="true" [text]="true" [raised]="true" severity="success" />
@@ -337,17 +337,95 @@
     </div>
 
     <div>
-      <label class="block font-medium mb-2">Mecánicos Asignados</label>
-      <p-multiSelect 
-        [options]="mecanicosDisponibles" 
-        [(ngModel)]="formMecanicos"
-        optionLabel="nombre"
-        optionValue="idMecanico"
-        display="chip"
-        placeholder="Selecciona mecánicos"
-        class="w-full">
-      </p-multiSelect>
+        <label class="block font-medium mb-2">Mecánicos Asignados</label>
+        <div class="flex items-end justify-center gap-3">
+            <p-select 
+                [options]="mecanicosDisponibles" 
+                [(ngModel)]="formMecanico"
+                optionLabel="nombre"
+                optionValue="idMecanico"
+                placeholder="Selecciona mecánicos"
+                class="flex-1">
+            </p-select>
+            <p-inputnumber
+                type="number" 
+                fluid
+                [(ngModel)]="duracionEstimadaMecanicosDialogEdit"
+                placeholder="Duración(U)"/>
+            <p-button 
+            class="min-w-36" 
+            fluid 
+            label="Agregar" 
+            [disabled]="formMecanico && duracionEstimadaMecanicosDialogEdit ? false:true"
+            (click)="agregarMecanicoTarea()"
+            />
+        </div>
+        <ng-container *ngFor="let mecanico of mecanicosTarea">
+            <div class="flex items-center justify-between px-2 py-1 mt-2 bg-gray-200 border rounded-md border-gray-300">
+                <span class="text-gray-700">{{ mecanico.nombreCompleto }}</span>
+                <button 
+                pButton 
+                type="button" 
+                icon="pi pi-times" 
+                class="p-button-rounded p-button-danger p-button-sm"
+                (click)="eliminarMecanicoTarea(mecanico)"
+                >
+                </button>
+            </div>
+        </ng-container>
     </div>
+    <div>
+        <label class="block font-medium mb-2">Repuestos Asignados</label>
+        <div class="flex items-end justify-center gap-3">
+            <p-select 
+            [options]="repuestosDisponibles"
+            [(ngModel)]="formRepuesto"
+            optionLabel="nombre"
+            optionValue="idItem"
+            placeholder="Selecciona repuesto"
+            class="flex-1"
+            appendTo="body"
+            >
+                <ng-template let-item pTemplate="item">
+                    <div class="flex flex-col px-2">
+                        <span class="font-semibold text-gray-800">{{ item.codigo }} - {{ item.nombre }}</span>
+                        <small class="text-sm text-gray-600 ">{{ item.descripcion }}</small>
+                        <small class="text-xs text-blue-600 ">Stock disponible: {{ item.stock }}</small>
+                    </div>
+                </ng-template>
+            </p-select>
+
+            <p-inputnumber 
+            [(ngModel)]="cantidadRepuesto" 
+            placeholder="Cantidad"
+            fluid
+            [min]="1"
+            [max]="1000"
+            [useGrouping]="false"
+            ></p-inputnumber>
+
+            <p-button 
+            class="min-w-36" 
+            label="Agregar"
+            fluid
+            [disabled]="formRepuesto && cantidadRepuesto ? false:true"
+            (onClick)="agregarRepuestoTarea()"
+            />
+        </div>
+
+        <ng-container *ngFor="let repuesto of repuestosTarea">
+            <div class="flex items-center justify-between px-2 py-1 mt-2 bg-gray-200 border rounded-md border-gray-300">
+            <span class="text-gray-700">{{ repuesto.nombre }}</span>
+            <button 
+                pButton 
+                icon="pi pi-times" 
+                class="p-button-rounded p-button-danger p-button-sm"
+                (click)="eliminarRepuestoTarea(repuesto)">
+            </button>
+            </div>
+        </ng-container>
+        </div>
+
     <div class="border-t pt-4">
       <h4 class="text-md font-semibold mb-3 text-gray-800">Agregar Observación</h4>
       
@@ -427,11 +505,6 @@
         label="Cancelar" 
         severity="secondary"
         (onClick)="cerrarModalEditTarea()">
-      </p-button>
-      <p-button 
-        label="Guardar cambios" 
-        severity="primary" 
-        (onClick)="guardarCambios()">
       </p-button>
     </div>
   </div>

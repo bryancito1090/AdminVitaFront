@@ -101,7 +101,7 @@ export class CrudTareaMecanicaComponent implements OnInit{
   loadingMagnitudes: boolean = false;
   mostrarMagnitudes: boolean = false;
 
-    solicitudRepuesto: boolean = false;
+  solicitudRepuesto: boolean = false;
   displaySolicitudRepuestoDialog: boolean = false;
   datosSolicitudRepuesto = {
     detalle: '',

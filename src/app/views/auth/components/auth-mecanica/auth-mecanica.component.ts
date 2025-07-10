@@ -42,6 +42,9 @@ export class AuthMecanicaComponent {
               this.authService.saveToken(response.token);
               this.ref.close({ acceso: true, token: response.token });
               break;
+            case 'CrearOrdenDeTrabajo':
+              this.ref.close({ acceso: true, token: response.token });
+              break;
             case 'AgregarTareaOT':
               if (!token) return;
               this.ref.close({ acceso: true, id: idIdentifier, token: response.token });
@@ -52,8 +55,23 @@ export class AuthMecanicaComponent {
             case 'AccederEditarOT':
               this.ref.close({ acceso: true, token: response.token });
               break;
-            default:
+            case 'AutorizarEstadoOT':
               this.ref.close({ acceso: true, token: response.token });
+              break;
+            case 'AgregarMecanicoTarea':
+              this.ref.close({ acceso: true, token: response.token });
+              break;
+            case 'EliminarMecanicoTarea':
+              this.ref.close({ acceso: true, token: response.token });
+              break;
+            case 'AgregarRepuestoTarea':
+              this.ref.close({ acceso: true, idUsuario: idIdentifier });
+              break;
+            case 'EliminarRepuestoTarea':
+              this.ref.close({ acceso: true });
+              break;
+            default:
+              this.ref.close({ acceso: false, token: response.token });
           }
 
         } else {

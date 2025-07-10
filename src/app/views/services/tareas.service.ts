@@ -48,4 +48,33 @@ getTareasByOT(code: string): Observable<TareaDetalle[]> {
     const headers = this.auth.getMecanicoAuthHeaders();
     return this.http.post<{ success: boolean }>(`${environment.domain}${environment.apiEndpoint}/Observacion/CrearObservacion`, data, { headers });
   }
+  eliminarMecanicoTarea(idTareaOt: number, idMecanico: number): Observable<any> {
+    const headers = this.auth.getMecanicoAuthHeaders();
+    const body = { idTareaOt, idMecanico };
+    return this.http.delete(`${this.apiURL}/eliminar-mecanico-tarea`, {
+      headers,
+      body
+    });
+  }
+  agregarMecanicosTarea(idTarea: number, mecanicos: { idMecanico: any, duracionEstimada: any }[]): Observable<any> {
+    const headers = this.auth.getMecanicoAuthHeaders();
+    const body = {
+      idTarea,
+      mecanicos
+    };
+    return this.http.post(`${this.apiURL}/AgregarMecanicosATarea`, body, { headers });
+  }
+  agregarRepuestosTarea(idTarea: any, idUsuario: any, repuestos: { idItem: any, cantidad: any }[]): Observable<any> {
+    const headers = this.auth.getMecanicoAuthHeaders();
+    return this.http.post(`${this.apiURL}/AgregarRepuestosATarea`, {
+      idTarea,
+      idUsuario,
+      repuestos
+    }, { headers });
+  }
+  eliminarRepuestoTarea(idTareaOt: number, idRepuesto: number): Observable<any> {
+    const headers = this.auth.getMecanicoAuthHeaders();
+    const body = { idTareaOt, idRepuesto };
+    return this.http.delete(`${this.apiURL}/eliminar-repuesto-tarea`, { headers, body });
+  }
 }
