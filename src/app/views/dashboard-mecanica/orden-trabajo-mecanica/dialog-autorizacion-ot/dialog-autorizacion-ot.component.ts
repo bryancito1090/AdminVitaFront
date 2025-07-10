@@ -15,6 +15,7 @@ import { DynamicDialogConfig, DynamicDialogRef } from 'primeng/dynamicdialog';
 export class DialogAutorizacionOTComponent {
 
   estado: any;
+  codigo: any; 
   mensaje: string = '';
 
   constructor(
@@ -22,8 +23,11 @@ export class DialogAutorizacionOTComponent {
     public config: DynamicDialogConfig
   ) {
     this.estado = this.config.data.estado;
+    this.codigo = this.config.data.codigo;
 
     console.log(this.estado); 
+    console.log(this.codigo);
+
     switch (this.estado) {
       
       case 6:
