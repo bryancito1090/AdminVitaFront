@@ -15,13 +15,18 @@ import { ChipModule } from 'primeng/chip';
 import { TooltipModule } from 'primeng/tooltip';
 import { CalendarModule } from 'primeng/calendar';
 import { MagnitudService } from '../../services/magnitud.service';
-import { RadioButton } from 'primeng/radiobutton';
+import { RadioButton, RadioButtonModule } from 'primeng/radiobutton';
 import { Select } from 'primeng/select';
-import { Divider } from 'primeng/divider';
-import { FloatLabel } from 'primeng/floatlabel';
-import { InputNumber } from 'primeng/inputnumber';
+import { Divider, DividerModule } from 'primeng/divider';
+import { FloatLabel, FloatLabelModule } from 'primeng/floatlabel';
+import { InputNumber, InputNumberModule } from 'primeng/inputnumber';
 import { MovimientoItem } from '../../../../domain/response/Movimiento.model';
 import { CreateUpdateItemRequest } from '../../../../domain/request/Item.model';
+import { TextareaModule } from 'primeng/textarea';
+import { DropdownModule } from 'primeng/dropdown';
+import { MessageModule } from 'primeng/message';
+import { ToastrService } from 'ngx-toastr';
+import { TagModule } from 'primeng/tag';
 interface Month {
   value: string;
   label: string;
@@ -61,10 +66,20 @@ interface MonthData {
     TooltipModule,
     CalendarModule,
     RadioButton,
-    Select,
     Divider,
     FloatLabel,
-    InputNumber
+    InputNumber,
+    TextareaModule,
+    DropdownModule,
+    MessageModule,
+    InputNumberModule,
+    FloatLabelModule,
+    DividerModule,
+    RadioButtonModule,
+    ButtonModule,
+    DialogModule,
+    TagModule,
+    ChipModule,
   ],
   templateUrl: './inventario.component.html',
   styleUrl: './inventario.component.scss'
@@ -104,10 +119,14 @@ export class InventarioComponent implements OnInit {
   selectedDate: Date | null = null;
   selectedDayMovimientos: MovimientoItem[] = [];
 
+  mostrarMagnitud : boolean = false;
+  mostrarValorUnitario : boolean = false;
+
   constructor( 
     private itemService: ItemService,
     private datePipe: DatePipe,
     private magnitudService: MagnitudService,
+    private toastr: ToastrService,
   ){}
 
   ngOnInit(): void {
@@ -143,15 +162,62 @@ export class InventarioComponent implements OnInit {
       idMagnitud: new FormControl<number | null>(null),
       nombre: new FormControl<string | null>(null, [Validators.required]),
       descripcion: new FormControl<string | null>(null),
-      valorUnitario: new FormControl<number | null>(null, [Validators.required]),
+      valorUnitario: new FormControl<number | null>(null), // ✅ Remover required por defecto
       stockMin: new FormControl<number | null>(null, [Validators.required]),
       stockIdeal: new FormControl<number | null>(null, [Validators.required]),
     });    
+
     this.fb_item.get('idTipoItem')?.valueChanges.subscribe((value) => {
       this.resetForm();
-      this.isToolRequired(value);
+      this.configurarCamposPorTipo(value);
     })
   }
+
+configurarCamposPorTipo(value: any) {
+  if (!value) return;
+  
+  const tipoItem = value.key || null;
+  
+  // Resetear validadores
+  this.fb_item.get('valorUnitario')?.clearValidators();
+  this.fb_item.get('idMagnitud')?.clearValidators();
+  
+  switch (tipoItem) {
+    case 1: // Repuesto
+      this.mostrarMagnitud = false;
+      this.mostrarValorUnitario = false;
+      this.isntTool = true; // Mantener stocks visibles
+      break;
+      
+    case 2: // Insumo
+      this.mostrarMagnitud = true;
+      this.mostrarValorUnitario = false;
+      this.isntTool = true; // Mantener stocks visibles
+      // ✅ AGREGAR VALIDACIÓN REQUERIDA PARA MAGNITUD EN INSUMOS
+      this.fb_item.get('idMagnitud')?.setValidators([Validators.required]);
+      break;
+      
+    case 3: // Herramienta
+      this.mostrarMagnitud = false; // ✅ CAMBIAR A false - Las herramientas NO tienen magnitud
+      this.mostrarValorUnitario = false;
+      this.isntTool = false; // Ocultar stocks
+      // Para herramientas, establecer stocks en 0
+      this.fb_item.get('stockMin')?.setValue(0);
+      this.fb_item.get('stockIdeal')?.setValue(0);
+      break;
+      
+    default:
+      this.mostrarMagnitud = false;
+      this.mostrarValorUnitario = false;
+      this.isntTool = true;
+      break;
+  }
+  
+  // Actualizar validadores
+  this.fb_item.get('valorUnitario')?.updateValueAndValidity();
+  this.fb_item.get('idMagnitud')?.updateValueAndValidity();
+}
+
   showMovimientosItem(codigo: number) {
     this.visibleMovimientos = true;
     this.loadingMovimientosDialog = true;
@@ -187,15 +253,9 @@ export class InventarioComponent implements OnInit {
   closeDialogCrearItem(){
     this.visibleCrearItem = false;
     this.fb_item.reset();
-  }
-  isToolRequired(value:any) {
-    if(!value) return;
-    const tipoItem = value.key || null;
-    this.isntTool = tipoItem == 1 || tipoItem == 2; // Repuesto o Insumo    
-    if (!this.isntTool) {
-      this.fb_item.get('stockMin')?.setValue(0);
-      this.fb_item.get('stockIdeal')?.setValue(0);
-    }
+    this.mostrarMagnitud = false;
+    this.mostrarValorUnitario = false;
+    this.isntTool = true;
   }
   resetForm(){
     this.fb_item.get('idMagnitud')?.setValue(null);
@@ -204,6 +264,8 @@ export class InventarioComponent implements OnInit {
     this.fb_item.get('valorUnitario')?.setValue(null);
     this.fb_item.get('stockMin')?.setValue(null);
     this.fb_item.get('stockIdeal')?.setValue(null);
+    this.mostrarMagnitud = false;
+    this.mostrarValorUnitario = false;
   }
  crearteItem() {
   const item: CreateUpdateItemRequest = {
@@ -220,6 +282,7 @@ export class InventarioComponent implements OnInit {
   this.itemService.createUpdateItem(item).subscribe({
     next: (response) => {
       this.visibleCrearItem = false;
+      this.toastr.success('Item Creado Exitosamente', 'Éxito!');
       this.fb_item.reset();
       this.getItems();
       // this.messageService.add({severity:'success', summary:'Éxito', detail:'Item creado correctamente'});

@@ -38,7 +38,7 @@
     </ng-template>
     <ng-template #body let-rowData let-columns="columns">
         <tr>
-            <td  *ngFor="let col of columns">
+            <td *ngFor="let col of columns">
                 <ng-container 
                 *ngIf="col.field === 'stock' 
                 || col.field === 'stockMin' 
@@ -46,11 +46,109 @@
                 || col.field === 'magnitud' 
                 || col.field === 'valorUnitario';
                 else normalData">
-                    <p *ngIf="col.field === 'stock'">{{rowData[col.field]}}</p>
-                    <p *ngIf="col.field === 'stockMin'">{{rowData[col.field]}}</p>
-                    <p *ngIf="col.field === 'stockIdeal'">{{rowData[col.field]}}</p>
-                    <p *ngIf="col.field === 'magnitud'">{{rowData['nombreMagnitud']}}</p>
-                    <p *ngIf="col.field === 'valorUnitario'">{{rowData[col.field] | currency:'USD':'symbol-narrow'}}</p>
+                    
+                    <!-- ✅ STOCK CON COLORES SEGÚN NIVEL -->
+                    <div *ngIf="col.field === 'stock'" class="flex justify-center">
+                        <p-tag 
+                            *ngIf="rowData['idTipoItem'] === 3" 
+                            value="No presenta stock" 
+                            severity="secondary"
+                            size="small">
+                        </p-tag>
+                        <p-tag 
+                            *ngIf="rowData['idTipoItem'] !== 3 && rowData[col.field] < rowData['stockMin']" 
+                            [value]="rowData[col.field].toString()" 
+                            severity="danger"
+                            size="small">
+                        </p-tag>
+                        <p-tag 
+                            *ngIf="rowData['idTipoItem'] !== 3 && rowData[col.field] >= rowData['stockMin'] && rowData[col.field] < rowData['stockIdeal']" 
+                            [value]="rowData[col.field].toString()" 
+                            severity="info"
+                            size="small">
+                        </p-tag>
+                        <p-tag 
+                            *ngIf="rowData['idTipoItem'] !== 3 && rowData[col.field] >= rowData['stockIdeal']" 
+                            [value]="rowData[col.field].toString()" 
+                            severity="success"
+                            size="small">
+                        </p-tag>
+                    </div>
+                    
+                    <!-- ✅ STOCK MÍNIMO CON BADGES -->
+                    <div *ngIf="col.field === 'stockMin'" class="flex justify-center">
+                        <p-tag 
+                            *ngIf="rowData['idTipoItem'] === 3" 
+                            value="No presenta stock" 
+                            severity="secondary"
+                            size="small">
+                        </p-tag>
+                        <p-chip 
+                            *ngIf="rowData['idTipoItem'] !== 3" 
+                            [label]="rowData[col.field].toString()"
+                            styleClass="p-chip-outlined">
+                        </p-chip>
+                    </div>
+                    
+                    <!-- ✅ STOCK IDEAL CON BADGES -->
+                    <div *ngIf="col.field === 'stockIdeal'" class="flex justify-center">
+                        <p-tag 
+                            *ngIf="rowData['idTipoItem'] === 3" 
+                            value="No presenta stock" 
+                            severity="secondary"
+                            size="small">
+                        </p-tag>
+                        <p-chip 
+                            *ngIf="rowData['idTipoItem'] !== 3" 
+                            [label]="rowData[col.field].toString()"
+                            styleClass="p-chip-outlined">
+                        </p-chip>
+                    </div>
+                    
+                    <!-- ✅ MAGNITUD CON BADGES DIFERENCIADOS -->
+                    <div *ngIf="col.field === 'magnitud'" class="flex justify-center">
+                        <p-tag 
+                            *ngIf="rowData['idTipoItem'] === 1" 
+                            value="No presenta magnitud" 
+                            severity="secondary"
+                            size="small">
+                        </p-tag>
+                        <p-tag 
+                            *ngIf="rowData['idTipoItem'] === 3" 
+                            value="No presenta magnitud" 
+                            severity="secondary"
+                            size="small">
+                        </p-tag>
+                        <p-chip 
+                            *ngIf="rowData['idTipoItem'] === 2 && rowData['nombreMagnitud']" 
+                            [label]="rowData['nombreMagnitud']"
+                            icon="pi pi-tags"
+                            styleClass="p-chip-primary">
+                        </p-chip>
+                        <p-tag 
+                            *ngIf="rowData['idTipoItem'] === 2 && !rowData['nombreMagnitud']" 
+                            value="Sin magnitud" 
+                            severity="warn"
+                            size="small">
+                        </p-tag>
+                    </div>
+                    
+                    <!-- ✅ VALOR UNITARIO CON BADGES -->
+                    <div *ngIf="col.field === 'valorUnitario'" class="flex justify-center">
+                        <p-chip 
+                            *ngIf="rowData[col.field] != null" 
+                            [label]="(rowData[col.field] | currency:'USD':'symbol-narrow') ?? ''"
+                            icon="pi pi-dollar"
+                            styleClass="p-chip-success">
+                        </p-chip>
+                        <p-tag 
+                            *ngIf="rowData[col.field] == null" 
+                            value="No definido" 
+                            severity="warn"
+                            size="small">
+                        </p-tag>
+                    </div>
+                    
                 </ng-container>
                 <ng-template #normalData>
                     <p>{{ rowData[col.field] }}</p>
@@ -63,7 +161,7 @@
     </ng-template>
     </p-table>
 </div>
-
+<!-- Dialog para mostrar los movimientos del item -->
 <p-dialog 
 [modal]="true" 
 [(visible)]="visibleMovimientos" 
@@ -258,86 +356,197 @@
         </div>
     </div>
 </p-dialog>
-
+<!-- Dialog para crear un nuevo item -->
 <p-dialog 
-header="Crear Item" 
-[modal]="true" 
-[(visible)]="visibleCrearItem" 
-[breakpoints]="{ '1199px': '70vw', '575px': '95vw' }" 
-[style]="{ width: '30vw' }"
-[closeOnEscape]="false"
-[closable]="false"> 
-    <div class="card mt-0">
-        <form class="flex flex-col gap-2" [formGroup]="fb_item">
-            <label>Tipo de Item*</label>
-            <div class="flex flex-col md:flex-row gap-4">
-                <div *ngFor="let tipo of tiposItem" class="field-checkbox">
-                    <p-radiobutton [inputId]="tipo.key" [value]="tipo" formControlName="idTipoItem" />
-                    <label [for]="tipo.key" class="ml-2">{{ tipo.name }}</label>
-                </div>    
+  header="Crear Item" 
+  [modal]="true" 
+  [(visible)]="visibleCrearItem" 
+  [breakpoints]="{ '1199px': '70vw', '575px': '95vw' }" 
+  [style]="{ width: '35vw', 'max-height': '90vh' }"
+  [closeOnEscape]="false"
+  [closable]="false"
+  [resizable]="false"
+  [draggable]="false"> 
+    
+    <div class="flex flex-col gap-4 p-2">
+        <form class="flex flex-col gap-4" [formGroup]="fb_item">
+            
+            <!-- Sección Tipo de Item -->
+            <div class="field">
+                <label class="block text-sm font-medium text-gray-700 mb-3">Tipo de Item *</label>
+                <div class="flex flex-wrap gap-4">
+                    <div *ngFor="let tipo of tiposItem" class="flex items-center">
+                        <p-radiobutton 
+                            [inputId]="'tipo_' + tipo.key" 
+                            [value]="tipo" 
+                            formControlName="idTipoItem" 
+                            class="mr-2" />
+                        <label 
+                            [for]="'tipo_' + tipo.key" 
+                            class="text-sm cursor-pointer select-none">
+                            {{ tipo.name }}
+                        </label>
+                    </div>    
+                </div>
             </div>
-            <p-divider class="my-0"></p-divider>
-            <p-floatlabel variant="on" class="w-full">
-                <input 
-                    type="text" 
-                    pInputText 
-                    formControlName="nombre" 
-                    class="w-full" 
-                    [ngClass]="{'ng-invalid ng-dirty': fb_item.get('nombre')?.invalid && fb_item.get('nombre')?.touched}">
-                <label>Nombre Item*</label>
-            </p-floatlabel>
-            <p-floatlabel variant="on" class="w-full">
-                <input 
-                    type="text" 
-                    pInputText 
-                    formControlName="descripcion" 
-                    class="w-full">
-                <label>Descripción Item</label>
-            </p-floatlabel>
-            <p-select 
-            *ngIf="this.isntTool"
-            formControlName="idMagnitud" 
-            [options]="magnitudes" 
-            optionValue="idMagnitud" 
-            optionLabel="nombre" 
-            fluid 
-            placeholder="Magnitud" 
-            class="w-full"
-            [showClear]="true" />
-            <p-floatlabel variant="on" class="w-full">
-                <p-inputnumber
-                    [min]="0" 
-                    mode="currency" 
-                    currency="USD" 
-                    formControlName="valorUnitario" 
-                    class="w-full" 
-                    [ngClass]="{'ng-invalid ng-dirty': fb_item.get('valorUnitario')?.invalid && fb_item.get('valorUnitario')?.touched}"/>
-                <label>Valor Unitario*</label>
-            </p-floatlabel>
-            <p-floatlabel variant="on" class="w-full" *ngIf="this.isntTool">
-                <p-inputnumber
-                    mode="decimal" 
-                    [min]="0" 
-                    [maxFractionDigits]="2"
-                    formControlName="stockMin" 
-                    class="w-full" 
-                    [ngClass]="{'ng-invalid ng-dirty': fb_item.get('stockMin')?.invalid && fb_item.get('stockMin')?.touched}"/>
-                <label>StockMínimo*</label>
-            </p-floatlabel>
-            <p-floatlabel variant="on" class="w-full" *ngIf="this.isntTool">
-                <p-inputnumber
-                    mode="decimal" 
-                    [min]="0" 
-                    [maxFractionDigits]="2"
-                    formControlName="stockIdeal"
-                    class="w-full" 
-                    [ngClass]="{'ng-invalid ng-dirty': fb_item.get('stockIdeal')?.invalid && fb_item.get('stockIdeal')?.touched}"/>
-                <label>Stock Ideal*</label>
-            </p-floatlabel>
+
+            <p-divider class="my-2"></p-divider>
+            
+            <!-- Sección Información Básica -->
+            <div class="grid grid-cols-1 gap-4">
+                
+                <!-- Nombre del Item -->
+                <div class="field">
+                    <p-floatlabel>
+                        <input 
+                            id="nombre"
+                            type="text" 
+                            pInputText 
+                            formControlName="nombre" 
+                            class="w-full"
+                            [class.ng-invalid]="fb_item.get('nombre')?.invalid && fb_item.get('nombre')?.touched"
+                            [class.ng-dirty]="fb_item.get('nombre')?.touched">
+                        <label for="nombre">Nombre del Item *</label>
+                    </p-floatlabel>
+                    <small 
+                        *ngIf="fb_item.get('nombre')?.invalid && fb_item.get('nombre')?.touched" 
+                        class="p-error block mt-1">
+                        El nombre es requerido
+                    </small>
+                </div>
+                
+                <!-- Descripción -->
+                <div class="field">
+                    <label for="descripcion" class="block text-sm font-medium text-gray-700 mb-2">
+                        Descripción
+                    </label>
+                    <textarea 
+                        id="descripcion"
+                        pTextarea 
+                        formControlName="descripcion" 
+                        class="w-full"
+                        rows="3"
+                        [autoResize]="true"
+                        placeholder="Ingrese una descripción del item (opcional)">
+                    </textarea>
+                </div>
+                
+                <!-- Magnitud - Solo para Insumos -->
+                <div class="field" *ngIf="mostrarMagnitud">
+                    <label for="magnitud" class="block text-sm font-medium text-gray-700 mb-2">
+                        Magnitud *
+                    </label>
+                    <p-dropdown
+                        inputId="magnitud"
+                        formControlName="idMagnitud" 
+                        [options]="magnitudes" 
+                        optionValue="idMagnitud" 
+                        optionLabel="nombre" 
+                        placeholder="Seleccione una magnitud"
+                        class="w-full"
+                        [showClear]="true"
+                        [filter]="true"
+                        filterBy="nombre"
+                        [virtualScroll]="true"
+                        [virtualScrollItemSize]="40"
+                        scrollHeight="200px"
+                        appendTo="body"
+                        [class.ng-invalid]="fb_item.get('idMagnitud')?.invalid && fb_item.get('idMagnitud')?.touched">
+                        
+                        <ng-template let-option pTemplate="item">
+                            <div class="flex items-center gap-2 p-2">
+                                <span>{{ option.nombre }}</span>
+                            </div>
+                        </ng-template>
+                    </p-dropdown>
+                    <small 
+                        *ngIf="fb_item.get('idMagnitud')?.invalid && fb_item.get('idMagnitud')?.touched" 
+                        class="p-error block mt-1">
+                        La magnitud es requerida para insumos
+                    </small>
+                </div>
+            </div>
+
+            <!-- Sección Stock - Solo para Repuestos e Insumos -->
+            <div *ngIf="isntTool" class="field">
+                <p-divider class="my-2">
+                    <span class="text-sm font-medium text-gray-600">Gestión de Stock</span>
+                </p-divider>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <!-- Stock Mínimo -->
+                    <div class="field">
+                        <label for="stockMin" class="block text-sm font-medium text-gray-700 mb-2">
+                            Stock Mínimo *
+                        </label>
+                        <p-inputNumber
+                            inputId="stockMin"
+                            mode="decimal" 
+                            [min]="0" 
+                            [maxFractionDigits]="2"
+                            formControlName="stockMin" 
+                            class="w-full"
+                            [class.ng-invalid]="fb_item.get('stockMin')?.invalid && fb_item.get('stockMin')?.touched"
+                            [class.ng-dirty]="fb_item.get('stockMin')?.touched"
+                            [useGrouping]="false"
+                            placeholder="Ingrese el stock mínimo"/>
+                        <small 
+                            *ngIf="fb_item.get('stockMin')?.invalid && fb_item.get('stockMin')?.touched" 
+                            class="p-error block mt-1">
+                            El stock mínimo es requerido
+                        </small>
+                    </div>
+                    
+                    <!-- Stock Ideal -->
+                    <div class="field">
+                        <label for="stockIdeal" class="block text-sm font-medium text-gray-700 mb-2">
+                            Stock Ideal *
+                        </label>
+                        <p-inputNumber
+                            inputId="stockIdeal"
+                            mode="decimal" 
+                            [min]="0" 
+                            [maxFractionDigits]="2"
+                            formControlName="stockIdeal"
+                            class="w-full"
+                            [class.ng-invalid]="fb_item.get('stockIdeal')?.invalid && fb_item.get('stockIdeal')?.touched"
+                            [class.ng-dirty]="fb_item.get('stockIdeal')?.touched"
+                            [useGrouping]="false"
+                            placeholder="Ingrese el stock ideal"/>
+                        <small 
+                            *ngIf="fb_item.get('stockIdeal')?.invalid && fb_item.get('stockIdeal')?.touched" 
+                            class="p-error block mt-1">
+                            El stock ideal es requerido
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información para Herramientas -->
+            <div *ngIf="!isntTool" class="field">
+                <p-message 
+                    severity="info" 
+                    text="Las herramientas no requieren gestión de stock ni magnitud"
+                    [closable]="false">
+                </p-message>
+            </div>
+            
         </form>
-        <div class="flex flex-row justify-between mt-4 gap-4 w-full">
-            <p-button label="Cancelar" fluid (click)="closeDialogCrearItem()" class="w-full" severity="secondary" />
-            <p-button label="Crear" fluid (click)="crearteItem()" [disabled]="fb_item.invalid" class="w-full" />
+        
+        <!-- Botones de Acción -->
+        <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
+            <p-button 
+                label="Cancelar" 
+                severity="secondary" 
+                [outlined]="true"
+                (onClick)="closeDialogCrearItem()" 
+                class="flex-1 md:flex-none md:min-w-24" />
+            <p-button 
+                label="Crear Item" 
+                icon="pi pi-plus"
+                [disabled]="fb_item.invalid" 
+                (onClick)="crearteItem()" 
+                class="flex-1 md:flex-none md:min-w-32" />
         </div>
     </div>
 </p-dialog>

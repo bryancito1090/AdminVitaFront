@@ -279,25 +279,75 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
       }
     });
   }
+showEditDialog() {
+  // Verificar que los supervisores estén cargados
+  if (!this.supervisor || this.supervisor.length === 0) {
+    this.toastr.warning('Cargando supervisores...', 'Espere');
+    setTimeout(() => {
+      this.showEditDialog();
+    }, 1000);
+    return;
+  }
 
-  // Método para mostrar el diálogo de edición
-  showEditDialog() {
-    this.loadingEditDialog = true;
-    this.visibleEdit = true;
+  this.loadingEditDialog = true;
+  this.visibleEdit = true;
 
-    // Cargar solo los campos editables en el formulario
-    if (this.OrdenTrabajo) {
-      this.fb_editOt.patchValue({
-        estado: parseInt(this.OrdenTrabajo.estado) || 0,
-        prioridad: parseInt(this.OrdenTrabajo.prioridad) || 0,
-        supervisor: parseInt(this.OrdenTrabajo.supervisor) || null,
-        fechaProgramada: new Date(this.OrdenTrabajo.fechaProgramada),
-        observacion: this.OrdenTrabajo.observacion || ''
-      });
+  // Cargar solo los campos editables en el formulario
+  if (this.OrdenTrabajo) {
+    // Buscar el supervisor correcto por ID usando idSupervisor
+    const supervisorSeleccionado = this.supervisor.find(sup => sup.code === parseInt(this.OrdenTrabajo.idSupervisor));
+    
+    // Parsear la fecha correctamente con múltiples formatos
+    let fechaProgramada: Date | null = null;
+    
+    if (this.OrdenTrabajo.fechaProgramada) {
+      const fechaString = this.OrdenTrabajo.fechaProgramada.toString();
+      
+      try {
+        if (fechaString.includes('T')) {
+          const soloFecha = fechaString.split('T')[0];
+          const [año, mes, dia] = soloFecha.split('-').map(Number);
+          fechaProgramada = new Date(año, mes - 1, dia); // mes - 1 porque Date usa 0-11 para meses
+        } else {
+          fechaProgramada = new Date(fechaString);
+        }
+        
+        // Verificar si la fecha es válida
+        if (isNaN(fechaProgramada.getTime())) {
+          fechaProgramada = new Date();
+          console.warn('Fecha inválida, usando fecha actual');
+        }
+        
+      } catch (error) {
+        console.error('Error al procesar fecha:', error);
+        fechaProgramada = new Date();
+      }
+    } else {
+      fechaProgramada = new Date();
     }
 
-    this.loadingEditDialog = false;
+    // Establecer valores en el formulario
+    this.fb_editOt.patchValue({
+      estado: parseInt(this.OrdenTrabajo.estado) || 0,
+      prioridad: parseInt(this.OrdenTrabajo.prioridad) || 0,
+      supervisor: supervisorSeleccionado ? supervisorSeleccionado.code : null,
+      fechaProgramada: fechaProgramada,
+      observacion: this.OrdenTrabajo.observacion || ''
+    });
+
+    // Verificar cada control individualmente
+    Object.keys(this.fb_editOt.controls).forEach(key => {
+      const control = this.fb_editOt.get(key);
+    });
+
+    // Forzar detección de cambios después de un pequeño delay
+    setTimeout(() => {
+      this.fb_editOt.get('fechaProgramada')?.updateValueAndValidity();
+    }, 100);
   }
+
+  this.loadingEditDialog = false;
+}
 
   // Método para actualizar la orden de trabajo
   updateOT() {
