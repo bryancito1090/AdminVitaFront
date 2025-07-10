@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ClienteService } from '../../../services/cliente.service';
@@ -23,6 +23,8 @@ import { ArchivosService } from '../../../services/archivos.service';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { AuthService } from '../../../auth/service/auth.service';
+import { RegistroClienteComponent } from '../../../../shared/components/registro-cliente/registro-cliente.component';
+import { RegistroVehiculoComponent } from '../../../../shared/components/registro-vehiculo/registro-vehiculo.component';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { AuthMecanicaComponent } from '../../../auth/components/auth-mecanica/auth-mecanica.component';
 
@@ -32,19 +34,22 @@ import { AuthMecanicaComponent } from '../../../auth/components/auth-mecanica/au
   imports: [CommonModule,
     FormsModule,
     ReactiveFormsModule,
-    Dialog,
     ButtonModule, 
     InputTextModule,
     DropdownModule,
     CalendarModule,
-    ConfirmDialogModule
+    ConfirmDialogModule,
+    RegistroClienteComponent,
+    RegistroVehiculoComponent
     ],
   providers: [ConfirmationService, DialogService],
   templateUrl: './agregar-orden-trabajo-mecanico.component.html',
   styleUrl: './agregar-orden-trabajo-mecanico.component.scss'
 })
 export class AgregarOrdenTrabajoMecanicoComponent implements OnInit{
-
+  // En registro-cliente.component.ts
+  @Input() visible: boolean = false;
+  @Output() visibleChange = new EventEmitter<boolean>();
   NameIdentifier: any;
 
   nombreUsuario: string = '';
@@ -103,50 +108,13 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit{
   imagenesSubidas: number = 0;
   totalImagenes: number = 0;
   
-  isPersonaNatural: boolean = true;
-  mostrarCamposPersonaNatural: boolean = true;
-  mostrarCamposEmpresa: boolean = false;
-  mostrarTipoDocumento: boolean = true;
-
   mostrarPopupPropietario: boolean = false;
   visibleVehiculo: boolean = false;
 
   // Property to store vehicle types
   tipoVehiculo: any[] = [];
-  tipoDocumento: string = 'cedula';
 
-// Datos para el formulario
-datosPersonaNatural = {
-  documento: '',
-  nombres: '',
-  apellidos: '',
-  fechaNacimiento: null as Date | null,
-  genero: '',
-  email: '',
-  telefono: '',
-  celular: '',
-  direccion: '',
-  esLocal: true,
-};
 
-datosEmpresa = {
-  documento: '',
-  nombre: '',
-  razonSocial: '',
-  representanteLegal: '',
-  email: '',
-  telefono: '',
-  celular: '',
-  direccion: '',
-  obligadaContabilidad: false,
-  esLocal: true
-};
-
-  visible: boolean = false;
-  activeTab: string = 'informacion';
-  mensajeExito: string = '';
-  mensajeError: string = '';
-  cargando: boolean = false;
   // En el componente .ts, agrega esta propiedad
   dialogStyle = {
     width: '680px', 
@@ -185,6 +153,9 @@ idAdjuntoFrontal: number | null = null;
 idAdjuntoLateralIzquierda: number | null = null;
 idAdjuntoLateralDerecha: number | null = null;
 idAdjuntoTrasera: number | null = null;
+mostrarDialogRegistroCliente: boolean = false;
+mensajeError: any;
+mensajeExito: any;
   constructor(
     private router: Router,
     private validacionService: ValidacionService,
@@ -205,18 +176,9 @@ idAdjuntoTrasera: number | null = null;
     this.obtenerNombreUsuario();
     this.cargarSupervisores();
     this.GetTipoVehiculo();
-    this.generarListaAnios();
     this.NameIdentifier = this.authService.getNameIdentifier();
   }
-  generarListaAnios(): void {
-  const anioActual = new Date().getFullYear();
-  const anioInicio = anioActual - 30; // 30 años atrás
-  
-  this.listaAnios = [];
-  for (let i = anioActual; i >= anioInicio; i--) {
-    this.listaAnios.push(i);
-  }
-}
+
   cargarSupervisores() {
     this.cargandoMecanicos = true;
     this.mecanicoService.getSupervisoresMec().subscribe({
@@ -280,7 +242,7 @@ idAdjuntoTrasera: number | null = null;
             this.toastr.info('El cliente existe pero no está activo', 'Información');
           }
         },
-        error: (error) => {
+        error: (error: any) => {
           console.error('Error al validar el cliente:', error);
           this.cargandoCliente = false;
           if (error.status === 404) {
@@ -291,16 +253,7 @@ idAdjuntoTrasera: number | null = null;
         }
       });
   }
-  crearNuevoPropietario() {
-    if (this.documento) {
-      // Pre-llenamos el campo documento
-      this.datosPersonaNatural.documento = this.documento;
-      this.datosEmpresa.documento = this.documento;
-    }
-    this.mostrarPopupPropietario = true;
-    this.activeTab = 'informacion'; // Reiniciamos a la primera pestaña
-  }
-  
+
 validarVehiculo() {
   if (!this.placa || this.placa.trim() === '') {
     this.toastr.warning('Por favor ingrese una placa válida', 'Advertencia');
@@ -749,327 +702,6 @@ async subirImagenes(): Promise<boolean> {
   isMobileDevice(): boolean {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   }
-  cerrarPopupPropietario() {
-    this.visible = false;
-    this.resetearFormulario();
-  }
-  
-
-  toggleClienteType(isPersonaNatural: boolean): void {
-    this.isPersonaNatural = isPersonaNatural;
-    this.mostrarCamposPersonaNatural = isPersonaNatural;
-    this.mostrarCamposEmpresa = !isPersonaNatural;
-    this.activeTab = 'informacion';
-    
-    // Resetear tipo de documento según el tipo de persona
-    if (isPersonaNatural) {
-      this.tipoDocumento = 'cedula';
-    } else {
-      this.tipoDocumento = 'ruc';
-    }
-  }
-  
-  // Cambiar tipo de documento
-  cambiarTipoDocumento(tipo: string): void {
-    this.tipoDocumento = tipo;
-  }
-  
-  // Resetear formulario
-  resetearFormulario(): void {
-    this.isPersonaNatural = true;
-    this.mostrarCamposPersonaNatural = true;
-    this.mostrarCamposEmpresa = false;
-    this.tipoDocumento = 'cedula';
-    this.activeTab = 'informacion';
-    
-    // Resetear datos de persona natural
-    this.datosPersonaNatural = {
-      documento: '',
-      nombres: '',
-      apellidos: '',
-      fechaNacimiento: null,
-      genero: '',
-      email: '',
-      celular: '',
-      telefono: '',
-      direccion: '',
-      esLocal: true
-    };
-    
-    // Resetear datos de empresa
-    this.datosEmpresa = {
-      documento: '',
-      nombre: '',
-      razonSocial: '',
-      representanteLegal: '',
-      email: '',
-      celular: '',
-      telefono: '',
-      direccion: '',
-      obligadaContabilidad: false,
-      esLocal: true
-    };
-    
-    this.mensajeExito = '';
-    this.mensajeError = '';
-  }
-  
-  prepararDatosCliente(): Cliente {
-    const fechaActual = new Date().toISOString();
-    
-    if (this.isPersonaNatural) {
-      // Para persona natural
-      return {
-        nombre: this.datosPersonaNatural.nombres,
-        tipoPersona: 'N',
-        tipoDocumento: this.tipoDocumento === 'cedula' ? 'C' : 'P',
-        documento: this.datosPersonaNatural.documento,
-        email: this.datosPersonaNatural.email,
-        celular: this.datosPersonaNatural.celular || '',
-        telefono: this.datosPersonaNatural.telefono || '',
-        direccion: this.datosPersonaNatural.direccion,
-        apellidos: this.datosPersonaNatural.apellidos,
-        // Importante: Manejar correctamente el tipo de fechaNacimiento
-        fechaNacimiento: this.datosPersonaNatural.fechaNacimiento ? 
-          (typeof this.datosPersonaNatural.fechaNacimiento === 'string' ? 
-           this.datosPersonaNatural.fechaNacimiento : 
-           this.datosPersonaNatural.fechaNacimiento.toISOString()) : undefined,
-        genero: this.datosPersonaNatural.genero === 'masculino' ? 'M' : 
-          this.datosPersonaNatural.genero === 'femenino' ? 'F' : '',
-        // Campos de empresa con valores por defecto para que no sean null/undefined
-        razonSocial: '',
-        idRepresentanteLegal: 0,
-        representanteLegalNombre: '',
-        obligadaContabilidad: false,
-        esLocal: this.datosPersonaNatural.esLocal
-      };
-    } else {
-      // Para empresa
-      return {
-        nombre: this.datosEmpresa.nombre,
-        tipoPersona: 'E',
-        tipoDocumento: 'R',
-        documento: this.datosEmpresa.documento,
-        email: this.datosEmpresa.email,
-        celular: this.datosEmpresa.celular || '',
-        telefono: this.datosEmpresa.telefono || '',
-        direccion: this.datosEmpresa.direccion,
-        // Campos para cumplir con el schema (pueden ir vacíos para empresas)
-        apellidos: '',
-        fechaNacimiento: undefined,
-        genero: '',
-        razonSocial: this.datosEmpresa.razonSocial,
-        idRepresentanteLegal: 0, // Ajustar si tienes este dato
-        representanteLegalNombre: this.datosEmpresa.representanteLegal,
-        obligadaContabilidad: this.datosEmpresa.obligadaContabilidad,
-        esLocal: this.datosEmpresa.esLocal
-      };
-    }
-  }
-// Validación mejorada con alertas Toast
-validarFormulario(): boolean {
-  // Validaciones para persona natural
-  if (this.isPersonaNatural) {
-    if (!this.datosPersonaNatural.documento) {
-      this.toastr.warning('El número de documento es obligatorio', 'Campo requerido');
-      return false;
-    }
-    
-    // Validar formato de cédula
-    if (this.tipoDocumento === 'cedula' && !/^\d{10}$/.test(this.datosPersonaNatural.documento)) {
-      this.toastr.warning('La cédula debe tener 10 dígitos numéricos', 'Formato inválido');
-      return false;
-    }
-    
-    // Validar formato de pasaporte (alfanumérico, entre 6-12 caracteres)
-    if (this.tipoDocumento === 'pasaporte' && !/^[A-Za-z0-9]{6,12}$/.test(this.datosPersonaNatural.documento)) {
-      this.toastr.warning('El pasaporte debe tener entre 6 y 12 caracteres alfanuméricos', 'Formato inválido');
-      return false;
-    }
-    
-    if (!this.datosPersonaNatural.nombres) {
-      this.toastr.warning('El nombre es obligatorio', 'Campo requerido');
-      return false;
-    }
-    
-    if (!this.datosPersonaNatural.apellidos) {
-      this.toastr.warning('El apellido es obligatorio', 'Campo requerido');
-      return false;
-    }
-    
-    if (!this.datosPersonaNatural.email) {
-      this.toastr.warning('El email es obligatorio', 'Campo requerido');
-      return false;
-    }
-    
-    // Validar formato de email
-    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
-    if (!emailRegex.test(this.datosPersonaNatural.email)) {
-      this.toastr.warning('El formato del email no es válido', 'Formato inválido');
-      return false;
-    }
-    
-    if (!this.datosPersonaNatural.direccion) {
-      this.toastr.warning('La dirección es obligatoria', 'Campo requerido');
-      return false;
-    }
-  } 
-  // Validaciones para empresa
-  else {
-    if (!this.datosEmpresa.documento) {
-      this.toastr.warning('El número de RUC es obligatorio', 'Campo requerido');
-      return false;
-    }
-    
-    // Validar formato de RUC (13 dígitos)
-    if (!/^\d{13}$/.test(this.datosEmpresa.documento)) {
-      this.toastr.warning('El RUC debe tener 13 dígitos numéricos', 'Formato inválido');
-      return false;
-    }
-    
-    if (!this.datosEmpresa.nombre) {
-      this.toastr.warning('El nombre de la empresa es obligatorio', 'Campo requerido');
-      return false;
-    }
-    
-    if (!this.datosEmpresa.razonSocial) {
-      this.toastr.warning('La razón social es obligatoria', 'Campo requerido');
-      return false;
-    }
-    
-    if (!this.datosEmpresa.representanteLegal) {
-      this.toastr.warning('El nombre del representante legal es obligatorio', 'Campo requerido');
-      return false;
-    }
-    
-    if (!this.datosEmpresa.email) {
-      this.toastr.warning('El email es obligatorio', 'Campo requerido');
-      return false;
-    }
-    
-    // Validar formato de email
-    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
-    if (!emailRegex.test(this.datosEmpresa.email)) {
-      this.toastr.warning('El formato del email no es válido', 'Formato inválido');
-      return false;
-    }
-    
-    if (!this.datosEmpresa.direccion) {
-      this.toastr.warning('La dirección es obligatoria', 'Campo requerido');
-      return false;
-    }
-  }
-  
-  return true;
-}
-registrarPropietario(): void {
-  this.mensajeError = '';
-  this.mensajeExito = '';
-  
-  if (!this.validarFormulario()) {
-    return;
-  }
-  
-  const cliente = this.prepararDatosCliente();
-  this.cargando = true;
-  
-  // Depuración detallada
-  console.log('Datos del cliente a registrar (objeto completo):', JSON.stringify(cliente, null, 2));
-  
-  this.clienteService.registrarCliente(cliente).subscribe({
-    next: (respuesta) => {
-      console.log('Respuesta del servidor:', respuesta);
-      this.cargando = false;
-      
-      if (respuesta === 'Cliente registrado correctamente.' || 
-          (typeof respuesta === 'object' && respuesta.success)) {
-        this.toastr.success('Cliente registrado correctamente', 'Operación exitosa');
-        
-        // Actualizar documento y cerrar popup
-        this.documento = cliente.documento;
-        this.visible = false;
-        
-        // Cargar cliente después
-        setTimeout(() => {
-          this.validarCliente();
-        }, 500);
-      } else {
-        this.toastr.warning(typeof respuesta === 'string' ? respuesta : 'Respuesta inesperada del servidor', 'Advertencia');
-      }
-    },
-    error: (error) => {
-      console.error('Error completo al registrar cliente:', error);
-      this.cargando = false;
-      
-      // Analizar la respuesta para obtener más detalles
-      let mensaje = 'Error al registrar el cliente';
-      let titulo = 'Error';
-      
-      if (error.status === 400) {
-        if (error.error && error.error.includes('ya existe')) {
-          this.toastr.info('Este documento ya está registrado', 'Cliente existente');
-          this.documento = cliente.documento;
-          this.visible = false;
-          setTimeout(() => this.validarCliente(), 500);
-          return;
-        }
-        
-        // Intentar extraer mensaje específico del error
-        if (typeof error.error === 'object') {
-          mensaje = JSON.stringify(error.error);
-        } else if (typeof error.error === 'string') {
-          mensaje = error.error;
-        }
-        titulo = 'Datos inválidos';
-      } else if (error.status === 409) {
-        mensaje = 'Ya existe un cliente con ese documento';
-        titulo = 'Cliente duplicado';
-      }
-      
-      this.toastr.error(mensaje, titulo);
-    }
-  });
-}
-// Para validación en tiempo real
-validarCampo(tipo: string, campo: string, valor: any): void {
-  // No mostrar errores mientras el usuario está escribiendo
-  if (!valor || valor === '') return;
-  
-  switch (campo) {
-    case 'documento':
-      if (tipo === 'persona' && this.tipoDocumento === 'cedula') {
-        if (!/^\d{10}$/.test(valor)) {
-          this.toastr.warning('La cédula debe tener 10 dígitos numéricos', 'Formato inválido');
-        }
-      } else if (tipo === 'persona' && this.tipoDocumento === 'pasaporte') {
-        if (!/^[A-Za-z0-9]{6,12}$/.test(valor)) {
-          this.toastr.warning('El pasaporte debe tener entre 6 y 12 caracteres alfanuméricos', 'Formato inválido');
-        }
-      } else if (tipo === 'empresa') {
-        if (!/^\d{13}$/.test(valor)) {
-          this.toastr.warning('El RUC debe tener 13 dígitos numéricos', 'Formato inválido');
-        }
-      }
-      break;
-      
-    case 'email':
-      const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
-      if (!emailRegex.test(valor)) {
-        this.toastr.warning('El formato del email no es válido', 'Formato inválido');
-      }
-      break;
-      
-    case 'telefono':
-    case 'celular':
-      if (valor && !/^[0-9]{7,10}$/.test(valor)) {
-        this.toastr.warning(`El número de ${campo} debe tener entre 7 y 10 dígitos`, 'Formato inválido');
-      }
-      break;
-  }
-}
-showDialog() {
-  this.visible = true;
-}
   GetTipoVehiculo(): void {
     this.tipoVehiculoService.getTiposVehiculo().subscribe({
       next: (data) => {
@@ -1111,125 +743,8 @@ abrirPopupVehiculo() {
   cerrarPopupVehiculo(): void {
     this.visibleVehiculo = false;
   }
-validarClienteVehiculo() {
-  if (!this.documentoVehiculo || this.documentoVehiculo.trim() === '') {
-    this.toastr.warning('Por favor ingrese un documento válido', 'Advertencia');
-    return;
-  }
-  
-  this.cargandoClienteVehiculo = true;
-  this.mostrarInfoClienteVehiculo = false;
-  this.errorClienteVehiculo = '';
-  
-  // Usar exactamente el mismo servicio y método que usas en validarCliente()
-  this.validacionService.validarClienteXDocMec(this.documentoVehiculo)
-    .subscribe({
-      next: (respuesta) => {
-        this.clienteVehiculoActual = respuesta;
-        this.mostrarInfoClienteVehiculo = true;
-        this.cargandoClienteVehiculo = false;
-        
-        // También puedes asignar el cliente al vehículo aquí si lo necesitas
-        // this.nuevoVehiculo.idCliente = this.clienteVehiculoActual.idPersona;
-        
-        if (this.clienteVehiculoActual.esClienteActivo) {
-          this.toastr.success('Cliente encontrado', 'Éxito');
-        } else {
-          this.toastr.info('El cliente existe pero no está activo', 'Información');
-        }
-      },
-      error: (error) => {
-        console.error('Error al validar el cliente:', error);
-        this.cargandoClienteVehiculo = false;
-        this.clienteVehiculoActual = null;
-        
-        if (error.status === 404) {
-          this.errorClienteVehiculo = 'Cliente no encontrado';
-          this.toastr.warning('Cliente no encontrado', 'No existe');
-        } else {
-          this.errorClienteVehiculo = 'Error al validar el cliente';
-          this.toastr.error('Error al validar el cliente', 'Error');
-        }
-      }
-    });
-}
-registrarVehiculo() {
-  // Validar campos obligatorios
-  if (!this.clienteVehiculoActual) {
-    this.toastr.warning('Debe validar un cliente primero', 'Advertencia');
-    return;
-  }
 
-  if (!this.nuevoVehiculo.marca || !this.nuevoVehiculo.modelo || !this.nuevoVehiculo.color || 
-      !this.nuevoVehiculo.anio || !this.nuevoVehiculo.idTipoVehiculo) {
-    this.toastr.warning('Complete todos los campos obligatorios', 'Advertencia');
-    return;
-  }
 
-  // Extraer solo los campos necesarios para la petición, omitiendo idVehiculo
-  const vehiculoParaEnviar = {
-    idTipoVehiculo: this.nuevoVehiculo.idTipoVehiculo,
-    marca: this.nuevoVehiculo.marca,
-    modelo: this.nuevoVehiculo.modelo,
-    version: this.nuevoVehiculo.version,
-    placa: this.nuevoVehiculo.placa,
-    anio: this.nuevoVehiculo.anio,
-    color: this.nuevoVehiculo.color,
-    numeroChasis: this.nuevoVehiculo.numeroChasis,
-    numeroVehiculo: null,  // Usa null en vez de string vacío
-    estado: this.nuevoVehiculo.estado,
-    idCliente: this.clienteVehiculoActual.idPersona,
-    idLicencias: this.nuevoVehiculo.idLicencias || null,
-    archivos: this.nuevoVehiculo.archivos || null,
-    ultimoAnioMatriculacion: this.nuevoVehiculo.ultimoAnioMatriculacion || 0, // Add this property
-    ultimoAnioRTV: this.nuevoVehiculo.ultimoAnioRTV || 0 // Add this property
-  };
-  
-  // Conversión segura para años (usando null si no hay valor)
-  if (this.nuevoVehiculo.ultimoAnioMatriculacion !== null) {
-    vehiculoParaEnviar.ultimoAnioMatriculacion = Number(this.nuevoVehiculo.ultimoAnioMatriculacion) || 0;
-  }
-  
-  if (this.nuevoVehiculo.ultimoAnioRTV !== null) {
-    vehiculoParaEnviar.ultimoAnioRTV = Number(this.nuevoVehiculo.ultimoAnioRTV) || 0;
-  }
-  
-  this.cargandoRegistroVehiculo = true;
-  console.log('Datos del vehículo a registrar:', vehiculoParaEnviar);
-  
-  this.vehiculoService.postVehicleNoInstitucional(vehiculoParaEnviar)
-    .subscribe({
-      next: (respuesta) => {
-        console.log('Respuesta del servidor:', respuesta);
-        this.cargandoRegistroVehiculo = false;
-        
-        if (respuesta === 'Vehículo registrado correctamente.' || 
-            (typeof respuesta === 'object' && respuesta.success)) {
-          this.toastr.success('Vehículo registrado correctamente', 'Éxito');
-          this.visibleVehiculo = false;
-          this.resetearFormulario();
-          
-          // Si deseas usar la placa del vehículo recién creado
-          if (respuesta.placa) {
-            this.placa = respuesta.placa;
-            this.validarVehiculo();
-          }
-        } else {
-          this.toastr.warning(typeof respuesta === 'string' ? respuesta : 'Respuesta inesperada del servidor', 'Advertencia');
-        }
-      },
-      error: (error) => {
-        console.error('Error al registrar vehículo:', error);
-        this.cargandoRegistroVehiculo = false;
-        
-        if (error.error && typeof error.error === 'string') {
-          this.toastr.error(error.error, 'Error');
-        } else {
-          this.toastr.error('Error al registrar el vehículo', 'Error');
-        }
-      }
-    });
-}
 limpiarPrevisualizaciones(): void {
   this.previewFrontal = null;
   this.previewLateralIzquierda = null;
@@ -1352,4 +867,24 @@ retirarVehiculo() {
     }
   });
 }
+ crearNuevoPropietario() {
+    this.mostrarDialogRegistroCliente = true;
+  }
+
+  onClienteRegistrado(evento: { documento: string, cliente: any }) {
+    this.documento = evento.documento;
+    
+    // Dar un delay para que el backend procese el registro
+    setTimeout(() => {
+      this.validarCliente();
+    }, 500);
+  }
+
+  onCerrarDialogCliente() {
+    this.mostrarDialogRegistroCliente = false;
+  }
+  onVehiculoRegistrado(placa: string) {
+  this.placa = placa;
+  this.validarVehiculo();
+  }
 }

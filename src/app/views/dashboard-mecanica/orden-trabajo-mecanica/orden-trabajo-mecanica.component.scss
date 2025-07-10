@@ -2,6 +2,7 @@ p-card {
     margin: 1rem;
     padding: 0;
 }
+
 .custom-dialog {
     width: 75vw;
     max-width: 700px;
@@ -13,8 +14,148 @@ p-card {
         height: 100vh !important;
     }
 }
-/* Estilos específicos para el p-calendar en tu aplicación */
 
+/* Estilos para el header con botón */
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.edit-button {
+    flex-shrink: 0;
+}
+
+/* Estilos para el detalle */
+.detalle-section {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+/* Grid principal responsivo */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+/* Secciones de información */
+.info-section {
+    background-color: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+/* Items de información */
+.info-item {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0.75rem;
+    gap: 0.25rem;
+}
+
+.info-item .label {
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.9rem;
+}
+
+.info-item .value {
+    color: #6c757d;
+    font-size: 0.95rem;
+    word-break: break-word;
+}
+
+/* Estilos responsive para móviles */
+@media (max-width: 768px) {
+    p-card {
+        margin: 0.5rem;
+    }
+    
+    .header-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .header-container h3 {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .edit-button {
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .info-section {
+        padding: 0.75rem;
+    }
+    
+    .section-title {
+        font-size: 1rem;
+    }
+    
+    .detalle-section {
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+    }
+}
+
+/* Estilos para pantallas muy pequeñas */
+@media (max-width: 480px) {
+    .header-container h3 {
+        font-size: 1.25rem;
+    }
+    
+    .info-item {
+        margin-bottom: 0.5rem;
+    }
+    
+    .info-item .label {
+        font-size: 0.85rem;
+    }
+    
+    .info-item .value {
+        font-size: 0.9rem;
+    }
+    
+    .section-title {
+        font-size: 0.95rem;
+        margin-bottom: 0.75rem;
+    }
+}
+
+/* Estilos para tablets */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .info-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Estilos específicos para el p-calendar en tu aplicación */
 :host ::ng-deep .p-calendar {
   width: 100%;
 }

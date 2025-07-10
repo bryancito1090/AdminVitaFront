@@ -1,0 +1,326 @@
+<p-dialog [(visible)]="visible" 
+          [modal]="true" 
+          [draggable]="false" 
+          [resizable]="false"
+          [style]="{width: '680px', maxWidth: '95vw'}"
+          styleClass="cliente-dialog" 
+          [baseZIndex]="1000"
+          [breakpoints]="{ '1199px': '75vw', '575px': '90vw' }"
+          header="Registrar Nuevo Cliente">
+  
+  <div class="dialog-content">
+    <!-- Mensajes de alerta -->
+    <div *ngIf="mensajeError" class="alert alert-danger">
+      <i class="pi pi-exclamation-circle"></i> {{ mensajeError }}
+    </div>
+    <div *ngIf="mensajeExito" class="alert alert-success">
+      <i class="pi pi-check-circle"></i> {{ mensajeExito }}
+    </div>
+    
+    <!-- Sección de tipo de cliente -->
+    <div class="form-section">
+      <h3 class="section-title">
+        <i class="pi pi-user"></i> Tipo de cliente
+      </h3>
+      <div class="selection-options">
+        <div class="selection-option" [class.selected]="isPersonaNatural">
+          <label class="selection-option-label">
+            <input type="radio" name="tipoCliente" [checked]="isPersonaNatural" (change)="toggleClienteType(true)">
+            <span class="selection-radio"></span>
+            <span class="selection-text">Persona Natural</span>
+          </label>
+        </div>
+        <div class="selection-option" [class.selected]="!isPersonaNatural">
+          <label class="selection-option-label">
+            <input type="radio" name="tipoCliente" [checked]="!isPersonaNatural" (change)="toggleClienteType(false)">
+            <span class="selection-radio"></span>
+            <span class="selection-text">Empresa</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Sección de tipo de documento -->
+    <div class="form-section" *ngIf="mostrarTipoDocumento">
+      <h3 class="section-title">
+        <i class="pi pi-id-card"></i> Tipo de documento
+      </h3>
+      <div class="selection-options">
+        <div class="selection-option" *ngIf="isPersonaNatural" [class.selected]="tipoDocumento === 'cedula'">
+          <label class="selection-option-label">
+            <input type="radio" name="tipoDocumento" [checked]="tipoDocumento === 'cedula'" (change)="cambiarTipoDocumento('cedula')">
+            <span class="selection-radio"></span>
+            <span class="selection-text">Cédula</span>
+          </label>
+        </div>
+        <div class="selection-option" *ngIf="isPersonaNatural" [class.selected]="tipoDocumento === 'pasaporte'">
+          <label class="selection-option-label">
+            <input type="radio" name="tipoDocumento" [checked]="tipoDocumento === 'pasaporte'" (change)="cambiarTipoDocumento('pasaporte')">
+            <span class="selection-radio"></span>
+            <span class="selection-text">Pasaporte</span>
+          </label>
+        </div>
+        <div class="selection-option" *ngIf="!isPersonaNatural" [class.selected]="tipoDocumento === 'ruc'">
+          <label class="selection-option-label">
+            <input type="radio" name="tipoDocumento" [checked]="tipoDocumento === 'ruc'" (change)="cambiarTipoDocumento('ruc')">
+            <span class="selection-radio"></span>
+            <span class="selection-text">RUC</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Pestañas del formulario -->
+    <p-tabView [(activeIndex)]="activeTabIndex" 
+           class="form-tabs card-style"
+           [scrollable]="false">
+      <!-- Pestaña de Información Básica -->
+      <p-tabPanel header="Información Básica" [disabled]="cargando">
+        <div class="form-section" *ngIf="mostrarCamposPersonaNatural">
+          <!-- ✅ Para persona natural -->
+            <div class="form-field">
+            <label class="form-label required" for="documentoPN">
+                Número de {{ tipoDocumento === 'cedula' ? 'cédula' : 'pasaporte' }}
+            </label>
+            <input pInputText 
+                    id="documentoPN" 
+                    type="text" 
+                    [(ngModel)]="datosPersonaNatural.documento" 
+                    name="documentoPN" 
+                    [placeholder]="tipoDocumento === 'cedula' ? 'Ingrese 10 dígitos' : 'Ingrese 6-12 caracteres'"
+                    [maxlength]="tipoDocumento === 'cedula' ? 10 : 12"
+                    (input)="soloNumeros($event, tipoDocumento)"
+                    (blur)="validarCampo('persona', 'documento', datosPersonaNatural.documento)">
+            <small class="form-hint">
+                {{ tipoDocumento === 'cedula' ? 'Solo números, exactamente 10 dígitos' : 'Letras y números, entre 6-12 caracteres' }}
+            </small>
+            </div>
+          
+          <div class="form-row">
+            <div class="form-field">
+              <label class="form-label required" for="nombres">Nombres</label>
+              <input pInputText id="nombres" type="text" [(ngModel)]="datosPersonaNatural.nombres" 
+                     name="nombres" placeholder="Nombres completos">
+            </div>
+            
+            <div class="form-field">
+              <label class="form-label required" for="apellidos">Apellidos</label>
+              <input pInputText id="apellidos" type="text" [(ngModel)]="datosPersonaNatural.apellidos" 
+                     name="apellidos" placeholder="Apellidos completos">
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-field">
+              <label class="form-label" for="fechaNacimiento">Fecha de nacimiento</label>
+              <p-calendar id="fechaNacimiento" 
+                          [(ngModel)]="datosPersonaNatural.fechaNacimiento" 
+                          [showIcon]="true" 
+                          [monthNavigator]="true" 
+                          [yearNavigator]="true" 
+                          yearRange="1900:2030" 
+                          name="fechaNacimiento"
+                          appendTo="body">
+              </p-calendar>
+            </div>
+            <div class="form-field">
+            <label class="form-label" for="genero">Género</label>
+            <p-dropdown 
+                id="genero" 
+                [options]="generos" 
+                [(ngModel)]="datosPersonaNatural.genero" 
+                name="genero" 
+                placeholder="Seleccionar"
+                appendTo="body">
+            </p-dropdown>
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-section" *ngIf="mostrarCamposEmpresa">
+          <div class="form-field">
+              <label class="form-label required" for="documentoEmpresa">Número de RUC</label>
+                <input pInputText 
+                        id="documentoEmpresa" 
+                        type="text" 
+                        [(ngModel)]="datosEmpresa.documento" 
+                        name="documentoEmpresa" 
+                        placeholder="Ingrese 13 dígitos"
+                        maxlength="13"
+                        (input)="soloNumeros($event, 'ruc')"
+                        (blur)="validarCampo('empresa', 'documento', datosEmpresa.documento)">
+                <small class="form-hint">Solo números, exactamente 13 dígitos</small>
+          </div>
+          
+          
+          <div class="form-row">
+            <div class="form-field">
+              <label class="form-label required" for="nombreEmpresa">Nombre comercial</label>
+              <input pInputText id="nombreEmpresa" type="text" [(ngModel)]="datosEmpresa.nombre" 
+                     name="nombreEmpresa" placeholder="Nombre comercial">
+            </div>
+            
+            <div class="form-field">
+              <label class="form-label required" for="razonSocial">Razón social</label>
+              <input pInputText id="razonSocial" type="text" [(ngModel)]="datosEmpresa.razonSocial" 
+                     name="razonSocial" placeholder="Razón social completa">
+            </div>
+          </div>
+          
+          <div class="form-field">
+            <label class="form-label required" for="representanteLegal">Representante legal</label>
+            <input pInputText id="representanteLegal" type="text" [(ngModel)]="datosEmpresa.representanteLegal" 
+                   name="representanteLegal" placeholder="Nombre completo del representante">
+          </div>
+        </div>
+      </p-tabPanel>
+      
+      <!-- Pestaña de Contacto -->
+      <p-tabPanel header="Datos de Contacto" [disabled]="cargando">
+        <div class="form-section" *ngIf="mostrarCamposPersonaNatural">
+          <div class="form-row">
+            <div class="form-field">
+              <label class="form-label required" for="email">Email</label>
+              <input pInputText id="email" type="email" [(ngModel)]="datosPersonaNatural.email" 
+                     name="email" placeholder="correo@ejemplo.com"
+                     (blur)="validarCampo('persona', 'email', datosPersonaNatural.email)">
+            </div>
+            
+            <div class="form-field">
+              <label class="form-label" for="celular">Celular</label>
+              <input pInputText id="celular" type="tel" [(ngModel)]="datosPersonaNatural.celular" 
+                     name="celular" placeholder="+099 000 0000"
+                     (blur)="validarCampo('persona', 'celular', datosPersonaNatural.celular)">
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-field">
+              <label class="form-label" for="telefono">Teléfono</label>
+              <input pInputText id="telefono" type="tel" [(ngModel)]="datosPersonaNatural.telefono" 
+                     name="telefono" placeholder="02 000 0000"
+                     (blur)="validarCampo('persona', 'telefono', datosPersonaNatural.telefono)">
+            </div>
+            
+            <div class="form-field">
+              <label class="form-label required" for="direccion">Dirección</label>
+              <input pInputText id="direccion" type="text" [(ngModel)]="datosPersonaNatural.direccion" 
+                     name="direccion" placeholder="Dirección completa">
+            </div>
+          </div>
+          
+          <div class="form-field">
+            <label class="form-label">Es Local</label>
+            <div class="selection-options">
+              <div class="selection-option" [class.selected]="datosPersonaNatural.esLocal">
+                <label class="selection-option-label">
+                  <input type="radio" name="esLocalPN" [checked]="datosPersonaNatural.esLocal" (change)="datosPersonaNatural.esLocal = true">
+                  <span class="selection-radio"></span>
+                  <span class="selection-text">Sí</span>
+                </label>
+              </div>
+              <div class="selection-option" [class.selected]="!datosPersonaNatural.esLocal">
+                <label class="selection-option-label">
+                  <input type="radio" name="esLocalPN" [checked]="!datosPersonaNatural.esLocal" (change)="datosPersonaNatural.esLocal = false">
+                  <span class="selection-radio"></span>
+                  <span class="selection-text">No</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-section" *ngIf="mostrarCamposEmpresa">
+          <div class="form-row">
+            <div class="form-field">
+              <label class="form-label required" for="emailEmpresa">Email</label>
+              <input pInputText id="emailEmpresa" type="email" [(ngModel)]="datosEmpresa.email" 
+                     name="emailEmpresa" placeholder="empresa@ejemplo.com"
+                     (blur)="validarCampo('empresa', 'email', datosEmpresa.email)">
+            </div>
+            
+            <div class="form-field">
+              <label class="form-label" for="celularEmpresa">Celular</label>
+              <input pInputText id="celularEmpresa" type="tel" [(ngModel)]="datosEmpresa.celular" 
+                     name="celularEmpresa" placeholder="+593 00 000 0000"
+                     (blur)="validarCampo('empresa', 'celular', datosEmpresa.celular)">
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-field">
+              <label class="form-label" for="telefonoEmpresa">Teléfono</label>
+              <input pInputText id="telefonoEmpresa" type="tel" [(ngModel)]="datosEmpresa.telefono" 
+                     name="telefonoEmpresa" placeholder="02 000 0000"
+                     (blur)="validarCampo('empresa', 'telefono', datosEmpresa.telefono)">
+            </div>
+            
+            <div class="form-field">
+              <label class="form-label required" for="direccionEmpresa">Dirección</label>
+              <input pInputText id="direccionEmpresa" type="text" [(ngModel)]="datosEmpresa.direccion" 
+                     name="direccionEmpresa" placeholder="Dirección completa">
+            </div>
+          </div>
+          
+          <div class="form-field">
+            <label class="form-label">Es Local</label>
+            <div class="selection-options">
+              <div class="selection-option" [class.selected]="datosEmpresa.esLocal">
+                <label class="selection-option-label">
+                  <input type="radio" name="esLocal" [checked]="datosEmpresa.esLocal" (change)="datosEmpresa.esLocal = true">
+                  <span class="selection-radio"></span>
+                  <span class="selection-text">Sí</span>
+                </label>
+              </div>
+              <div class="selection-option" [class.selected]="!datosEmpresa.esLocal">
+                <label class="selection-option-label">
+                  <input type="radio" name="esLocal" [checked]="!datosEmpresa.esLocal" (change)="datosEmpresa.esLocal = false">
+                  <span class="selection-radio"></span>
+                  <span class="selection-text">No</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </p-tabPanel>
+      
+      <!-- Pestaña adicional solo para empresas -->
+      <p-tabPanel header="Información Adicional" [disabled]="cargando || isPersonaNatural">
+        <div class="form-section" *ngIf="mostrarCamposEmpresa">
+          <div class="form-field">
+            <label class="form-label">Obligada a llevar contabilidad</label>
+            <div class="selection-options">
+              <div class="selection-option" [class.selected]="datosEmpresa.obligadaContabilidad">
+                <label class="selection-option-label">
+                  <input type="radio" name="obligadaContabilidad" [checked]="datosEmpresa.obligadaContabilidad" (change)="datosEmpresa.obligadaContabilidad = true">
+                  <span class="selection-radio"></span>
+                  <span class="selection-text">Sí</span>
+                </label>
+              </div>
+              <div class="selection-option" [class.selected]="!datosEmpresa.obligadaContabilidad">
+                <label class="selection-option-label">
+                  <input type="radio" name="obligadaContabilidad" [checked]="!datosEmpresa.obligadaContabilidad" (change)="datosEmpresa.obligadaContabilidad = false">
+                  <span class="selection-radio"></span>
+                  <span class="selection-text">No</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </p-tabPanel>
+    </p-tabView>
+  </div>
+  
+  <!-- Footer del diálogo -->
+    <div class="dialog-footer">
+      <button pButton type="button" label="Cancelar" icon="pi pi-times" 
+              class="p-button-text" (click)="cerrarDialogo()"></button>
+      <button pButton type="button" label="Registrar" icon="pi pi-save" 
+              [disabled]="cargando" (click)="registrarCliente()">
+        <span *ngIf="cargando" class="loading-text">
+          <i class="pi pi-spinner pi-spin"></i> Registrando...
+        </span>
+        <span *ngIf="!cargando">Registrar</span>
+      </button>
+    </div>
+</p-dialog>
