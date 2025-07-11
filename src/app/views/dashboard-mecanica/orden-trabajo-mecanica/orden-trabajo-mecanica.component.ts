@@ -116,7 +116,8 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
 
   formRepuesto: number | null = null;
   cantidadRepuesto: any;
-  repuestosDisponibles: any[] = []; // llena desde tu backend
+  repuestosDisponibles: any[] = [];
+  repuestosDisponiblesAux: any[] = [];
   repuestosTarea: any[] = [];
 
 
@@ -513,6 +514,12 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
     this.itemService.getItemsByTarea(id).subscribe({
       next: (items: any[]) => {
         this.repuestosTarea = items;
+        this.itemService.getItemsTipoRespuestoMec().subscribe({
+          next: (items : any) => {
+            this.repuestosDisponibles = items;
+            //console.log('Items disponibles:', this.repuestosDisponibles, this.repuestosTarea);
+          }
+        });
       },
       error: (error) => {
         console.error('Error al obtener los items de la tarea:', error);
@@ -532,7 +539,8 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
     this.formEstado = this.selectedTarea.estado;
     this.formMecanico = [...this.selectedTarea.mecanicos];
     this.displayModal = true;
-    this.getItemsDisponibles();
+    
+    
   }
 
   cerrarModalEditTarea() {
@@ -675,7 +683,7 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
           this.selectedTarea && 
           this.formEstado !== this.selectedTarea.estado;
   }
-  
+
   onFileSelected(event: any) {
     const file = event.target.files[0];
     if (file) {

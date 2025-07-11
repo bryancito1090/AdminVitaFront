@@ -406,7 +406,7 @@
         <label class="block font-medium mb-2">Repuestos Asignados</label>
         <div class="flex items-end justify-center gap-3">
             <p-select 
-            [options]="repuestosDisponibles"
+            [options]="repuestosDisponiblesAux"
             [(ngModel)]="formRepuesto"
             optionLabel="nombre"
             optionValue="idItem"
@@ -443,7 +443,10 @@
 
         <ng-container *ngFor="let repuesto of repuestosTarea">
             <div class="flex items-center justify-between px-2 py-1 mt-2 bg-gray-200 border rounded-md border-gray-300">
-            <span class="text-gray-700">{{ repuesto.nombre }}</span>
+              <div class="flex items-center justify-between gap-2 w-full">
+                <span class="text-gray-700">{{ repuesto.nombre }}</span>
+                <span class="text-gray-700 mr-20">{{ repuesto.cantidad }}</span>
+              </div>
             <button 
                 pButton 
                 icon="pi pi-times" 
