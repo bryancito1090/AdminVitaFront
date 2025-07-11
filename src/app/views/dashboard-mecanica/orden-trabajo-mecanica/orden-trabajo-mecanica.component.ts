@@ -258,13 +258,55 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
 
   getTareaOT() {
     this.tareaService.getTareasByOTMec(this.codigo!).subscribe({
-      next: (response) => {
-        this.TareasOT = response;
-        this.loadingTable = false;
+      next: (tareas) => {
+        this.tareaService.getTareaExternaByOT(this.codigo!).subscribe({
+          next: (tareasExternas) => {
+            const tareasMapeadas = tareas.map(t => {
+              const externa = tareasExternas.find(e => e.codigo === t.codigo);
+              return {
+                ...t,
+                solicitante: externa?.solicitante ?? null,
+                requiereAutorizacion: externa?.requiereAutorizacion ?? null,
+                requiereServicioExterno: externa?.requiereServicioExterno ?? null,
+                detalleExterno: externa?.detalle ?? null
+              };
+            });
+
+            // Agregar tareas externas que no estén en las internas
+            const tareasExternasNoIncluidas = tareasExternas.filter(e =>
+              !tareas.some(t => t.codigo === e.codigo)
+            ).map(e => ({
+              idTareaOt: null,
+              codigo: e.codigo,
+              detalle: e.detalle ?? null,
+              duracion: null,
+              estado: null,
+              mecanicos: [],
+              observaciones: [],
+              requiereRepuesto: null,
+              requiereServicioExterno: e.requiereServicioExterno ?? null,
+              solicitante: e.solicitante ?? null,
+              requiereAutorizacion: e.requiereAutorizacion ?? null,
+              detalleExterno: e.detalle ?? null
+            }));
+
+            this.TareasOT = [...tareasMapeadas, ...tareasExternasNoIncluidas];
+
+            this.loadingTable = false;
+          },
+          error: () => {
+            this.toastr.error('No se pudieron cargar las tareas externas de la orden de trabajo', 'Error');
+            this.loadingTable = false;
+          }
+        });
       },
+      error: () => {
+        this.toastr.error('No se pudieron cargar las tareas de la orden de trabajo', 'Error');
+        this.loadingTable = false;
+      }
     });
   }
-
+  
   getSeverityEstado(status: number) {
     switch (status) {
       case 0: return 'success';
