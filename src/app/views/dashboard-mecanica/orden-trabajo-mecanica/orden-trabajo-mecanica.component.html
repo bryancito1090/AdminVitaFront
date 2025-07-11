@@ -191,21 +191,42 @@
               </div>
             </ng-container>
             <ng-container *ngIf="col.field === 'observaciones'">
-              <ng-container *ngFor="let item of rowData['observaciones']; let last = last">
-                <p>
-                  {{ item.detalle }}<span *ngIf="!last">, </span>
-                </p>
-              </ng-container>
+              <div class="flex flex-col gap-1">
+                <!-- Si hay 2 o menos observaciones, mostrarlas completas -->
+                <ng-container *ngIf="rowData['observaciones']?.length <= 2">
+                  <p *ngFor="let item of rowData['observaciones']" class="text-sm">
+                    {{ item.detalle }}
+                  </p>
+                </ng-container>
+
+                <!-- Si hay más de 2 observaciones, mostrar solo la primera y el contador -->
+                <ng-container *ngIf="rowData['observaciones']?.length > 2">
+                  <p class="text-sm">
+                    {{ rowData['observaciones'][0].detalle }}
+                  </p>
+                  <p class="text-xs text-gray-500">
+                    y {{ rowData['observaciones'].length - 1 }} más...
+                  </p>
+                  <p-button 
+                    label="Ver todas" 
+                    icon="pi pi-eye" 
+                    size="small" 
+                    severity="secondary" 
+                    variant="text"
+                    [rounded]="true"
+                    (onClick)="mostrarObservaciones(rowData['observaciones'], rowData['codigo'])"
+                    class="text-xs" />
+                </ng-container>
+              </div>
             </ng-container>
           </ng-template>
 
           <div *ngIf="col.field =='actions'" class="flex justify-start w-full gap-2">
-            <p-button icon="pi pi-pen-to-square" [rounded]="true" [text]="true" [raised]="true" severity="secondary"
-              (onClick)="abrirModalEdicion(rowData['codigo'], rowData['mecanicos'])">
-            </p-button>
-            <!-- <p-button icon="pi pi-times" [rounded]="true" [text]="true" [raised]="true" severity="danger" />
-                        <p-button icon="pi pi-check" [rounded]="true" [text]="true" [raised]="true" severity="success" />
-                        -->
+            <ng-container *ngIf="rowData['estado'] !== 3 && rowData['estado'] !== 4 && rowData['estado'] !== 5">
+              <p-button icon="pi pi-pen-to-square" [rounded]="true" [text]="true" [raised]="true" severity="secondary"
+                (onClick)="abrirModalEdicion(rowData['codigo'], rowData['mecanicos'])">
+              </p-button>
+            </ng-container>
             <ng-container *ngIf="rowData['estado'] == 6 || rowData['estado'] == 7 || rowData['estado'] == 8">
               <p-button icon="pi pi-exclamation-triangle" [rounded]="true" [text]="true" [raised]="true" severity="warn"
                 (onClick)="autorizacionTareaOT(rowData['codigo'])" />
@@ -273,10 +294,13 @@
           </p-calendar>
           <label>Fecha programa de inicio OT</label>
         </p-floatlabel>
-        <p-floatlabel variant="on" class="w-full my-1">
-          <textarea pTextarea formControlName="observacion" rows="2" cols="34.5"></textarea>
-          <label>Observaciones</label>
-        </p-floatlabel>
+        <label class="block font-medium mt-2">Observación *</label>
+        <textarea 
+          formControlName="observacion"
+          placeholder="Agrega una observación para la OT..."
+          rows="3"
+          class="w-full p-2 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        ></textarea>
       </div>
     </ng-container>
     <div class="flex justify-end gap-2">
@@ -344,9 +368,9 @@
         <label class="block font-medium mb-2">Mecánicos Asignados</label>
         <div class="flex items-end justify-center gap-3">
             <p-select 
-                [options]="mecanicosDisponibles" 
+                [options]="mecanicosDisponiblesAux" 
                 [(ngModel)]="formMecanico"
-                optionLabel="nombre"
+                optionLabel="nombreCompleto"
                 optionValue="idMecanico"
                 placeholder="Selecciona mecánicos"
                 class="flex-1">

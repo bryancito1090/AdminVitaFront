@@ -31,6 +31,7 @@ import { DialogAutorizacionOTComponent } from './dialog-autorizacion-ot/dialog-a
 import { CreateObservacionRequest } from '../../../../domain/response/Observacion.model';
 import { AdjuntoService } from '../../services/adjunto.service';
 import { ItemService } from '../../services/item.service';
+import { DialogObservacionesComponent } from './dialog-observaciones/dialog-observaciones.component';
 
 interface ActualizarOrdenRequest {
   idOrden: number;
@@ -172,7 +173,7 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
 
   initData() {
     this.codigo = this.route.snapshot.paramMap.get('codigo');
-    if (!this.codigo) {
+    if (!this.codigo ) {
       this.toastr.error('La orden de trabajo no existe', 'Error');
       this.router.navigate(['mecanico']);
     }
@@ -196,9 +197,9 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
         this.OrdenTrabajo = response;
         this.loadingGeneral = false;
         this.getTareaOT();
-        if (this.OrdenTrabajo.estado === 6 || this.OrdenTrabajo.estado === 7 || this.OrdenTrabajo.estado === 8) {
+        if (this.OrdenTrabajo.estado === 1 || this.OrdenTrabajo.estado === 2 || this.OrdenTrabajo.estado === 3) {
           this.toastr.error('La orden de trabajo no está disponible', 'Error');
-          this.router.navigate(['mecanico']);
+          this.router.navigate(['mecanica']);
         }
       },
       error: (error) => {
@@ -300,115 +301,111 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
       }
     });
   }
-showEditDialog() {
-  // Verificar que los supervisores estén cargados
-  if (!this.supervisor || this.supervisor.length === 0) {
-    this.toastr.warning('Cargando supervisores...', 'Espere');
-    setTimeout(() => {
-      this.showEditDialog();
-    }, 1000);
-    return;
-  }
-
-  this.loadingEditDialog = true;
-  this.visibleEdit = true;
-
-  // Cargar solo los campos editables en el formulario
-  if (this.OrdenTrabajo) {
-    // Buscar el supervisor correcto por ID usando idSupervisor
-    const supervisorSeleccionado = this.supervisor.find(sup => sup.code === parseInt(this.OrdenTrabajo.idSupervisor));
-    
-    // Parsear la fecha correctamente con múltiples formatos
-    let fechaProgramada: Date | null = null;
-    
-    if (this.OrdenTrabajo.fechaProgramada) {
-      const fechaString = this.OrdenTrabajo.fechaProgramada.toString();
-      
-      try {
-        if (fechaString.includes('T')) {
-          const soloFecha = fechaString.split('T')[0];
-          const [año, mes, dia] = soloFecha.split('-').map(Number);
-          fechaProgramada = new Date(año, mes - 1, dia); // mes - 1 porque Date usa 0-11 para meses
-        } else {
-          fechaProgramada = new Date(fechaString);
-        }
-        
-        // Verificar si la fecha es válida
-        if (isNaN(fechaProgramada.getTime())) {
+  showEditDialog() {
+    // Verificar que los supervisores estén cargados
+    if (!this.supervisor || this.supervisor.length === 0) {
+      this.toastr.warning('Cargando supervisores...', 'Espere');
+      setTimeout(() => {
+        this.showEditDialog();
+      }, 1000);
+      return;
+    }
+    this.loadingEditDialog = true;
+    this.visibleEdit = true;
+    if (this.OrdenTrabajo) {
+      const supervisorSeleccionado = this.supervisor.find(sup => sup.code === parseInt(this.OrdenTrabajo.idSupervisor));
+      let fechaProgramada: Date | null = null;
+      if (this.OrdenTrabajo.fechaProgramada) {
+        const fechaString = this.OrdenTrabajo.fechaProgramada.toString();
+        try {
+          if (fechaString.includes('T')) {
+            const soloFecha = fechaString.split('T')[0];
+            const [año, mes, dia] = soloFecha.split('-').map(Number);
+            fechaProgramada = new Date(año, mes - 1, dia); // mes - 1 porque Date usa 0-11 para meses
+          } else {
+            fechaProgramada = new Date(fechaString);
+          }
+          if (isNaN(fechaProgramada.getTime())) {
+            fechaProgramada = new Date();
+            console.warn('Fecha inválida, usando fecha actual');
+          }
+        } catch (error) {
+          console.error('Error al procesar fecha:', error);
           fechaProgramada = new Date();
-          console.warn('Fecha inválida, usando fecha actual');
         }
-        
-      } catch (error) {
-        console.error('Error al procesar fecha:', error);
+      } else {
         fechaProgramada = new Date();
       }
-    } else {
-      fechaProgramada = new Date();
-    }
-
-    // Establecer valores en el formulario
-    this.fb_editOt.patchValue({
-      estado: parseInt(this.OrdenTrabajo.estado) || 0,
-      prioridad: parseInt(this.OrdenTrabajo.prioridad) || 0,
-      supervisor: supervisorSeleccionado ? supervisorSeleccionado.code : null,
-      fechaProgramada: fechaProgramada,
-      observacion: this.OrdenTrabajo.observacion || ''
-    });
-
-    // Verificar cada control individualmente
-    Object.keys(this.fb_editOt.controls).forEach(key => {
-      const control = this.fb_editOt.get(key);
-    });
-
-    // Forzar detección de cambios después de un pequeño delay
-    setTimeout(() => {
-      this.fb_editOt.get('fechaProgramada')?.updateValueAndValidity();
-    }, 100);
-  }
-
-  this.loadingEditDialog = false;
-}
-
-  // Método para actualizar la orden de trabajo
-  updateOT() {
-    if (this.fb_editOt.valid) {
-      this.loadingEditDialog = true;
-
-      // Crear el objeto con solo los campos que necesitas enviar
-      const datosActualizados = {
-        codigo: this.codigo!,
-        estado: this.fb_editOt.value.estado,
-        prioridad: this.fb_editOt.value.prioridad,
-        idMecanico: this.fb_editOt.value.supervisor, // Asumiendo que 'supervisor' corresponde a 'idMecanico'
-        fechaProgramada: this.fb_editOt.value.fechaProgramada,
-        observacion: this.fb_editOt.value.observacion || ''
-      };
-
-      this.ordenTrabajoService.updateOrdenTrabajo(datosActualizados).subscribe({
-        next: (response) => {
-          this.toastr.success('Orden de trabajo actualizada con éxito', 'Éxito');
-          this.visibleEdit = false;
-          this.loadingEditDialog = false;
-          // Recargar los datos de la OT para mostrar los cambios
-          this.getOrdenTrabajo();
-        },
-        error: (error) => {
-          console.error('Error al actualizar la orden de trabajo', error);
-          this.toastr.error('No se pudo actualizar la orden de trabajo', 'Error');
-          this.loadingEditDialog = false;
-        }
+      this.fb_editOt.patchValue({
+        estado: parseInt(this.OrdenTrabajo.estado) || 0,
+        prioridad: parseInt(this.OrdenTrabajo.prioridad) || 0,
+        supervisor: supervisorSeleccionado ? supervisorSeleccionado.code : null,
+        fechaProgramada: fechaProgramada,
+        observacion: this.OrdenTrabajo.observacion || ''
       });
-    } else {
-      // Mostrar errores del formulario
       Object.keys(this.fb_editOt.controls).forEach(key => {
         const control = this.fb_editOt.get(key);
-        if (control?.invalid) {
-          control.markAsTouched();
-        }
       });
-      this.toastr.warning('Por favor complete correctamente todos los campos requeridos', 'Formulario inválido');
+      setTimeout(() => {
+        this.fb_editOt.get('fechaProgramada')?.updateValueAndValidity();
+      }, 100);
     }
+    this.loadingEditDialog = false;
+  }
+  updateOT() {
+    const dialogRef = this.dialogService.open(AuthMecanicaComponent, {
+      header: 'Código de Autenticación',
+      width: '400px',
+      modal: true,
+      dismissableMask: false,
+      closable: false,
+      data: {
+        accion: 'EditarOT'
+      }
+    });
+
+    dialogRef.onClose.subscribe((result: { acceso: boolean, token: any }) => {
+      this.modalActivo = false;
+      if (result?.acceso) {
+        if (this.fb_editOt.valid) {
+          this.loadingEditDialog = true;
+          // Crear el objeto con solo los campos que necesitas enviar
+          const datosActualizados = {
+            codigo: this.codigo!,
+            estado: this.fb_editOt.value.estado,
+            prioridad: this.fb_editOt.value.prioridad,
+            idMecanico: this.fb_editOt.value.supervisor, // Asumiendo que 'supervisor' corresponde a 'idMecanico'
+            fechaProgramada: this.fb_editOt.value.fechaProgramada,
+            observacion: this.fb_editOt.value.observacion || ''
+          };
+
+          this.ordenTrabajoService.updateOrdenTrabajo(datosActualizados).subscribe({
+            next: (response) => {
+              this.toastr.success('Orden de trabajo actualizada con éxito', 'Éxito');
+              this.visibleEdit = false;
+              this.loadingEditDialog = false;
+              this.getOrdenTrabajo();
+            },
+            error: (error) => {
+              console.error('Error al actualizar la orden de trabajo', error);
+              this.toastr.error('No se pudo actualizar la orden de trabajo', 'Error');
+              this.loadingEditDialog = false;
+            }
+          });
+        } else {
+          // Mostrar errores del formulario
+          Object.keys(this.fb_editOt.controls).forEach(key => {
+            const control = this.fb_editOt.get(key);
+            if (control?.invalid) {
+              control.markAsTouched();
+            }
+          });
+          this.toastr.warning('Por favor complete correctamente todos los campos requeridos', 'Formulario inválido');
+        }
+      } else {
+        this.toastr.error('Código incorrecto o cancelado', 'Error');
+      }
+    });
   }
   // Método para confirmar anulación de OT
   confirmarAnularOT() {
@@ -503,7 +500,6 @@ showEditDialog() {
     this.ordenMecanicoService.actualizarEstadoOrdenTrabajo(this.codigo!, 1).subscribe({ //3anular, 1 finalizar, 2 finalizar sin exito
       next: (response) => {
         this.toastr.success('Orden de trabajo Finalizada exitosamente', 'Éxito');
-        // Recargar los datos para mostrar el nuevo estado
         this.getOrdenTrabajo();
       },
       error: (error) => {
@@ -530,6 +526,7 @@ showEditDialog() {
     this.selectedTarea = this.TareasOT.find(t => t.codigo === codigo);
     if (!this.selectedTarea) return;
 
+    this.mecanicosDisponiblesAux = this.filtrarMecanicosDisponibles(); 
     this.GetItemsByTarea(this.selectedTarea.idTareaOt);
 
     this.formEstado = this.selectedTarea.estado;
@@ -605,67 +602,60 @@ showEditDialog() {
     return estadoObj?.severity as any || 'secondary';
   }
 
-actualizarEstadoTarea(idTarea?: number) {
-  if (!this.selectedTarea || this.formEstado === null) {
-    this.toastr.warning('Debe seleccionar un estado válido', 'Advertencia');
-    return;
-  }
-
-  // Verificar si realmente cambió el estado
-  if (this.formEstado === this.selectedTarea.estado) {
-    this.toastr.info('No se detectaron cambios en el estado', 'Información');
-    return;
-  }
-
-  const idTareaFinal = idTarea || 
-                      this.selectedTarea.idTarea || 
-                      this.selectedTarea.id || 
-                      this.selectedTarea.idTareaOt;
-
-  if (!idTareaFinal) {
-    this.toastr.error('No se pudo identificar la tarea para actualizar', 'Error');
-    return;
-  }
-
-  this.loadingActualizarEstado = true;
-
-  const datosActualizacion = {
-    idTareaOt: Number(idTareaFinal),
-    estado: Number(this.formEstado)
-  };
-
-  this.tareaService.actualizarTarea(datosActualizacion).subscribe({
-    next: (response) => {
-      this.toastr.success(
-        `Estado actualizado a: ${this.obtenerTextoEstadoTarea(this.formEstado!)}`, 
-        'Estado Actualizado'
-      );
-      this.loadingActualizarEstado = false;
-      this.actualizarTareaEnLista();
-      this.getTareaOT();
-      this.displayModal = false;
-    },
-    error: (error) => {
-      this.toastr.error('No se pudo actualizar el estado de la tarea', 'Error');
-      this.loadingActualizarEstado = false;
+  actualizarEstadoTarea(idTarea?: number) {
+    if (!this.selectedTarea || this.formEstado === null) {
+      this.toastr.warning('Debe seleccionar un estado válido', 'Advertencia');
+      return;
     }
-  });
-}
+    // Verificar si realmente cambió el estado
+    if (this.formEstado === this.selectedTarea.estado) {
+      this.toastr.info('No se detectaron cambios en el estado', 'Información');
+      return;
+    }
+    const idTareaFinal = idTarea || 
+                        this.selectedTarea.idTarea || 
+                        this.selectedTarea.id || 
+                        this.selectedTarea.idTareaOt;
+    if (!idTareaFinal) {
+      this.toastr.error('No se pudo identificar la tarea para actualizar', 'Error');
+      return;
+    }
+    this.loadingActualizarEstado = true;
+    const datosActualizacion = {
+      idTareaOt: Number(idTareaFinal),
+      estado: Number(this.formEstado)
+    };
 
-// Método para actualizar la tarea en la lista local
-actualizarTareaEnLista() {
-  const index = this.TareasOT.findIndex(t => t.codigo === this.selectedTarea.codigo);
-  if (index !== -1) {
-    this.TareasOT[index].estado = this.formEstado;
+    this.tareaService.actualizarTarea(datosActualizacion).subscribe({
+      next: (response) => {
+        this.toastr.success(
+          `Estado actualizado a: ${this.obtenerTextoEstadoTarea(this.formEstado!)}`, 
+          'Estado Actualizado'
+        );
+        this.loadingActualizarEstado = false;
+        this.actualizarTareaEnLista();
+        this.getTareaOT();
+        this.displayModal = false;
+      },
+      error: (error) => {
+        this.toastr.error('No se pudo actualizar el estado de la tarea', 'Error');
+        this.loadingActualizarEstado = false;
+      }
+    });
   }
-}
 
-estadoHaCambiado(): boolean {
-  return this.formEstado !== null && 
-         this.selectedTarea && 
-         this.formEstado !== this.selectedTarea.estado;
-}
-onFileSelected(event: any) {
+  actualizarTareaEnLista() {
+    const index = this.TareasOT.findIndex(t => t.codigo === this.selectedTarea.codigo);
+    if (index !== -1) {
+      this.TareasOT[index].estado = this.formEstado;
+    }
+  }
+  estadoHaCambiado(): boolean {
+    return this.formEstado !== null && 
+          this.selectedTarea && 
+          this.formEstado !== this.selectedTarea.estado;
+  }
+  onFileSelected(event: any) {
     const file = event.target.files[0];
     if (file) {
       // Validar tipo de archivo
@@ -686,39 +676,38 @@ onFileSelected(event: any) {
     }
   }
 
-  // ✅ MÉTODO PARA REMOVER ARCHIVO SELECCIONADO
   removeSelectedFile() {
     this.selectedFile = null;
   }
-async subirImagen(): Promise<number | null> {
-  if (!this.selectedFile) {
-    return null;
-  }
 
-  this.loadingSubirImagen = true;
+  async subirImagen(): Promise<number | null> {
+    if (!this.selectedFile) {
+      return null;
+    }
 
-  try {
-    // Llamar al servicio de adjuntos con idVehiculo como null (opcional)
-    const response = await this.adjuntoService.createAdjunto(this.selectedFile, null as any).toPromise();
-    
-    console.log('Imagen subida exitosamente:', response);
-    this.loadingSubirImagen = false;
-    
-    return response.idAdjunto;
-  } catch (error) {
-    console.error('Error al subir imagen:', error);
-    this.toastr.error('Error al subir la imagen', 'Error');
-    this.loadingSubirImagen = false;
-    return null;
+    this.loadingSubirImagen = true;
+
+    try {
+      // Llamar al servicio de adjuntos con idVehiculo como null (opcional)
+      const response = await this.adjuntoService.createAdjunto(this.selectedFile, null as any).toPromise();
+      
+      console.log('Imagen subida exitosamente:', response);
+      this.loadingSubirImagen = false;
+      
+      return response.idAdjunto;
+    } catch (error) {
+      console.error('Error al subir imagen:', error);
+      this.toastr.error('Error al subir la imagen', 'Error');
+      this.loadingSubirImagen = false;
+      return null;
+    }
   }
-}
 
   async crearObservacionTarea() {
     if (!this.selectedTarea || !this.observacionDetalle.trim()) {
       this.toastr.warning('Debe ingresar un detalle para la observación', 'Campos requeridos');
       return;
     }
-
     // Obtener ID de la tarea (igual que en actualizar estado)
     const tareaCompleta = this.TareasOT.find(t => t.codigo === this.selectedTarea.codigo);
     const idTarea = tareaCompleta?.idTarea || 
@@ -735,8 +724,6 @@ async subirImagen(): Promise<number | null> {
 
     try {
       let idAdjunto: number | null = null;
-
-      // Subir imagen si hay una seleccionada
       if (this.selectedFile) {
         idAdjunto = await this.subirImagen();
         
@@ -745,8 +732,6 @@ async subirImagen(): Promise<number | null> {
           return; // Error al subir imagen
         }
       }
-
-      // Crear la observación
       const observacionData: CreateObservacionRequest = {
         IdTareaOt: Number(idTarea),
         IdUsuario: 1, // Obtener del servicio de autenticación
@@ -760,12 +745,8 @@ async subirImagen(): Promise<number | null> {
         next: (response) => {
           if (response.success) {
             this.toastr.success('Observación creada exitosamente', 'Éxito');
-            
-            // Limpiar formulario
             this.limpiarFormularioObservacion();
-            
-            // Opcional: recargar observaciones o actualizar vista
-            // this.cargarObservaciones();
+            this.getTareaOT();
           }
           this.loadingCrearObservacion = false;
         },
@@ -789,11 +770,23 @@ async subirImagen(): Promise<number | null> {
     }
   }
 
-  // ✅ MÉTODO PARA LIMPIAR FORMULARIO DE OBSERVACIÓN
   limpiarFormularioObservacion() {
     this.observacionDetalle = '';
     this.selectedFile = null;
     this.loadingSubirImagen = false;
+  }
+
+  mostrarObservaciones(lista: any[], codigo: string) {
+    this.dialogService.open(DialogObservacionesComponent, {
+      header: `Observaciones de ${codigo}`,
+      width: '450px',
+      modal: true,
+      dismissableMask: true,
+      closable: true,
+      data: {
+        observaciones: lista
+      }
+    });
   }
 
   agregarMecanicoTarea() {  
@@ -843,10 +836,19 @@ async subirImagen(): Promise<number | null> {
       }
     });
   }
+  filtrarMecanicosDisponibles() {
+    const idsAsignados = this.mecanicosTarea.map(m => m.idMecanico);
 
+    const mecanicosDisponiblesFiltrados = this.mecanicosDisponibles
+      .filter(m => !idsAsignados.includes(m.idMecanico))
+      .map(m => ({
+        ...m,
+        nombreCompleto: `${m.nombre} ${m.apellidos || ''}` 
+      }));
+
+    return mecanicosDisponiblesFiltrados;
+  }
   eliminarMecanicoTarea(mecanico: any) {    
-    console.log(this.selectedTarea);
-    
     const dialogRef = this.dialogService.open(AuthMecanicaComponent, {
       header: 'Código de Autenticación',
       width: '400px',

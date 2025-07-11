@@ -42,6 +42,10 @@ export class AuthMecanicaComponent {
               this.authService.saveToken(response.token);
               this.ref.close({ acceso: true, token: response.token });
               break;
+              case 'EditarOT':
+              this.authService.saveToken(response.token);
+              this.ref.close({ acceso: true, token: response.token });
+              break;
             case 'CrearOrdenDeTrabajo':
               this.ref.close({ acceso: true, token: response.token });
               break;
