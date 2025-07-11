@@ -147,7 +147,8 @@ export class OrdenTrabajoComponent implements OnInit {
     celular: '',
     correo: '',
     direccion: '',
-    supervisor: 0
+    idSupervisor: 0,
+    supervisor: ''
   };
 
   iconValidarDocumento: string = 'pi pi-search';
@@ -281,33 +282,36 @@ estadosTarea = [
   showDialogAdd() {
     this.visibleAdd = true;
   }  
-  showDialogEdit(code: string) {
-    this.visibleEdit = true;
-    this.loadingEditDialog = true;
-    this.codeEditDialog = code;
-    this.otService.getOrdenTrabajoCodigo(code).subscribe({
-      next: (response: OrdenTrabajo) => {        
-        this.fb_editOt.patchValue({
-          detalle: response.detalle,
-          nombreCliente: response.nombreCliente,
-          placa: response.placa,
-          estado: response.estado,
-          prioridad: response.prioridad,
-          supervisor: response.supervisor,
-          fechaProgramada: new Date(response.fechaProgramada),
-          observacion: response.observacion,
-        })
-        this.fb_editOt.get('detalle')?.disable();
-        this.fb_editOt.get('nombreCliente')?.disable();
-        this.fb_editOt.get('placa')?.disable();
+showDialogEdit(code: string) {
+  this.visibleEdit = true;
+  this.loadingEditDialog = true;
+  this.codeEditDialog = code;
+  this.otService.getOrdenTrabajoCodigo(code).subscribe({
+    next: (response: OrdenTrabajo) => {      
+      console.log("Orden de Trabajo: ", response);  
+      
+      this.fb_editOt.patchValue({
+        detalle: response.detalle,
+        nombreCliente: response.nombreCliente,
+        placa: response.placa,
+        estado: response.estado, // ✅ Solo el código
+        prioridad: response.prioridad, // ✅ Solo el código
+        supervisor: response.idSupervisor, // ✅ Solo el código
+        fechaProgramada: new Date(response.fechaProgramada),
+        observacion: response.observacion,
+      })
+      
+      this.fb_editOt.get('detalle')?.disable();
+      this.fb_editOt.get('nombreCliente')?.disable();
+      this.fb_editOt.get('placa')?.disable();
 
-        this.loadingEditDialog = false;
-      },
-      error: (err) => {
-        console.log("Error al solicitar Orden de Trabajo: ", err);
-      }
-    }) 
-  }
+      this.loadingEditDialog = false;
+    },
+    error: (err) => {
+      console.log("Error al solicitar Orden de Trabajo: ", err);
+    }
+  }) 
+}
 showDialogExpand(code: string){
     this.visibleExpand = true;
     this.loadingExpandDialog = true;
@@ -377,30 +381,28 @@ showDialogExpand(code: string){
        }
   });
 }
-  updateOT():void{
-    const ot: ActualizarOrdenRequest = {
-      codigo: this.codeEditDialog,
-      estado: this.fb_editOt.get('estado')?.value,
-      prioridad: this.fb_editOt.get('prioridad')?.value,
-      idMecanico: this.fb_editOt.get('supervisor')?.value,
-      fechaProgramada: this.fb_editOt.get('fechaProgramada')?.value,
-      observacion: this.fb_editOt.get('observacion')?.value,
-    }
-    
-    this.otService.updateOrdenTrabajo(ot).subscribe({
-      next: (response) => {
-        this.toastr.success(response.message, "Actualización exitosa!");
-        this.visibleEdit = false;
-        this.GetOrdenesTrabajoList();
-        
-      },
-      error: (err) => {
-        this.toastr.error(err.error, "Actualización sin éxito!");
-        console.log(err);
-        
-      }
-    });
+updateOT(): void {
+  const ot: ActualizarOrdenRequest = {
+    codigo: this.codeEditDialog,
+    estado: this.fb_editOt.get('estado')?.value, 
+    prioridad: this.fb_editOt.get('prioridad')?.value, 
+    idMecanico: this.fb_editOt.get('supervisor')?.value, 
+    fechaProgramada: this.fb_editOt.get('fechaProgramada')?.value,
+    observacion: this.fb_editOt.get('observacion')?.value,
   }
+  console.log(ot);
+  this.otService.updateOrdenTrabajo(ot).subscribe({
+    next: (response) => {
+      this.toastr.success(response.message, "Actualización exitosa!");
+      this.visibleEdit = false;
+      this.GetOrdenesTrabajoList();
+    },
+    error: (err) => {
+      this.toastr.error(err.error, "Actualización sin éxito!");
+      console.log(err);
+    }
+  });
+}
   GetEstado(id: number)  {
     const item = this.estado.find(x => x.code === id);  
     return item?.name;
@@ -449,9 +451,20 @@ showDialogExpand(code: string){
           ordenExport[col.header] = this.GetPrioridad(Number(orden[col.field])) || '';
         }
         // Caso especial para fechas
-        else if (col.field.includes('fecha') && orden[col.field]) {
+         else if (col.field.includes('fecha') && orden[col.field]) {
+        // Si la fecha ya está formateada (como string dd/MM/yyyy), usarla directamente
+        if (typeof orden[col.field] === 'string' && orden[col.field].includes('/')) {
+          ordenExport[col.header] = orden[col.field];
+        } 
+        // Si es una fecha sin formatear, formatearla
+        else if (orden[col.field] !== 'Vacío') {
           ordenExport[col.header] = this.formatDate(orden[col.field]) || '';
         }
+        // Si es 'Vacío', mantenerlo
+        else {
+          ordenExport[col.header] = orden[col.field];
+        }
+      }
         // Caso especial para supervisor
         else if (col.field === 'supervisor' && orden[col.field]) {
           ordenExport[col.header] = this.getSupervisor(orden[col.field]) || '';
@@ -976,7 +989,7 @@ showDialogExpand(code: string){
     { key: 'Celular', value: this.ExpandItem.celular || 'No disponible' },
     { key: 'Correo', value: this.ExpandItem.correo || 'No disponible' },
     { key: 'Dirección', value: this.ExpandItem.direccion || 'No disponible' },
-    { key: 'Supervisor', value: this.getSupervisor(this.ExpandItem.supervisor) || 'No disponible' }
+    { key: 'Supervisor', value: this.getSupervisor(this.ExpandItem.idSupervisor) || 'No disponible' }
   ], y);
   y += 30;
     // 1. Tareas

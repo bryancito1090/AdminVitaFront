@@ -662,18 +662,9 @@ private crearNuevaCompra() {
   });
 }
 private actualizarCompra() {
-  console.log('=====================================');
-  console.log('INICIANDO ACTUALIZACIÓN DE COMPRA');
-  
   let idCompra: number | undefined;
   
-  // Primero, verificamos si hay detalles existentes para obtener el idCompra
-  if (this.detallesCompraPeticion && this.detallesCompraPeticion.length > 0) {
-    const detalleConId = this.detallesCompraPeticion.find(d => d.idCompra);
-    idCompra = detalleConId?.idCompra;
-  }
-  
- if (this.idCompraActual) {
+  if (this.idCompraActual) {
     idCompra = this.idCompraActual;
     console.log('idCompra obtenido de la propiedad guardada:', idCompra);
   }
@@ -697,56 +688,118 @@ private actualizarCompra() {
   const soloNuevosDetalles = this.detallesCompraPeticion.filter(detalle => detalle.idDetalleCompra === null);
   
   console.log('Solo nuevos detalles a enviar:', soloNuevosDetalles);
+  console.log('Archivo a subir:', this.uploadedFile);
   
-  if (soloNuevosDetalles.length === 0) {
-    this.toastr.info('No existen nuevos detalles agregados a la compra', 'Información');
+  // Verificar si hay cambios para procesar (nuevos detalles o archivo)
+  const hayNuevosDetalles = soloNuevosDetalles.length > 0;
+  const hayArchivoNuevo = this.uploadedFile && !this.existingFileInfo;
+  
+  if (!hayNuevosDetalles && !hayArchivoNuevo) {
+    this.toastr.info('No hay cambios para guardar', 'Información');
     setTimeout(() => {
-        this.router.navigate(['/panel/Adquisiciones']);
-      }, 1500); // Esperar 1.5 segundos para que el usuario vea el mensaje de éxito
+      this.router.navigate(['/panel/Adquisiciones']);
+    }, 1500);
     return;
   }
   
-  this.toastr.info('Procesando su solicitud...', 'Agregando nuevos detalles');
+  this.toastr.info('Procesando su solicitud...', 'Actualizando compra');
   
-  // Llamar al servicio solo con los nuevos detalles
-  this.detalleCompraService.createUpdateDetalleCompra(soloNuevosDetalles).subscribe({
-    next: (respuesta) => {
-      console.log('Nuevos detalles agregados con éxito:', respuesta);
-      this.toastr.success('Nuevos detalles agregados exitosamente', 'Éxito');
-      
-      setTimeout(() => {
-        this.router.navigate(['/panel/Adquisiciones']);
-      }, 1500); // Esperar 1.5 segundos para que el usuario vea el mensaje de éxito
-      
-      // Recargar la compra completa para actualizar la interfaz
-      if (idCompra !== undefined) {
-        this.compraService.getCompraDetallada(idCompra.toString()).subscribe({
-          next: (compraActualizada) => {
-            console.log('Compra recargada después de actualizar:', compraActualizada);
-            this.actualizarDetallesEnInterfaz(compraActualizada);
-          },
-          error: (errorRecarga) => {
-            console.error('Error al recargar la compra:', errorRecarga);
+  // Crear un array de operaciones a realizar
+  const operaciones: any[] = [];
+  
+  // Agregar operación de nuevos detalles si los hay
+  if (hayNuevosDetalles) {
+    operaciones.push(
+      this.detalleCompraService.createUpdateDetalleCompra(soloNuevosDetalles)
+    );
+  }
+  
+  // Agregar operación de archivo si hay uno nuevo
+  if (hayArchivoNuevo && idCompra) {
+    operaciones.push(
+      this.compraService.agregarAdjuntoCompra(idCompra, this.uploadedFile!)
+    );
+  }
+  
+  // Ejecutar todas las operaciones
+  if (operaciones.length > 0) {
+    forkJoin(operaciones).subscribe({
+      next: (respuestas) => {
+        console.log('Todas las operaciones completadas:', respuestas);
+        
+        let mensajeExito = 'Compra actualizada exitosamente';
+        
+        if (hayNuevosDetalles && hayArchivoNuevo) {
+          mensajeExito = 'Nuevos detalles y archivo agregados exitosamente';
+        } else if (hayNuevosDetalles) {
+          mensajeExito = 'Nuevos detalles agregados exitosamente';
+        } else if (hayArchivoNuevo) {
+          mensajeExito = 'Archivo adjuntado exitosamente';
+        }
+        
+        this.toastr.success(mensajeExito, 'Éxito');
+        
+        // Si se adjuntó un archivo, actualizar la información
+        if (hayArchivoNuevo) {
+          const respuestaArchivo = respuestas.find(r => r && r.adjunto);
+          if (respuestaArchivo && respuestaArchivo.adjunto) {
+            this.existingFileInfo = respuestaArchivo.adjunto;
+            this.obtenerYMostrarArchivo(respuestaArchivo.adjunto.ruta);
           }
-        });
-      } else {
-        console.error('idCompra es undefined, no se puede recargar la compra.');
-        this.toastr.error('No se pudo identificar la compra para recargar los detalles', 'Error');
+          
+          // Limpiar el archivo subido
+          this.uploadedFile = null;
+          if (this.fileUpload) {
+            this.fileUpload.clear();
+          }
+        }
+        
+        setTimeout(() => {
+          this.router.navigate(['/panel/Adquisiciones']);
+        }, 1500);
+        
+        // Recargar la compra completa para actualizar la interfaz
+        if (idCompra !== undefined) {
+          this.compraService.getCompraDetallada(idCompra.toString()).subscribe({
+            next: (compraActualizada) => {
+              console.log('Compra recargada después de actualizar:', compraActualizada);
+              this.actualizarDetallesEnInterfaz(compraActualizada);
+            },
+            error: (errorRecarga) => {
+              console.error('Error al recargar la compra:', errorRecarga);
+            }
+          });
+        }
+      },
+      error: (error) => {
+        console.error('Error en las operaciones de actualización:', error);
+        
+        // Manejar errores específicos
+        let mensajeError = 'Error al actualizar la compra';
+        
+        if (Array.isArray(error)) {
+          // Si es un array de errores de forkJoin
+          const erroresDetalle = error.filter((e, index) => index === 0 && hayNuevosDetalles);
+          const erroresArchivo = error.filter((e, index) => 
+            (hayNuevosDetalles && index === 1 && hayArchivoNuevo) || 
+            (!hayNuevosDetalles && index === 0 && hayArchivoNuevo)
+          );
+          
+          if (erroresDetalle.length > 0) {
+            mensajeError = 'Error al guardar nuevos detalles';
+          }
+          if (erroresArchivo.length > 0) {
+            mensajeError += (mensajeError.includes('detalles') ? ' y archivo' : 'Error al guardar archivo');
+          }
+        } else if (error.error && typeof error.error === 'object') {
+          console.log('Detalles del error:', JSON.stringify(error.error));
+          mensajeError = error.error.mensaje || mensajeError;
+        }
+        
+        this.toastr.error(mensajeError, 'Error');
       }
-    },
-    error: (error) => {
-      console.error('Error al agregar nuevos detalles:', error);
-      
-      // Intentar obtener más información sobre el error
-      let mensajeError = 'Error al agregar nuevos detalles';
-      if (error.error && typeof error.error === 'object') {
-        console.log('Detalles del error:', JSON.stringify(error.error));
-        mensajeError = error.error.mensaje || mensajeError;
-      }
-      
-      this.toastr.error(mensajeError, 'Error');
-    }
-  });
+    });
+  }
 }
 private actualizarDetallesEnInterfaz(compraActualizada: any) {
   this.detallesCompra = compraActualizada.detallesCompra.map((detalle: any) => {

@@ -941,5 +941,16 @@ async subirImagen(): Promise<number | null> {
       }
     });
   }
-
+onTareaCreada(success: boolean) {
+    if (success) {
+      console.log('✅ Tarea creada exitosamente, refrescando datos...');
+      // Recargar las tareas de la OT
+      this.getTareaOT();
+      // Opcional: también recargar la información completa de la OT
+      // this.getOrdenTrabajo();
+    } else {
+      console.log('❌ Error al crear la tarea');
+      // Aquí puedes manejar errores adicionales si es necesario
+    }
+  }
 }

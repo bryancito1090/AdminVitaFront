@@ -133,7 +133,8 @@ export class DashboardMecanicaComponent implements OnInit {
     celular: '',
     correo: '',
     direccion: '',
-    supervisor: 0
+    supervisor: '',
+    idSupervisor: 0
   };
   
   // Variables para adjuntos

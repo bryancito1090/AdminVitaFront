@@ -115,7 +115,7 @@
     'max-h-[auto] opacity-100': !agregar_tarea_card 
   }">
   <div class="w-full p-4">
-    <app-crud-tarea-mecanica [codigoOT]="codigo" [action]="'agregar'"></app-crud-tarea-mecanica>
+    <app-crud-tarea-mecanica [codigoOT]="codigo" [action]="'agregar'" (onTareaCreated)="onTareaCreada($event)"></app-crud-tarea-mecanica>
   </div>
 </div>
 
