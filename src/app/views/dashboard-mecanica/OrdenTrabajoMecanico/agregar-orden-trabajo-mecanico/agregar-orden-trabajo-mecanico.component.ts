@@ -23,10 +23,10 @@ import { ArchivosService } from '../../../services/archivos.service';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { ConfirmationService } from 'primeng/api';
 import { AuthService } from '../../../auth/service/auth.service';
-import { RegistroClienteComponent } from '../../../../shared/components/registro-cliente/registro-cliente.component';
-import { RegistroVehiculoComponent } from '../../../../shared/components/registro-vehiculo/registro-vehiculo.component';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { AuthMecanicaComponent } from '../../../auth/components/auth-mecanica/auth-mecanica.component';
+import { RegistroClienteComponent } from '../../../shared/components/registro-cliente/registro-cliente.component';
+import { RegistroVehiculoComponent } from '../../../shared/components/registro-vehiculo/registro-vehiculo.component';
 
 @Component({
   selector: 'app-agregar-orden-trabajo-mecanico',
@@ -114,7 +114,6 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit{
   // Property to store vehicle types
   tipoVehiculo: any[] = [];
 
-
   // En el componente .ts, agrega esta propiedad
   dialogStyle = {
     width: '680px', 
@@ -130,32 +129,34 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit{
   errorClienteVehiculo: string = '';
 
   nuevoVehiculo: AddVehicleNoInstitucional = {
-   idTipoVehiculo: 0,
-  marca: '',
-  modelo: '',
-  version: null,            // Ahora es opcional
-  placa: '',
-  anio: 0,
-  color: '',
-  numeroChasis: null,       // Ahora es opcional
-  numeroVehiculo: null,     // Ahora es opcional
-  estado: 1,
-  ultimoAnioMatriculacion: null, // Ahora es opcional
-  ultimoAnioRTV: null,      // Ahora es opcional
-  idCliente: 0,
-  idLicencias: [],
-  archivos: []
-};
-dialogRef: DynamicDialogRef | undefined; // Referencia al diálogo de autenticación
-listaAnios: number[] = [];
-cargandoRegistroVehiculo: boolean = false;
-idAdjuntoFrontal: number | null = null;
-idAdjuntoLateralIzquierda: number | null = null;
-idAdjuntoLateralDerecha: number | null = null;
-idAdjuntoTrasera: number | null = null;
-mostrarDialogRegistroCliente: boolean = false;
-mensajeError: any;
-mensajeExito: any;
+    idTipoVehiculo: 0,
+    marca: '',
+    modelo: '',
+    version: null,            // Ahora es opcional
+    placa: '',
+    anio: 0,
+    color: '',
+    numeroChasis: null,       // Ahora es opcional
+    numeroVehiculo: null,     // Ahora es opcional
+    estado: 1,
+    ultimoAnioMatriculacion: null, // Ahora es opcional
+    ultimoAnioRTV: null,      // Ahora es opcional
+    idCliente: 0,
+    idLicencias: [],
+    archivos: []
+  };
+  
+  dialogRef: DynamicDialogRef | undefined; // Referencia al diálogo de autenticación
+  listaAnios: number[] = [];
+  cargandoRegistroVehiculo: boolean = false;
+  idAdjuntoFrontal: number | null = null;
+  idAdjuntoLateralIzquierda: number | null = null;
+  idAdjuntoLateralDerecha: number | null = null;
+  idAdjuntoTrasera: number | null = null;
+  mostrarDialogRegistroCliente: boolean = false;
+  mensajeError: any;
+  mensajeExito: any;
+
   constructor(
     private router: Router,
     private validacionService: ValidacionService,
@@ -254,54 +255,54 @@ mensajeExito: any;
       });
   }
 
-validarVehiculo() {
-  if (!this.placa || this.placa.trim() === '') {
-    this.toastr.warning('Por favor ingrese una placa válida', 'Advertencia');
-    return;
+  validarVehiculo() {
+    if (!this.placa || this.placa.trim() === '') {
+      this.toastr.warning('Por favor ingrese una placa válida', 'Advertencia');
+      return;
+    }
+    
+    this.cargandoVehiculo = true;
+    this.mostrarInfoVehiculo = false;
+    
+    // Limpiar previews de imágenes existentes
+    this.limpiarPrevisualizaciones();
+    
+    this.validacionService.validarVehiculoXPlacaMec(this.placa)
+      .subscribe({
+        next: (respuesta) => {
+          this.vehiculoActual = respuesta;
+          this.mostrarInfoVehiculo = true;
+          
+          // Asignar idVehiculo a ordenData
+          this.ordenData.idVehiculo = this.vehiculoActual.idVehiculo;
+          
+          // Cargar las imágenes del vehículo si tiene un ID válido
+          if (this.vehiculoActual.idVehiculo) {
+            this.cargarImagenesVehiculo(this.vehiculoActual.idVehiculo);
+          }
+          
+          this.cargandoVehiculo = false;
+          
+          if (this.vehiculoActual.estado === 0) {
+            this.toastr.success('Vehículo encontrado - Estado: Operativo', 'Éxito');
+          } else if (this.vehiculoActual.estado === 1) {
+            this.toastr.info('Vehículo encontrado - Estado: En Mantenimiento', 'Información');
+          } else if (this.vehiculoActual.estado === 2) {
+            this.toastr.warning('Vehículo encontrado - Estado: De Baja', 'Precaución');
+          }
+        },
+        error: (error) => {
+          console.error('Error al validar el vehículo:', error);
+          this.cargandoVehiculo = false;
+          
+          if (error.status === 404) {
+            this.toastr.warning('Vehículo no encontrado', 'No existe');
+          } else {
+            this.toastr.error('Error al validar el vehículo', 'Error');
+          }
+        }
+      });
   }
-  
-  this.cargandoVehiculo = true;
-  this.mostrarInfoVehiculo = false;
-  
-  // Limpiar previews de imágenes existentes
-  this.limpiarPrevisualizaciones();
-  
-  this.validacionService.validarVehiculoXPlacaMec(this.placa)
-    .subscribe({
-      next: (respuesta) => {
-        this.vehiculoActual = respuesta;
-        this.mostrarInfoVehiculo = true;
-        
-        // Asignar idVehiculo a ordenData
-        this.ordenData.idVehiculo = this.vehiculoActual.idVehiculo;
-        
-        // Cargar las imágenes del vehículo si tiene un ID válido
-        if (this.vehiculoActual.idVehiculo) {
-          this.cargarImagenesVehiculo(this.vehiculoActual.idVehiculo);
-        }
-        
-        this.cargandoVehiculo = false;
-        
-        if (this.vehiculoActual.estado === 0) {
-          this.toastr.success('Vehículo encontrado - Estado: Operativo', 'Éxito');
-        } else if (this.vehiculoActual.estado === 1) {
-          this.toastr.info('Vehículo encontrado - Estado: En Mantenimiento', 'Información');
-        } else if (this.vehiculoActual.estado === 2) {
-          this.toastr.warning('Vehículo encontrado - Estado: De Baja', 'Precaución');
-        }
-      },
-      error: (error) => {
-        console.error('Error al validar el vehículo:', error);
-        this.cargandoVehiculo = false;
-        
-        if (error.status === 404) {
-          this.toastr.warning('Vehículo no encontrado', 'No existe');
-        } else {
-          this.toastr.error('Error al validar el vehículo', 'Error');
-        }
-      }
-    });
-}
   crearNuevoVehiculo() {
     this.router.navigate(['/panel/mecanica/nuevo-vehiculo']);
   }

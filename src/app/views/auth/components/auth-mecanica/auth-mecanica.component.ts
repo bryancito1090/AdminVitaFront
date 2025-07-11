@@ -77,6 +77,10 @@ export class AuthMecanicaComponent {
             case 'ActualizarEstadoTarea':
               this.ref.close({ acceso: true });
               break;
+            case 'RegistrarClienteOT':
+              this.authService.saveToken(response.token);
+              this.ref.close({ acceso: true });
+              break;
             default:
               this.ref.close({ acceso: false, token: response.token });
           }

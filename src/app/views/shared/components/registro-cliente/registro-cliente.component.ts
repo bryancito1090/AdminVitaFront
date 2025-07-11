@@ -1,15 +1,17 @@
 import { Component, EventEmitter, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { AuthMecanicaComponent } from '../../../auth/components/auth-mecanica/auth-mecanica.component';
 import { ToastrService } from 'ngx-toastr';
-import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { RadioButtonModule } from 'primeng/radiobutton';
-import { TabViewModule } from 'primeng/tabview';
-import { CalendarModule } from 'primeng/calendar';
-import { DropdownModule } from 'primeng/dropdown';
+import { ClienteService } from '../../../services/cliente.service';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { ButtonModule } from 'primeng/button';
-import { ClienteService } from '../../../views/services/cliente.service';
+import { DropdownModule } from 'primeng/dropdown';
+import { CalendarModule } from 'primeng/calendar';
+import { TabViewModule } from 'primeng/tabview';
+import { RadioButtonModule } from 'primeng/radiobutton';
+import { InputTextModule } from 'primeng/inputtext';
+import { DialogModule } from 'primeng/dialog';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-registro-cliente',
@@ -26,13 +28,12 @@ import { ClienteService } from '../../../views/services/cliente.service';
     ButtonModule
   ],
   templateUrl: './registro-cliente.component.html',
-  styleUrls: ['./registro-cliente.component.scss']
+  styleUrls: ['./registro-cliente.component.scss'],
+  providers: [DialogService],
 })
 export class RegistroClienteComponent {
-  // ✅ ELIMINADO: @Input() documentoPrevio
   @Output() clienteRegistrado = new EventEmitter<{ documento: any; cliente: any | null }>();
   
-  // Control de visibilidad del diálogo
   visible: boolean = false;
   
   // Tipos de cliente
@@ -87,9 +88,12 @@ export class RegistroClienteComponent {
     esLocal: true
   };
 
+   dialogRef: DynamicDialogRef | undefined;
+
   constructor(
     private clienteService: ClienteService,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private dialogService: DialogService
   ) {}
 
   mostrarDialogo(): void {
@@ -369,48 +373,78 @@ export class RegistroClienteComponent {
     }
   }
 
-  registrarCliente(): void {
-    this.mensajeError = '';
-    this.mensajeExito = '';
+  registrarCliente(): void {    
+    const dialogRef = this.dialogService.open(AuthMecanicaComponent, {
+          header: 'Código de Autenticación',
+          width: '400px',
+          modal: true,
+          dismissableMask: false,
+          closable: false,
+          data: { accion: 'RegistrarClienteOT' }
+        });
     
-    if (!this.validarFormulario()) {
-      return;
-    }
-    
-    const cliente = this.prepararDatosCliente();
-    this.cargando = true;
-    
-    this.clienteService.registrarCliente(cliente).subscribe({
-      next: (respuesta) => {
-        this.cargando = false;
-        
-        if (respuesta === 'Cliente registrado correctamente.' || 
-            (typeof respuesta === 'object' && respuesta.success)) {
-          this.toastr.success('Cliente registrado correctamente', 'Operación exitosa');
+    dialogRef.onClose.subscribe((result: { acceso: boolean }) => {
+      this.mensajeError = '';
+      this.mensajeExito = '';
+      
+      if (!this.validarFormulario()) {
+        return;
+      }
+      
+      const cliente = this.prepararDatosCliente();
+      this.cargando = true;
+      
+      this.clienteService.registrarCliente(cliente).subscribe({
+        next: (respuesta) => {
+          this.cargando = false;
           
-          this.clienteRegistrado.emit({
-            documento: cliente.documento,
-            cliente: respuesta
-          });
-          
-          this.visible = false;
-        } else {
-          this.toastr.warning(typeof respuesta === 'string' ? respuesta : 'Respuesta inesperada del servidor', 'Advertencia');
-        }
-      },
-      error: (error) => {
-        this.cargando = false;
-        
-        let mensaje = 'Error al registrar el cliente';
-        let titulo = 'Error';
-        
-        if (error.status === 400) {
-          if (error.error && error.error.includes('ya existe')) {
-            this.toastr.info('Este documento ya está registrado', 'Cliente existente');
+          if (respuesta === 'Cliente registrado correctamente.' || 
+              (typeof respuesta === 'object' && respuesta.success)) {
+            this.toastr.success('Cliente registrado correctamente', 'Operación exitosa');
             
             this.clienteRegistrado.emit({
               documento: cliente.documento,
-              cliente: null  // null indica que ya existe
+              cliente: respuesta
+            });
+            
+            this.visible = false;
+          } else {
+            this.toastr.warning(typeof respuesta === 'string' ? respuesta : 'Respuesta inesperada del servidor', 'Advertencia');
+          }
+        },
+        error: (error) => {
+          this.cargando = false;
+          
+          let mensaje = 'Error al registrar el cliente';
+          let titulo = 'Error';
+          
+          if (error.status === 400) {
+            if (error.error && error.error.includes('ya existe')) {
+              this.toastr.info('Este documento ya está registrado', 'Cliente existente');
+              
+              this.clienteRegistrado.emit({
+                documento: cliente.documento,
+                cliente: null  // null indica que ya existe
+              });
+              
+              this.visible = false;
+              this.resetearFormulario();
+              return;
+            }
+            
+            if (typeof error.error === 'object') {
+              mensaje = JSON.stringify(error.error);
+            } else if (typeof error.error === 'string') {
+              mensaje = error.error;
+            }
+            titulo = 'Datos inválidos';
+          } else if (error.status === 409) {
+            mensaje = 'Ya existe un cliente con ese documento';
+            titulo = 'Cliente duplicado';
+            
+            this.clienteRegistrado.emit({
+              documento: cliente.documento,
+              cliente: null
             });
             
             this.visible = false;
@@ -418,44 +452,20 @@ export class RegistroClienteComponent {
             return;
           }
           
-          if (typeof error.error === 'object') {
-            mensaje = JSON.stringify(error.error);
-          } else if (typeof error.error === 'string') {
-            mensaje = error.error;
-          }
-          titulo = 'Datos inválidos';
-        } else if (error.status === 409) {
-          mensaje = 'Ya existe un cliente con ese documento';
-          titulo = 'Cliente duplicado';
-          
-          this.clienteRegistrado.emit({
-            documento: cliente.documento,
-            cliente: null
-          });
-          
-          this.visible = false;
-          this.resetearFormulario();
-          return;
+          this.toastr.error(mensaje, titulo);
         }
-        
-        this.toastr.error(mensaje, titulo);
-      }
+      });
     });
   }
 
   cambiarPestana(index: number) {
-    // Solo permite cambiar a pestañas anteriores o si ya se completaron los pasos previos
     if (index < this.activeTabIndex || this.validarPestañaActual()) {
       this.activeTabIndex = index;
     }
   }
 
   validarPestañaActual(): boolean {
-    // Implementa la validación de los campos de la pestaña actual
-    // Retorna true si los datos son válidos y se puede avanzar
-    
     if (this.activeTabIndex === 0) {
-      // Validar información básica
       if (this.isPersonaNatural) {
         return this.datosPersonaNatural.documento !== '' && 
                this.datosPersonaNatural.nombres !== '' && 
@@ -467,8 +477,7 @@ export class RegistroClienteComponent {
                this.datosEmpresa.representanteLegal !== '';
       }
     } else if (this.activeTabIndex === 1) {
-      // Validar información adicional (solo empresas)
-      return true; // O implementa validaciones específicas si es necesario
+      return true;
     }
     
     return false;
