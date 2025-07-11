@@ -1,19 +1,24 @@
-<div class="flex flex-col items-center p-6">
+<form (ngSubmit)="onSubmit()" class="flex flex-col items-center p-6">
   <div class="font-bold text-xl mb-2">Autenticación</div>
-  <p class="text-gray-500 mb-6">Por favor ingresa tu código de acceso para {{ tipoAccion }}</p>
+  <p class="text-gray-500 mb-6">
+    Por favor ingresa tu código de acceso para {{ tipoAccion }}
+  </p>
 
   <p-inputotp 
+    name="codigo"
     [(ngModel)]="value"
     [mask]="true"
     [integerOnly]="true"
     size="large"
-    [length]="4">
+    [length]="4"
+    inputStyleClass="no-autofill"
+    autocomplete="off"
+    (keydown.enter)="onSubmit()"
+    >
   </p-inputotp>
 
   <div class="flex items-center gap-4 mt-6">
-    <button (click)="onCancel()" class="bg-slate-200 text-black px-4 py-2 rounded">Cancelar</button>
-    <button 
-      (click)="onSubmit()" 
-      class="bg-primary-600 text-white px-4 py-2 rounded">Enviar</button>
+    <button type="button" (click)="onCancel()" class="bg-slate-200 text-black px-4 py-2 rounded">Cancelar</button>
+    <button type="submit" class="bg-primary-600 text-white px-4 py-2 rounded">Enviar</button>
   </div>
-</div>
+</form>
