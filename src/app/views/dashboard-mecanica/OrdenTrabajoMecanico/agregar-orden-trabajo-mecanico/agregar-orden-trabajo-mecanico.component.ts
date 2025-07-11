@@ -217,7 +217,7 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit{
   }
   
   navegarInicio() {
-    this.router.navigate(['/panel/mecanica']);
+    this.router.navigate(['/mecanica']);
   }
   
   validarCliente() {
