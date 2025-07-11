@@ -250,17 +250,9 @@
 </p-dialog>
 
 <p-dialog [header]="'Orden de trabajo código '+codeExpandDialog" closeOnEscape="false" [modal]="true" [(visible)]="visibleExpand" [style]="{ width: '75rem' }" [breakpoints]="{ '1199px': '75vw', '575px': '90vw' }">
-    <!-- Botón con PrimeNG -->
-    <div class="export-btn-container">
-        <p-button 
-            (onClick)="exportCompletePDF()" 
-            severity="secondary"
-            size="small"
-            styleClass="btn-export-pdf-prime"
-            icon="pi pi-file-pdf" 
-            label="Exportar Informe">
-        </p-button>
-    </div>
+    <button (click)="exportCompletePDF()" class="btn btn-primary">
+        <i class="fa fa-file-pdf"></i> Exportar Informe Completo
+      </button>
     <app-skeleton-expand-info *ngIf="loadingExpandDialog" />
     <ng-container *ngIf="!loadingExpandDialog">
         <div class="rounded border border-surface-200 p-6 bg-surface-0 flex flex-col card md:flex-row md:justify-center gap-10">
@@ -396,17 +388,11 @@
                                 [value]="rowData[col.field] ? 'Sí':'No'"
                                 [severity]="rowData[col.field] ? 'success':'danger'"/>
                                 
-                                <!-- Manejo especial para el estado cuando es de Tareas -->
                                 <p-tag 
-                                *ngIf="col.field === 'estado' && ExpandOptionsValue === 'Tareas'"
-                                class="w-full hover:p-2" 
-                                fluid 
-                                [value]="getEstadoTareaTexto(rowData[col.field])"
-                                [severity]="getEstadoTareaSeverity(rowData[col.field])"/>
-
-                                <!-- Para otros campos que no sean estado o cuando no sea Tareas -->
-                                <p-tag 
-                                *ngIf="(col.field === 'duracion' || col.field === 'codigoTarea' || col.field === 'cantidad') || (col.field === 'estado' && ExpandOptionsValue !== 'Tareas')"
+                                *ngIf="col.field === 'estado'
+                                || col.field === 'duracion'
+                                || col.field === 'codigoTarea'
+                                || col.field === 'cantidad'"
                                 class="w-full hover:p-2" 
                                 fluid 
                                 severity="secondary" 

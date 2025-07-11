@@ -51,6 +51,7 @@ export class CrudTareaMecanicaComponent implements OnInit{
   @Input() action: 'agregar' | 'editar' | 'eliminar' = 'agregar';
   @Input() color: any;
   @Output() onClose: EventEmitter<any> = new EventEmitter<any>();
+  @Output() onTareaCreated: EventEmitter<boolean> = new EventEmitter<boolean>(); 
 
   //dialog repuestos
   displayAddDialogRepuestos: boolean = false;
@@ -290,6 +291,7 @@ crearTareaNormal(result: { acceso: boolean, id: number | null, token: any }) {
     next: (response) => {
       this.toastr.success('Tarea creada correctamente', 'Éxito');
       this.resetForm();
+      this.onTareaCreated.emit(true);
     },
     error: (error) => {
       // ✅ MOSTRAR ERRORES DE VALIDACIÓN ESPECÍFICOS
@@ -312,6 +314,7 @@ crearTareaNormal(result: { acceso: boolean, id: number | null, token: any }) {
       } else {
         this.toastr.error('Error al crear la tarea', 'Error');
       }
+      this.onTareaCreated.emit(false);
     }
   });
 }
@@ -371,16 +374,19 @@ async crearTareaConSolicitud(authResult: { acceso: boolean, id: number | null, t
         } else {
           this.toastr.error('No se pudo crear la solicitud de repuesto: ID de tarea no encontrado', 'Error');
         }
-        
+
         this.resetForm();
+        this.onTareaCreated.emit(true);
       },
       error: (error) => {
         this.toastr.error('Error al crear la tarea', 'Error');
+        this.onTareaCreated.emit(false);
       }
     });
 
   } catch (error) {
     this.toastr.error('Error en el proceso de creación', 'Error');
+    this.onTareaCreated.emit(false);
   }
 }
 async crearSolicitudRepuesto(idTareaOt: string | number) {
