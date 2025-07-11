@@ -603,43 +603,62 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
   }
 
   actualizarEstadoTarea(idTarea?: number) {
-    if (!this.selectedTarea || this.formEstado === null) {
-      this.toastr.warning('Debe seleccionar un estado válido', 'Advertencia');
-      return;
-    }
-    // Verificar si realmente cambió el estado
-    if (this.formEstado === this.selectedTarea.estado) {
-      this.toastr.info('No se detectaron cambios en el estado', 'Información');
-      return;
-    }
-    const idTareaFinal = idTarea || 
-                        this.selectedTarea.idTarea || 
-                        this.selectedTarea.id || 
-                        this.selectedTarea.idTareaOt;
-    if (!idTareaFinal) {
-      this.toastr.error('No se pudo identificar la tarea para actualizar', 'Error');
-      return;
-    }
-    this.loadingActualizarEstado = true;
-    const datosActualizacion = {
-      idTareaOt: Number(idTareaFinal),
-      estado: Number(this.formEstado)
-    };
+    const dialogRef = this.dialogService.open(AuthMecanicaComponent, {
+      header: 'Código de Autenticación',
+      width: '400px',
+      modal: true,
+      dismissableMask: false,
+      closable: false,
+      data: {
+        accion: 'ActualizarEstadoTarea'
+      }
+    });
 
-    this.tareaService.actualizarTarea(datosActualizacion).subscribe({
-      next: (response) => {
-        this.toastr.success(
-          `Estado actualizado a: ${this.obtenerTextoEstadoTarea(this.formEstado!)}`, 
-          'Estado Actualizado'
-        );
-        this.loadingActualizarEstado = false;
-        this.actualizarTareaEnLista();
-        this.getTareaOT();
-        this.displayModal = false;
-      },
-      error: (error) => {
-        this.toastr.error('No se pudo actualizar el estado de la tarea', 'Error');
-        this.loadingActualizarEstado = false;
+    dialogRef.onClose.subscribe((result: { acceso: boolean, token: any }) => {
+      this.modalActivo = false;
+
+      if (result?.acceso) {
+        if (!this.selectedTarea || this.formEstado === null) {
+          this.toastr.warning('Debe seleccionar un estado válido', 'Advertencia');
+          return;
+        }
+        // Verificar si realmente cambió el estado
+        if (this.formEstado === this.selectedTarea.estado) {
+          this.toastr.info('No se detectaron cambios en el estado', 'Información');
+          return;
+        }
+        const idTareaFinal = idTarea || 
+                            this.selectedTarea.idTarea || 
+                            this.selectedTarea.id || 
+                            this.selectedTarea.idTareaOt;
+        if (!idTareaFinal) {
+          this.toastr.error('No se pudo identificar la tarea para actualizar', 'Error');
+          return;
+        }
+        this.loadingActualizarEstado = true;
+        const datosActualizacion = {
+          idTareaOt: Number(idTareaFinal),
+          estado: Number(this.formEstado)
+        };
+
+        this.tareaService.actualizarTarea(datosActualizacion).subscribe({
+          next: (response) => {
+            this.toastr.success(
+              `Estado actualizado a: ${this.obtenerTextoEstadoTarea(this.formEstado!)}`, 
+              'Estado Actualizado'
+            );
+            this.loadingActualizarEstado = false;
+            this.actualizarTareaEnLista();
+            this.getTareaOT();
+            this.displayModal = false;
+          },
+          error: (error) => {
+            this.toastr.error('No se pudo actualizar el estado de la tarea', 'Error');
+            this.loadingActualizarEstado = false;
+          }
+        });
+      } else {
+        this.toastr.error('Código incorrecto o cancelado', 'Error');
       }
     });
   }
@@ -650,11 +669,13 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
       this.TareasOT[index].estado = this.formEstado;
     }
   }
+
   estadoHaCambiado(): boolean {
     return this.formEstado !== null && 
           this.selectedTarea && 
           this.formEstado !== this.selectedTarea.estado;
   }
+  
   onFileSelected(event: any) {
     const file = event.target.files[0];
     if (file) {

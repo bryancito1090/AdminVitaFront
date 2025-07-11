@@ -74,6 +74,9 @@ export class AuthMecanicaComponent {
             case 'EliminarRepuestoTarea':
               this.ref.close({ acceso: true });
               break;
+            case 'ActualizarEstadoTarea':
+              this.ref.close({ acceso: true });
+              break;
             default:
               this.ref.close({ acceso: false, token: response.token });
           }
