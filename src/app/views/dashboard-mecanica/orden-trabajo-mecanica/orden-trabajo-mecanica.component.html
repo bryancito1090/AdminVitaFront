@@ -466,13 +466,37 @@
       </div>
 
       <!-- Repuestos section -->
+      <!-- Repuestos section - Reemplaza la sección existente -->
       <div>
-        <label class="block font-medium mb-2">Repuestos Asignados</label>
-        <div class="grid grid-cols-1 md:grid-cols-[1fr_120px_auto] gap-3 items-end">
+        <label class="block font-medium mb-2">Repuestos e Insumos Asignados</label>
+
+        <!-- ✅ Selector de tipo -->
+        <div class="bg-gray-50 p-3 rounded mb-3">
+          <label class="block font-medium text-gray-700 mb-2">Tipo de ítem:</label>
+          <div class="flex gap-6">
+            <div class="flex items-center">
+              <input type="radio" id="repuesto" [(ngModel)]="tipoItemSeleccionado" value="repuesto"
+                (change)="onTipoItemChange()" />
+              <label for="repuesto" class="ml-2 text-sm">Repuestos</label>
+            </div>
+            <div class="flex items-center">
+              <input type="radio" id="insumo" [(ngModel)]="tipoItemSeleccionado" value="insumo"
+                (change)="onTipoItemChange()" />
+              <label for="insumo" class="ml-2 text-sm">Insumos</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-3">
+          <!-- ✅ Select de ítems -->
           <div>
-            <p-select [options]="repuestosDisponiblesAux" [(ngModel)]="formRepuesto" optionLabel="nombre"
-              optionValue="idItem" placeholder="Selecciona repuesto" class="w-full" appendTo="body" [filter]="true"
-              filterBy="nombre,codigo">
+            <label class="block font-medium text-gray-700 mb-2">
+              {{tipoItemSeleccionado === 'repuesto' ? 'Seleccionar repuesto:' : 'Seleccionar insumo:'}}
+            </label>
+            <p-select [options]="repuestosDisponiblesAux" optionLabel="nombre" optionValue="idItem"
+              [(ngModel)]="formRepuesto" (onChange)="onItemSelectionChange($event.value)"
+              [placeholder]="tipoItemSeleccionado === 'repuesto' ? 'Busca y selecciona un repuesto' : 'Busca y selecciona un insumo'"
+              [filter]="true" [loading]="loadingItems" appendTo="body" filterBy="nombre,codigo" class="w-full">
               <ng-template let-item pTemplate="item">
                 <div class="flex flex-col px-2 py-2">
                   <span class="font-semibold text-gray-800 text-sm">{{ item.codigo }} - {{ item.nombre }}</span>
@@ -482,19 +506,45 @@
               </ng-template>
             </p-select>
           </div>
-          <div>
-            <p-inputnumber [(ngModel)]="cantidadRepuesto" placeholder="Cantidad" class="w-full" [min]="1" [max]="1000"
-              [useGrouping]="false">
-            </p-inputnumber>
+
+          <!-- ✅ Select de magnitudes (solo para insumos) -->
+          <div *ngIf="mostrarMagnitudes && tipoItemSeleccionado === 'insumo'">
+            <label class="block font-medium text-gray-700 mb-2">Unidad de medida:</label>
+            <p-select [options]="magnitudesCompatibles" optionLabel="nombre" optionValue="idMagnitud"
+              [(ngModel)]="selectedMagnitudId" placeholder="Selecciona la unidad de medida"
+              [loading]="loadingMagnitudes" [disabled]="loadingMagnitudes" appendTo="body" class="w-full">
+              <ng-template let-magnitud pTemplate="item">
+                <div class="flex justify-between items-center p-2">
+                  <span>{{ magnitud.nombre }}</span>
+                  <small class="text-gray-500 bg-gray-100 px-2 py-1 rounded">({{ magnitud.unidad }})</small>
+                </div>
+              </ng-template>
+            </p-select>
+
+            <!-- Indicador de carga -->
+            <div *ngIf="loadingMagnitudes" class="text-center text-sm text-gray-500 py-2">
+              <i class="pi pi-spin pi-spinner"></i> Cargando unidades de medida...
+            </div>
           </div>
-          <div>
-            <p-button label="Agregar" icon="pi pi-plus" [disabled]="!formRepuesto || !cantidadRepuesto"
-              (onClick)="agregarRepuestoTarea()" class="w-full md:w-auto">
-            </p-button>
+
+          <!-- ✅ Grid para cantidad y botón -->
+          <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
+            <div>
+              <label class="block font-medium text-gray-700 mb-2">Cantidad:</label>
+              <p-inputnumber [(ngModel)]="cantidadRepuesto" placeholder="Cantidad" class="w-full" [min]="0.01"
+                [max]="1000" [step]="tipoItemSeleccionado === 'insumo' ? 0.01 : 1" [useGrouping]="false">
+              </p-inputnumber>
+            </div>
+            <div>
+              <p-button label="Agregar" icon="pi pi-plus"
+                [disabled]="!formRepuesto || !cantidadRepuesto || (tipoItemSeleccionado === 'insumo' && mostrarMagnitudes && !selectedMagnitudId)"
+                (onClick)="agregarRepuestoTarea()" class="w-full md:w-auto">
+              </p-button>
+            </div>
           </div>
         </div>
 
-        <!-- Lista de repuestos -->
+        <!-- Lista de repuestos (sin cambios) -->
         <div class="mt-3 space-y-2" *ngIf="(repuestosTarea?.length || 0) > 0">
           <div *ngFor="let repuesto of repuestosTarea"
             class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">

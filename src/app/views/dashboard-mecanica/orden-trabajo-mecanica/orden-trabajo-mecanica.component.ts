@@ -32,6 +32,7 @@ import { CreateObservacionRequest } from '../../../../domain/response/Observacio
 import { AdjuntoService } from '../../services/adjunto.service';
 import { ItemService } from '../../services/item.service';
 import { DialogObservacionesComponent } from './dialog-observaciones/dialog-observaciones.component';
+import { MagnitudService } from '../../services/magnitud.service';
 
 interface ActualizarOrdenRequest {
   idOrden: number;
@@ -128,13 +129,23 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
   mecanicosTareaSeleccionada: any[] = [];
   codigoTareaSeleccionada: string = '';
 
-  loadingActualizarEstado : boolean = false;
+  loadingActualizarEstado: boolean = false;
   estadosTarea = EstadoTarea;
   observacionDetalle: string = '';
   selectedFile: File | null = null;
   loadingCrearObservacion: boolean = false;
   loadingSubirImagen: boolean = false;
 
+  tipoItemSeleccionado: string = 'repuesto';
+  allItemsRepuestos: any[] = [];
+  allItemsInsumos: any[] = [];
+  allItemsActual: any[] = [];
+  loadingItems: boolean = false;
+  loadingMagnitudes: boolean = false;
+  mostrarMagnitudes: boolean = false;
+  magnitudesCompatibles: any[] = [];
+  magnitudOrigen: any = null;
+  selectedMagnitudId: number | null = null;
   constructor(
     private route: ActivatedRoute,
     private router: Router,
@@ -145,9 +156,10 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
     private fb: FormBuilder,
     private confirmationService: ConfirmationService,
     private dialogService: DialogService,
-    private ordenMecanicoService : OrdenMecanicoService,
-    private adjuntoService : AdjuntoService,
-    private itemService: ItemService
+    private ordenMecanicoService: OrdenMecanicoService,
+    private adjuntoService: AdjuntoService,
+    private itemService: ItemService,
+    private magnitudService: MagnitudService
   ) {
     // Inicializar el formulario
     this.fb_editOt = this.fb.group({
@@ -163,18 +175,18 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
     this.initData();
     this.cargarSupervisores();
     this.mecanicoService.getMecanicos().subscribe({
-    next: (mecanicos: any) => {
-      this.mecanicosDisponibles = mecanicos;
-    },
-    error: (error) => {
-      console.error('Error al cargar mecánicos:', error);
-    }
-  })
+      next: (mecanicos: any) => {
+        this.mecanicosDisponibles = mecanicos;
+      },
+      error: (error) => {
+        console.error('Error al cargar mecánicos:', error);
+      }
+    })
   }
 
   initData() {
     this.codigo = this.route.snapshot.paramMap.get('codigo');
-    if (!this.codigo ) {
+    if (!this.codigo) {
       this.toastr.error('La orden de trabajo no existe', 'Error');
       this.router.navigate(['mecanico']);
     }
@@ -183,18 +195,131 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
     this.estadosFilter = EstadoTarea;
   }
 
-getItemsDisponibles() {
+  getItemsDisponibles() {
+    this.loadingItems = true;
+
+    // Cargar repuestos
     this.itemService.getItemsTipoRespuestoMec().subscribe({
-        next: (items: any) => {
-            this.repuestosDisponibles = items;
-            this.repuestosDisponiblesAux = items;
-        },
-        error: (error) => {
-            console.error('Error al cargar repuestos:', error);
-            this.toastr.error('No se pudieron cargar los repuestos disponibles', 'Error');
-        }
+      next: (repuestos: any) => {
+        this.allItemsRepuestos = repuestos;
+        this.repuestosDisponibles = repuestos;
+
+        // Cargar insumos
+        this.itemService.getItemsTipoInsumoMec().subscribe({
+          next: (insumos: any) => {
+            this.allItemsInsumos = insumos;
+
+            // Por defecto mostrar repuestos
+            this.allItemsActual = this.allItemsRepuestos;
+            this.actualizarRepuestosDisponibles();
+            this.loadingItems = false;
+          },
+          error: (error) => {
+            console.warn('Error al cargar insumos:', error);
+            this.allItemsActual = this.allItemsRepuestos;
+            this.actualizarRepuestosDisponibles();
+            this.loadingItems = false;
+          }
+        });
+      },
+      error: (error) => {
+        console.error('Error al cargar repuestos:', error);
+        this.toastr.error('No se pudieron cargar los repuestos disponibles', 'Error');
+        this.loadingItems = false;
+      }
     });
+  }
+  private actualizarRepuestosDisponibles() {
+    const idsRepuestosAsignados = this.repuestosTarea.map(r => r.idItem || r.idRepuesto);
+    this.repuestosDisponiblesAux = this.allItemsActual.filter(r => !idsRepuestosAsignados.includes(r.idItem));
+  }
+  onTipoItemChange() {
+    this.limpiarFormularioRepuesto();
+
+    if (this.tipoItemSeleccionado === 'repuesto') {
+      this.allItemsActual = this.allItemsRepuestos;
+    } else {
+      this.allItemsActual = this.allItemsInsumos;
+    }
+
+    this.actualizarRepuestosDisponibles();
+  }
+
+  onItemSelectionChange(itemId: number) {
+  if (!itemId) {
+    this.limpiarMagnitudes();
+    return;
+  }
+
+  const item = this.allItemsActual.find(i => i.idItem === itemId);
+  
+  if (!item) {
+    console.error('❌ No se encontró el item seleccionado');
+    this.limpiarMagnitudes();
+    return;
+  }
+
+  // Solo cargar magnitudes para insumos
+  if (this.tipoItemSeleccionado === 'insumo') {
+    this.cargarMagnitudesCompatibles(item);
+  } else {
+    this.limpiarMagnitudes();
+  }
 }
+
+private cargarMagnitudesCompatibles(item: any) {
+  console.log('🔧 Cargando magnitudes para item:', item);
+  
+  if (!item.idMagnitud) {
+    this.mostrarMagnitudes = false;
+    return;
+  }
+
+  this.loadingMagnitudes = true;
+  
+  this.magnitudService.GetMagnitudCompatibleByItemMec(item.idItem).subscribe({
+    next: (response: any) => {
+      
+      const magnitudesCompatibles = response.magnitudesCompatibles || [];
+      const magnitudOrigen = response.magnitudOrigen;
+      
+      this.magnitudesCompatibles = magnitudOrigen ? [magnitudOrigen, ...magnitudesCompatibles] : magnitudesCompatibles;
+      this.magnitudOrigen = magnitudOrigen;
+      this.mostrarMagnitudes = this.magnitudesCompatibles.length > 1;
+      this.selectedMagnitudId = magnitudOrigen?.idMagnitud || null;
+      this.loadingMagnitudes = false;
+      
+    },
+    error: (error) => {
+      
+      if (error.status === 500) {
+        this.toastr.warning(
+          `El ${this.tipoItemSeleccionado} "${item.nombre}" no tiene unidades de medida configuradas.`,
+          'Sin unidades disponibles'
+        );
+      }
+      
+      this.mostrarMagnitudes = false;
+      this.loadingMagnitudes = false;
+    }
+  });
+}
+
+  // ✅ Limpiar magnitudes
+  private limpiarMagnitudes() {
+    this.mostrarMagnitudes = false;
+    this.magnitudesCompatibles = [];
+    this.magnitudOrigen = null;
+    this.selectedMagnitudId = null;
+  }
+
+  // ✅ Limpiar formulario de repuesto
+  private limpiarFormularioRepuesto() {
+    this.formRepuesto = null;
+    this.cantidadRepuesto = null;
+    this.selectedMagnitudId = null;
+    this.limpiarMagnitudes();
+  }
   getOrdenTrabajo() {
     this.loadingGeneral = true;
     this.ordenTrabajoService.getOrdenTrabajoCodigoMec(this.codigo!).subscribe({
@@ -260,112 +385,111 @@ getItemsDisponibles() {
     }
   }
 
-getTareaOT() {
-  this.loadingTable = true;
-  
-  this.tareaService.getTareasByOTMec(this.codigo!).subscribe({
-    next: (tareas) => {
-      this.tareaService.getTareaExternaByOT(this.codigo!).subscribe({
-        next: (tareasExternas) => {
-          const tareasMapeadas = tareas.map(t => {
-            const externa = tareasExternas.find(e => e.codigo === t.codigo);
-            return {
+  getTareaOT() {
+    this.loadingTable = true;
+
+    this.tareaService.getTareasByOTMec(this.codigo!).subscribe({
+      next: (tareas) => {
+        this.tareaService.getTareaExternaByOT(this.codigo!).subscribe({
+          next: (tareasExternas) => {
+            const tareasMapeadas = tareas.map(t => {
+              const externa = tareasExternas.find(e => e.codigo === t.codigo);
+              return {
+                ...t,
+                solicitante: externa?.solicitante ?? null,
+                requiereAutorizacion: externa?.requiereAutorizacion ?? null,
+                requiereServicioExterno: externa?.requiereServicioExterno ?? null,
+                detalleExterno: externa?.detalle ?? null,
+                esExterna: externa ? true : false
+              };
+            });
+
+            const tareasExternasNoIncluidas = tareasExternas.filter(e =>
+              !tareas.some(t => t.codigo === e.codigo)
+            ).map(e => ({
+              idTareaOt: e.idTareaOt,
+              codigo: e.codigo,
+              detalle: e.detalle ?? null,
+              duracion: null,
+              estado: e.estado,
+              mecanicos: [],
+              observaciones: e.observaciones || [],
+              requiereRepuesto: null,
+              requiereServicioExterno: e.requiereServicioExterno ?? null,
+              solicitante: e.solicitante ?? null,
+              requiereAutorizacion: e.requiereAutorizacion ?? null,
+              detalleExterno: e.detalle ?? null,
+              esExterna: true
+            }));
+
+            this.TareasOT = [...tareasMapeadas, ...tareasExternasNoIncluidas];
+            this.loadingTable = false;
+          },
+          error: (error) => {
+            console.warn('No se pudieron cargar las tareas externas, pero continuando con tareas normales:', error);
+
+            this.TareasOT = tareas.map(t => ({
               ...t,
-              solicitante: externa?.solicitante ?? null,
-              requiereAutorizacion: externa?.requiereAutorizacion ?? null,
-              requiereServicioExterno: externa?.requiereServicioExterno ?? null,
-              detalleExterno: externa?.detalle ?? null,
-              esExterna: externa ? true : false
-            };
-          });
+              solicitante: null,
+              requiereAutorizacion: null,
+              requiereServicioExterno: null,
+              detalleExterno: null,
+              esExterna: false
+            }));
 
-          const tareasExternasNoIncluidas = tareasExternas.filter(e =>
-            !tareas.some(t => t.codigo === e.codigo)
-          ).map(e => ({
-            idTareaOt: e.idTareaOt, 
-            codigo: e.codigo,
-            detalle: e.detalle ?? null,
-            duracion: null,
-            estado: e.estado,
-            mecanicos: [],
-            observaciones: e.observaciones || [], 
-            requiereRepuesto: null,
-            requiereServicioExterno: e.requiereServicioExterno ?? null,
-            solicitante: e.solicitante ?? null,
-            requiereAutorizacion: e.requiereAutorizacion ?? null,
-            detalleExterno: e.detalle ?? null,
-            esExterna: true
-          }));
+            this.loadingTable = false;
+          }
+        });
+      },
+      error: (error) => {
+        console.error('Error al cargar las tareas de la orden de trabajo:', error);
+        this.toastr.error('No se pudieron cargar las tareas de la orden de trabajo', 'Error');
 
-          this.TareasOT = [...tareasMapeadas, ...tareasExternasNoIncluidas];
-          this.loadingTable = false;
-        },
-        error: (error) => {
-          console.warn('No se pudieron cargar las tareas externas, pero continuando con tareas normales:', error);
-          
-          this.TareasOT = tareas.map(t => ({
-            ...t,
-            solicitante: null,
-            requiereAutorizacion: null,
-            requiereServicioExterno: null,
-            detalleExterno: null,
-            esExterna: false
-          }));
-          
-          this.loadingTable = false;
-        }
-      });
-    },
-    error: (error) => {
-      console.error('Error al cargar las tareas de la orden de trabajo:', error);
-      this.toastr.error('No se pudieron cargar las tareas de la orden de trabajo', 'Error');
-      
-      // Intentar cargar solo tareas externas como fallback
-      this.tareaService.getTareaExternaByOT(this.codigo!).subscribe({
-        next: (tareasExternas) => {
-          this.TareasOT = tareasExternas.map(e => ({
-            idTareaOt: e.idTareaOt, 
-            codigo: e.codigo,
-            detalle: e.detalle ?? null,
-            duracion: null,
-            estado: e.estado,
-            mecanicos: [],
-            observaciones: e.observaciones || [], 
-            requiereRepuesto: null,
-            requiereServicioExterno: e.requiereServicioExterno ?? null,
-            solicitante: e.solicitante ?? null,
-            requiereAutorizacion: e.requiereAutorizacion ?? null,
-            detalleExterno: e.detalle ?? null,
-            esExterna: true
-          }));
-          console.log('Cargando tareas externas como fallback:', this.TareasOT);
-          this.loadingTable = false;
-        },
-        error: (errorExternas) => {
-          console.error('Error al cargar tareas externas como fallback:', errorExternas);
-          this.TareasOT = [];
-          this.loadingTable = false;
-        }
-      });
-    }
-  });
-}
-getSeverityEstadoUnificado(estado: number, esExterna: boolean = false): "success" | "info" | "warn" | "danger" | "secondary" | "contrast" {
-  const severityBase = this.getSeverityEstado(estado);
-  
-  if (esExterna) {
-    switch (severityBase) {
-      case 'success': return 'info';    
-      case 'warn': return 'warn';        
-      case 'danger': return 'danger';     
-      case 'info': return 'info';        
-      case 'secondary': return 'contrast'; 
-      default: return 'info';            
-    }
+        // Intentar cargar solo tareas externas como fallback
+        this.tareaService.getTareaExternaByOT(this.codigo!).subscribe({
+          next: (tareasExternas) => {
+            this.TareasOT = tareasExternas.map(e => ({
+              idTareaOt: e.idTareaOt,
+              codigo: e.codigo,
+              detalle: e.detalle ?? null,
+              duracion: null,
+              estado: e.estado,
+              mecanicos: [],
+              observaciones: e.observaciones || [],
+              requiereRepuesto: null,
+              requiereServicioExterno: e.requiereServicioExterno ?? null,
+              solicitante: e.solicitante ?? null,
+              requiereAutorizacion: e.requiereAutorizacion ?? null,
+              detalleExterno: e.detalle ?? null,
+              esExterna: true
+            }));
+            this.loadingTable = false;
+          },
+          error: (errorExternas) => {
+            console.error('Error al cargar tareas externas como fallback:', errorExternas);
+            this.TareasOT = [];
+            this.loadingTable = false;
+          }
+        });
+      }
+    });
   }
-  
-  return severityBase;
-}
+  getSeverityEstadoUnificado(estado: number, esExterna: boolean = false): "success" | "info" | "warn" | "danger" | "secondary" | "contrast" {
+    const severityBase = this.getSeverityEstado(estado);
+
+    if (esExterna) {
+      switch (severityBase) {
+        case 'success': return 'info';
+        case 'warn': return 'warn';
+        case 'danger': return 'danger';
+        case 'info': return 'info';
+        case 'secondary': return 'contrast';
+        default: return 'info';
+      }
+    }
+
+    return severityBase;
+  }
   getSeverityEstado(status: number): "success" | "warn" | "danger" | "secondary" | "info" {
     switch (status) {
       case 0: return 'success';
@@ -376,17 +500,17 @@ getSeverityEstadoUnificado(estado: number, esExterna: boolean = false): "success
         return 'secondary';
     }
   }
-getTextoEstadoUnificado(estado: number): string {
-  return this.GetEstado(estado) || 'Sin definir';
-}
+  getTextoEstadoUnificado(estado: number): string {
+    return this.GetEstado(estado) || 'Sin definir';
+  }
 
-estadoRequiereAtencion(estado: number): boolean {
-  return [6, 7, 8].includes(estado);
-}
+  estadoRequiereAtencion(estado: number): boolean {
+    return [6, 7, 8].includes(estado);
+  }
 
-puedeEditarTarea(estado: number): boolean {
-  return ![3, 4, 5].includes(estado);
-}
+  puedeEditarTarea(estado: number): boolean {
+    return ![3, 4, 5].includes(estado);
+  }
   GetEstado(id: number) {
     const item = this.estadosFilter.find(x => x.code === id);
     return item?.name;
@@ -609,7 +733,7 @@ puedeEditarTarea(estado: number): boolean {
 
   finalizarOT(token: any) {
     this.toastr.info('Procesando su solicitud...', 'Finalizada orden de Trabajo!');
-   
+
     this.ordenMecanicoService.actualizarEstadoOrdenTrabajo(this.codigo!, 1).subscribe({ //3anular, 1 finalizar, 2 finalizar sin exito
       next: (response) => {
         this.toastr.success('Orden de trabajo Finalizada exitosamente', 'Éxito');
@@ -622,16 +746,17 @@ puedeEditarTarea(estado: number): boolean {
     });
   }
 
+  getMagnitudNombre(idMagnitud: number): string {
+    const magnitud = this.magnitudesCompatibles.find(m => m.idMagnitud === idMagnitud);
+    return magnitud ? magnitud.unidad : '';
+  }
+
   GetItemsByTarea(id: any) {
     this.itemService.getItemsByTarea(id).subscribe({
       next: (items: any[]) => {
         this.repuestosTarea = items;
-        this.itemService.getItemsTipoRespuestoMec().subscribe({
-          next: (items : any) => {
-            this.repuestosDisponibles = items;
-            //console.log('Items disponibles:', this.repuestosDisponibles, this.repuestosTarea);
-          }
-        });
+        // Actualizar filtros después de cargar items de la tarea
+        this.actualizarRepuestosDisponibles();
       },
       error: (error) => {
         console.error('Error al obtener los items de la tarea:', error);
@@ -640,26 +765,24 @@ puedeEditarTarea(estado: number): boolean {
     });
   }
 
-abrirModalEdicion(codigo: string, mecanicos: any) {
-    // ✅ Asegurar que cada mecánico tenga todas las propiedades necesarias
+  abrirModalEdicion(codigo: string, mecanicos: any) {
     this.mecanicosTarea = (mecanicos || []).map((m: any) => ({
-        idMecanico: m.idMecanico,
-        nombreCompleto: m.nombreCompleto || `${m.nombre || ''} ${m.apellidos || ''}`.trim(),
-        duracionEstimada: m.duracionEstimada || null, // ✅ ASEGURAR QUE EXISTE
-        especialidad: m.especialidad || null
+      idMecanico: m.idMecanico,
+      nombreCompleto: m.nombreCompleto || `${m.nombre || ''} ${m.apellidos || ''}`.trim(),
+      duracionEstimada: m.duracionEstimada || null, 
+      especialidad: m.especialidad || null
     }));
-    console.log('Mecánicos de la tarea:', this.mecanicosTarea);
-    
+
     this.selectedTarea = this.TareasOT.find(t => t.codigo === codigo);
     if (!this.selectedTarea) return;
 
-    this.mecanicosDisponiblesAux = this.filtrarMecanicosDisponibles(); 
+    this.mecanicosDisponiblesAux = this.filtrarMecanicosDisponibles();
     this.GetItemsByTarea(this.selectedTarea.idTareaOt);
     this.getItemsDisponibles();
     this.formEstado = this.selectedTarea.estado;
     this.formMecanico = [...this.selectedTarea.mecanicos];
     this.displayModal = true;
-}
+  }
 
   cerrarModalEditTarea() {
     this.displayModal = false;
@@ -675,9 +798,9 @@ abrirModalEdicion(codigo: string, mecanicos: any) {
       this.toastr.error('No se encontró la tarea', 'Error');
       return;
     }
-    
-    const estado = tarea.estado; 
-    const duracion = tarea.duracionEstimada || 0; 
+
+    const estado = tarea.estado;
+    const duracion = tarea.duracionEstimada || 0;
     const idTarea = tarea.idTareaOt
 
     const dialogRef = this.dialogService.open(DialogAutorizacionOTComponent, {
@@ -699,7 +822,7 @@ abrirModalEdicion(codigo: string, mecanicos: any) {
       }
     });
   }
-  
+
   autorizarTareaOT(codigo: string) { //modificar cuando haya una funciuon para cambiar el estado
     this.toastr.info('Procesando su solicitud...', 'Autorizando tarea');
   }
@@ -753,10 +876,10 @@ abrirModalEdicion(codigo: string, mecanicos: any) {
           this.toastr.info('No se detectaron cambios en el estado', 'Información');
           return;
         }
-        const idTareaFinal = idTarea || 
-                            this.selectedTarea.idTarea || 
-                            this.selectedTarea.id || 
-                            this.selectedTarea.idTareaOt;
+        const idTareaFinal = idTarea ||
+          this.selectedTarea.idTarea ||
+          this.selectedTarea.id ||
+          this.selectedTarea.idTareaOt;
         if (!idTareaFinal) {
           this.toastr.error('No se pudo identificar la tarea para actualizar', 'Error');
           return;
@@ -770,7 +893,7 @@ abrirModalEdicion(codigo: string, mecanicos: any) {
         this.tareaService.actualizarTarea(datosActualizacion).subscribe({
           next: (response) => {
             this.toastr.success(
-              `Estado actualizado a: ${this.obtenerTextoEstadoTarea(this.formEstado!)}`, 
+              `Estado actualizado a: ${this.obtenerTextoEstadoTarea(this.formEstado!)}`,
               'Estado Actualizado'
             );
             this.loadingActualizarEstado = false;
@@ -797,9 +920,9 @@ abrirModalEdicion(codigo: string, mecanicos: any) {
   }
 
   estadoHaCambiado(): boolean {
-    return this.formEstado !== null && 
-          this.selectedTarea && 
-          this.formEstado !== this.selectedTarea.estado;
+    return this.formEstado !== null &&
+      this.selectedTarea &&
+      this.formEstado !== this.selectedTarea.estado;
   }
 
   onFileSelected(event: any) {
@@ -819,7 +942,6 @@ abrirModalEdicion(codigo: string, mecanicos: any) {
       }
 
       this.selectedFile = file;
-      console.log('Archivo seleccionado:', file.name, 'Tamaño:', file.size);
     }
   }
 
@@ -837,10 +959,9 @@ abrirModalEdicion(codigo: string, mecanicos: any) {
     try {
       // Llamar al servicio de adjuntos con idVehiculo como null (opcional)
       const response = await this.adjuntoService.createAdjunto(this.selectedFile, null as any).toPromise();
-      
-      console.log('Imagen subida exitosamente:', response);
+
       this.loadingSubirImagen = false;
-      
+
       return response.idAdjunto;
     } catch (error) {
       console.error('Error al subir imagen:', error);
@@ -857,10 +978,10 @@ abrirModalEdicion(codigo: string, mecanicos: any) {
     }
     // Obtener ID de la tarea (igual que en actualizar estado)
     const tareaCompleta = this.TareasOT.find(t => t.codigo === this.selectedTarea.codigo);
-    const idTarea = tareaCompleta?.idTarea || 
-                   tareaCompleta?.id || 
-                   tareaCompleta?.idTareaOt ||
-                   this.selectedTarea.idTarea;
+    const idTarea = tareaCompleta?.idTarea ||
+      tareaCompleta?.id ||
+      tareaCompleta?.idTareaOt ||
+      this.selectedTarea.idTarea;
 
     if (!idTarea) {
       this.toastr.error('No se pudo identificar la tarea', 'Error');
@@ -873,7 +994,7 @@ abrirModalEdicion(codigo: string, mecanicos: any) {
       let idAdjunto: number | null = null;
       if (this.selectedFile) {
         idAdjunto = await this.subirImagen();
-        
+
         if (idAdjunto === null) {
           this.loadingCrearObservacion = false;
           return; // Error al subir imagen
@@ -886,7 +1007,6 @@ abrirModalEdicion(codigo: string, mecanicos: any) {
         IdAdjunto: idAdjunto
       };
 
-      console.log('Datos de observación a enviar:', observacionData);
 
       this.tareaService.crearObservacion(observacionData).subscribe({
         next: (response) => {
@@ -899,13 +1019,13 @@ abrirModalEdicion(codigo: string, mecanicos: any) {
         },
         error: (error) => {
           console.error('Error al crear observación:', error);
-          
+
           if (error.status === 400) {
             this.toastr.error(error.error || 'Datos inválidos', 'Error de Validación');
           } else {
             this.toastr.error('No se pudo crear la observación', 'Error');
           }
-          
+
           this.loadingCrearObservacion = false;
         }
       });
@@ -936,61 +1056,61 @@ abrirModalEdicion(codigo: string, mecanicos: any) {
     });
   }
 
-  agregarMecanicoTarea() {  
-  const dialogRef = this.dialogService.open(AuthMecanicaComponent, {
-    header: 'Código de Autenticación',
-    width: '400px',
-    modal: true,
-    dismissableMask: false,
-    closable: false,
-    data: {
-      accion: 'AgregarMecanicoTarea',
-    }
-  });
+  agregarMecanicoTarea() {
+    const dialogRef = this.dialogService.open(AuthMecanicaComponent, {
+      header: 'Código de Autenticación',
+      width: '400px',
+      modal: true,
+      dismissableMask: false,
+      closable: false,
+      data: {
+        accion: 'AgregarMecanicoTarea',
+      }
+    });
 
-  dialogRef.onClose.subscribe((result: { acceso: boolean }) => {
-    this.modalActivo = false;
-    if (result?.acceso) {
-      const peticion = {
-        idTareaOt: this.selectedTarea.idTareaOt,
-        mecanicos: [{
-          idMecanico: this.formMecanico,
-          duracionEstimada: this.duracionEstimadaMecanicosDialogEdit
-        }]
-      };
-      this.tareaService.agregarMecanicosTarea(peticion.idTareaOt, peticion.mecanicos).subscribe({
-        next: (response) => {
-          this.toastr.success('Mecánico agregado a la tarea exitosamente', 'Éxito');
-          const mecanico = this.mecanicosDisponibles.find(m => m.idMecanico == peticion.mecanicos[0].idMecanico);
-          this.getTareaOT(); 
-          
-          // ✅ Objeto completo con duracionEstimada y especialidad
-          const mecanicoFormat = {
-            idMecanico: mecanico.idMecanico,
-            nombreCompleto: mecanico.nombre + ' ' + (mecanico.apellidos || ''),
-            duracionEstimada: this.duracionEstimadaMecanicosDialogEdit, // ✅ INCLUIR DURACIÓN
-            especialidad: mecanico.especialidad || null // ✅ INCLUIR ESPECIALIDAD
+    dialogRef.onClose.subscribe((result: { acceso: boolean }) => {
+      this.modalActivo = false;
+      if (result?.acceso) {
+        const peticion = {
+          idTareaOt: this.selectedTarea.idTareaOt,
+          mecanicos: [{
+            idMecanico: this.formMecanico,
+            duracionEstimada: this.duracionEstimadaMecanicosDialogEdit
+          }]
+        };
+        this.tareaService.agregarMecanicosTarea(peticion.idTareaOt, peticion.mecanicos).subscribe({
+          next: (response) => {
+            this.toastr.success('Mecánico agregado a la tarea exitosamente', 'Éxito');
+            const mecanico = this.mecanicosDisponibles.find(m => m.idMecanico == peticion.mecanicos[0].idMecanico);
+            this.getTareaOT();
+
+            // ✅ Objeto completo con duracionEstimada y especialidad
+            const mecanicoFormat = {
+              idMecanico: mecanico.idMecanico,
+              nombreCompleto: mecanico.nombre + ' ' + (mecanico.apellidos || ''),
+              duracionEstimada: this.duracionEstimadaMecanicosDialogEdit, // ✅ INCLUIR DURACIÓN
+              especialidad: mecanico.especialidad || null // ✅ INCLUIR ESPECIALIDAD
+            }
+            this.mecanicosTarea.push(mecanicoFormat);
+
+            // ✅ Actualizar también la lista de mecánicos disponibles
+            this.mecanicosDisponiblesAux = this.filtrarMecanicosDisponibles();
+
+            // Limpiar formulario
+            this.duracionEstimadaMecanicosDialogEdit = null;
+            this.formMecanico = null;
+          },
+          error: (error) => {
+            console.error('Error al agregar mecánico a la tarea:', error);
+            this.toastr.error('No se pudo agregar el mecánico a la tarea', 'Error');
+            this.getTareaOT();
           }
-          this.mecanicosTarea.push(mecanicoFormat); 
-          
-          // ✅ Actualizar también la lista de mecánicos disponibles
-          this.mecanicosDisponiblesAux = this.filtrarMecanicosDisponibles();
-          
-          // Limpiar formulario
-          this.duracionEstimadaMecanicosDialogEdit = null;
-          this.formMecanico = null;
-        },
-        error: (error) => {
-          console.error('Error al agregar mecánico a la tarea:', error);
-          this.toastr.error('No se pudo agregar el mecánico a la tarea', 'Error');
-          this.getTareaOT(); 
-        }
-      });
-    } else {
-      this.toastr.error('Código incorrecto o cancelado', 'Error');
-    }
-  });
-}
+        });
+      } else {
+        this.toastr.error('Código incorrecto o cancelado', 'Error');
+      }
+    });
+  }
   filtrarMecanicosDisponibles() {
     const idsAsignados = this.mecanicosTarea.map(m => m.idMecanico);
 
@@ -998,12 +1118,12 @@ abrirModalEdicion(codigo: string, mecanicos: any) {
       .filter(m => !idsAsignados.includes(m.idMecanico))
       .map(m => ({
         ...m,
-        nombreCompleto: `${m.nombre} ${m.apellidos || ''}` 
+        nombreCompleto: `${m.nombre} ${m.apellidos || ''}`
       }));
 
     return mecanicosDisponiblesFiltrados;
   }
-  eliminarMecanicoTarea(mecanico: any) {    
+  eliminarMecanicoTarea(mecanico: any) {
     const dialogRef = this.dialogService.open(AuthMecanicaComponent, {
       header: 'Código de Autenticación',
       width: '400px',
@@ -1036,6 +1156,77 @@ abrirModalEdicion(codigo: string, mecanicos: any) {
   }
 
   agregarRepuestoTarea() {
+  
+  if (!this.formRepuesto || !this.cantidadRepuesto || this.cantidadRepuesto <= 0) {
+    this.toastr.error('Selecciona un ítem y una cantidad válida.', 'Error');
+    return;
+  }
+
+  const item = this.allItemsActual.find(i => i.idItem === this.formRepuesto);
+  if (!item) {
+    this.toastr.error('El ítem seleccionado no es válido.', 'Error');
+    return;
+  }
+
+  const yaExiste = this.repuestosTarea.some(r => r.idItem === this.formRepuesto);
+  if (yaExiste) {
+    this.toastr.warning('Este ítem ya fue agregado.', 'Ítem duplicado');
+    return;
+  }
+
+  if (this.tipoItemSeleccionado === 'insumo' && this.mostrarMagnitudes && this.selectedMagnitudId) {
+    this.validarStockConConversion(item);
+  } else {
+    if (this.cantidadRepuesto > item.stock) {
+      this.toastr.error(`La cantidad excede el stock disponible: ${item.stock}`, 'Stock insuficiente');
+      return;
+    }
+    this.ejecutarAgregarRepuesto(this.cantidadRepuesto);
+  }
+}
+  private validarStockConConversion(item: any) {
+  if (!this.magnitudOrigen || !this.selectedMagnitudId) {
+    console.error('❌ Faltan datos de magnitud para la conversión');
+    this.toastr.error('Error en la configuración de unidades de medida', 'Error');
+    return;
+  }
+  
+  if (this.selectedMagnitudId === this.magnitudOrigen.idMagnitud) {
+    if (this.cantidadRepuesto! > item.stock) {
+      this.toastr.error(`La cantidad excede el stock disponible: ${item.stock} ${this.magnitudOrigen.unidad}`, 'Stock insuficiente');
+      return;
+    }
+    this.ejecutarAgregarRepuesto(this.cantidadRepuesto!);
+    return;
+  }
+
+  
+  this.magnitudService.convertirUnidad(
+    this.selectedMagnitudId!, 
+    this.cantidadRepuesto!, 
+    this.magnitudOrigen.idMagnitud 
+  ).subscribe({
+    next: (response: any) => {
+      const cantidadEnUnidadBase = response.unidadDestino;
+      
+      if (cantidadEnUnidadBase > item.stock) {
+        const magnitudSeleccionada = this.magnitudesCompatibles.find(m => m.idMagnitud === this.selectedMagnitudId);
+        this.toastr.error(
+          `La cantidad solicitada (${this.cantidadRepuesto} ${magnitudSeleccionada?.unidad}) equivale a ${cantidadEnUnidadBase} ${this.magnitudOrigen.unidad}, pero solo hay ${item.stock} ${this.magnitudOrigen.unidad} disponibles.`,
+          'Stock insuficiente'
+        );
+        return;
+      }
+
+      // Stock suficiente - guardar la cantidad en unidad base
+      this.ejecutarAgregarRepuesto(cantidadEnUnidadBase);
+    },
+    error: (error) => {
+      this.toastr.error('Error al validar el stock. Intenta nuevamente.', 'Error');
+    }
+  });
+}
+  private ejecutarAgregarRepuesto(cantidadFinal: number) {
     const dialogRef = this.dialogService.open(AuthMecanicaComponent, {
       header: 'Código de Autenticación',
       width: '400px',
@@ -1045,20 +1236,18 @@ abrirModalEdicion(codigo: string, mecanicos: any) {
       data: { accion: 'AgregarRepuestoTarea' }
     });
 
-    const repuesto = this.repuestosDisponibles.find(r => r.idRepuesto === this.formRepuesto);
-
     dialogRef.onClose.subscribe((result: { acceso: boolean, idUsuario: any }) => {
       if (result?.acceso) {
         const repuestos = [{
-            idItem: this.formRepuesto,
-            cantidad: this.cantidadRepuesto
-          }];
-        
-        this.tareaService.agregarRepuestosTarea(this.selectedTarea.idTareaOt, parseInt(result.idUsuario, 10) , repuestos).subscribe({
+          idItem: this.formRepuesto,
+          cantidad: cantidadFinal
+        }];
+
+        this.tareaService.agregarRepuestosTarea(this.selectedTarea.idTareaOt, parseInt(result.idUsuario, 10), repuestos).subscribe({
           next: () => {
             this.toastr.success('Repuesto agregado exitosamente', 'Éxito');
             this.GetItemsByTarea(this.selectedTarea.idTareaOt);
-            this.repuestosTarea.push({ ...repuesto, cantidad: this.cantidadRepuesto });
+            this.limpiarFormularioRepuesto();
           },
           error: (err) => {
             console.error('Error al agregar repuesto:', err);
@@ -1070,7 +1259,6 @@ abrirModalEdicion(codigo: string, mecanicos: any) {
       }
     });
   }
-
   eliminarRepuestoTarea(repuesto: any) {
     const dialogRef = this.dialogService.open(AuthMecanicaComponent, {
       header: 'Código de Autenticación',
@@ -1082,7 +1270,6 @@ abrirModalEdicion(codigo: string, mecanicos: any) {
     });
     dialogRef.onClose.subscribe((result: { acceso: boolean }) => {
       if (result?.acceso) {
-        console.log(this.selectedTarea.idTarea, repuesto.idRepuesto)
         this.tareaService.eliminarRepuestoTarea(this.selectedTarea.idTareaOt, repuesto.idRepuestoOt).subscribe({
           next: () => {
             this.toastr.success('Repuesto eliminado de la tarea', 'Éxito');
@@ -1098,16 +1285,11 @@ abrirModalEdicion(codigo: string, mecanicos: any) {
       }
     });
   }
-onTareaCreada(success: boolean) {
+  onTareaCreada(success: boolean) {
     if (success) {
-      console.log('✅ Tarea creada exitosamente, refrescando datos...');
-      // Recargar las tareas de la OT
       this.getTareaOT();
-      // Opcional: también recargar la información completa de la OT
-      // this.getOrdenTrabajo();
     } else {
       console.log('❌ Error al crear la tarea');
-      // Aquí puedes manejar errores adicionales si es necesario
     }
   }
 }
