@@ -408,7 +408,6 @@ export class DashboardMecanicaComponent implements OnInit {
             this.ExpandOptions = [
               {code: response.totalTareas, name: 'Tareas'},
               {code: response.totalRepuestos, name: 'Repuestos'},
-              {code: response.totalRepuestos, name: 'Mecanicos'},
               {code: response.totalTrabajosExternos, name: 'Trab. Externos'},
               {code: response.totalObservaciones, name: 'Observaciones'},
               {code: response.totalSolicitudes, name: 'Solicitudes'}
@@ -500,18 +499,6 @@ export class DashboardMecanicaComponent implements OnInit {
           next: (response) => {
             this.expandDataTables = response;            
             this.expandCols = HeadersTables.RepuestoseInsumosList;
-          },
-          error: (err) => {
-            this.expandDataTables = [];
-            this.expandCols = [];
-          }
-        });
-        break;
-      case 'Mecanicos':
-        this.mecService.getManoObraOT(this.codeExpandDialog).subscribe({
-          next: (response) => {
-            this.expandDataTables = response;
-            this.expandCols = HeadersTables.ManoDeObraList;
           },
           error: (err) => {
             this.expandDataTables = [];

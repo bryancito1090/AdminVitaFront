@@ -207,16 +207,23 @@ onItemSelectionChange(itemId: number) {
   }
 }
 agregarTarea() {
-    // Validaciones mínimas
-    if (!this.detalleTarea || this.duracion_tarea <= 0) {
-      this.toastr.error('Los campos Detalle de Tarea y Duración son obligatorios.', 'Error de validación');
+    // Validación básica del detalle (obligatorio para ambos tipos)
+    if (!this.detalleTarea || !this.detalleTarea.trim()) {
+      this.toastr.error('El campo Detalle de Tarea es obligatorio.', 'Error de validación');
       return;
     }
 
-    // Validar que tenga mecánicos asignados
-    if (this.list_mecanicos.length === 0) {
-      this.toastr.error('Debe asignar al menos un mecánico a la tarea.', 'Error de validación');
-      return;
+    // Validaciones específicas para tareas internas
+    if (this.tipo_tarea === 'interna') {
+      if (this.duracion_tarea <= 0) {
+        this.toastr.error('La duración es obligatoria para tareas internas.', 'Error de validación');
+        return;
+      }
+
+      if (this.list_mecanicos.length === 0) {
+        this.toastr.error('Debe asignar al menos un mecánico a la tarea interna.', 'Error de validación');
+        return;
+      }
     }
 
     this.dialogRef = this.dialogService.open(AuthMecanicaComponent, {
@@ -244,42 +251,79 @@ agregarTarea() {
         this.toastr.error('Código incorrecto o no se pudo obtener el ID del usuario', 'Error');
       }
     });
+}
+
+onTipoTareaChange() {
+  if (this.tipo_tarea === 'externa') {
+    // Reset repuestos y mecánicos cuando es externa
+    this.list_repuestos = [];
+    this.list_mecanicos = [];
+    this.requ_repuestos = false;
+    this.solicitudRepuesto = false;
+    this.duracion_tarea = 0; // O puedes usar null si prefieres
+  }
+}
+
+crearTareaNormal(result: { acceso: boolean, id: number | null, token: any }) {
+  // Para tareas externas, usar valores específicos
+  if (this.tipo_tarea === 'externa') {
+    if (!this.detalleTarea || !this.detalleTarea.trim()) {
+      this.toastr.warning('Debe ingresar un detalle para la tarea', 'Advertencia');
+      return;
+    }
+
+    const nuevaTarea = {
+      codigoOrdenTrabajo: this.codigoOT,
+      idUsuario: Number(result.id),
+      detalle: this.detalleTarea.trim(),
+      estado: 1, // Estado por defecto para externas
+      esManual: true,
+      requiereRepuesto: false,
+      requiereServicioExterno: true,
+      requiereAutorizacion: this.requ_auth,
+      tipoMantenimiento: this.tipo_mantenimiento === 'preventivo',
+      duracion: null, // Cambiar a null en lugar de 0
+      mecanicos: [], // Sin mecánicos para externas
+      repuestos: [], // Sin repuestos para externas
+    };
+
+    this.crearTarea(nuevaTarea, result.token);
+    return;
   }
 
-// ✅ MÉTODO PARA TAREAS NORMALES - CORREGIDO
-crearTareaNormal(result: { acceso: boolean, id: number | null, token: any }) {
-  
-  // ✅ VALIDAR CONSISTENCIA DE REPUESTOS
+  // Validaciones para tareas internas (código existente sin cambios)
   const tieneRepuestos = this.list_repuestos.length > 0;
   const requiereRepuestos = this.requ_repuestos;
 
-  // Si el usuario marcó que requiere repuestos pero no agregó ninguno
   if (requiereRepuestos && !tieneRepuestos) {
     this.toastr.warning('Has marcado que requiere repuestos pero no has agregado ninguno', 'Advertencia');
     return;
   }
 
-  // ✅ PREPARAR REPUESTOS CON VALIDACIÓN DE TIPOS
+  if (this.list_mecanicos.length === 0) {
+    this.toastr.warning('Debe asignar al menos un mecánico a la tarea', 'Advertencia');
+    return;
+  }
+
+  // Preparar datos para tarea interna
   const repuestosFormateados = this.list_repuestos.map(repuesto => ({
     idItem: Number(repuesto.idItem),
     cantidad: Number(repuesto.cantidad)
   }));
 
-  // ✅ PREPARAR MECÁNICOS CON VALIDACIÓN DE TIPOS
   const mecanicosFormateados = this.list_mecanicos.map(mecanico => ({
     idMecanico: Number(mecanico.idMecanico),
     duracionEstimada: Number(mecanico.duracionEstimada)
   }));
 
-  // ✅ PREPARAR DATOS DE LA TAREA - FORMATO CORRECTO
   const nuevaTarea = {
     codigoOrdenTrabajo: this.codigoOT,
-    idUsuario: Number(result.id), // ✅ CORRECTO: usar idUsuario en lugar de idMecanico
+    idUsuario: Number(result.id),
     detalle: this.detalleTarea.trim(),
     estado: Number(this.estado_tarea),
     esManual: true,
-    requiereRepuesto: tieneRepuestos, // ✅ Basado en si realmente tiene repuestos
-    requiereServicioExterno: this.tipo_tarea === 'externa' ? true : false,
+    requiereRepuesto: tieneRepuestos,
+    requiereServicioExterno:false,
     requiereAutorizacion: this.requ_auth,
     tipoMantenimiento: this.tipo_mantenimiento === 'preventivo' ? true : false,
     duracion: Number(this.duracion_tarea),
@@ -287,29 +331,26 @@ crearTareaNormal(result: { acceso: boolean, id: number | null, token: any }) {
     repuestos: repuestosFormateados,
   };
 
-  this.tareaService.createTarea(nuevaTarea, result.token).subscribe({
+  this.crearTarea(nuevaTarea, result.token);
+}
+
+crearTarea(tarea: any, token: any) {
+  this.tareaService.createTarea(tarea, token).subscribe({
     next: (response) => {
       this.toastr.success('Tarea creada correctamente', 'Éxito');
       this.resetForm();
       this.onTareaCreated.emit(true);
     },
     error: (error) => {
-      // ✅ MOSTRAR ERRORES DE VALIDACIÓN ESPECÍFICOS
       if (error.error?.errors) {
         console.error('❌ Errores de validación:', error.error.errors);
-        
-        // Mostrar cada error de validación
         Object.keys(error.error.errors).forEach(campo => {
           const errores = error.error.errors[campo];
-          console.error(`❌ Campo "${campo}":`, errores);
-          
-          // Mostrar el primer error de cada campo
           if (Array.isArray(errores) && errores.length > 0) {
             this.toastr.error(`${campo}: ${errores[0]}`, 'Error de validación');
           }
         });
       } else if (error.error?.message) {
-        console.error('❌ Mensaje de error:', error.error.message);
         this.toastr.error(error.error.message, 'Error del servidor');
       } else {
         this.toastr.error('Error al crear la tarea', 'Error');
@@ -318,7 +359,6 @@ crearTareaNormal(result: { acceso: boolean, id: number | null, token: any }) {
     }
   });
 }
-
 // ✅ MÉTODO PARA TAREAS CON SOLICITUD DE REPUESTO - TAMBIÉN CORREGIDO
 async crearTareaConSolicitud(authResult: { acceso: boolean, id: number | null, token: any }) {
   try {

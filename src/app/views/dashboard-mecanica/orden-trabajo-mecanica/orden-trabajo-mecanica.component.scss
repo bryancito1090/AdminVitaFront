@@ -232,3 +232,494 @@ p-card {
 :host ::ng-deep .p-datepicker .p-datepicker-buttonbar {
   padding: 0.5rem;
 }
+
+// ...existing code...
+
+// Estilos mejorados para el modal de edición de tarea
+.p-dialog {
+  .p-dialog-header {
+    background-color: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    
+    .p-dialog-title {
+      font-weight: 600;
+    }
+  }
+
+  .p-dialog-content {
+    padding: 1.5rem;
+    
+    // Mejorar espaciado entre secciones
+    > div {
+      margin-bottom: 1.5rem;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+}
+
+// Grid responsivo mejorado para formularios
+.grid {
+  &.grid-cols-1 {
+    gap: 0.75rem;
+    
+    @media (min-width: 768px) {
+      &.md\:grid-cols-\[1fr_120px_auto\] {
+        grid-template-columns: 1fr 120px auto;
+        align-items: end;
+      }
+    }
+  }
+}
+
+// Estilos para listas de elementos (mecánicos y repuestos)
+.space-y-2 > * + * {
+  margin-top: 0.5rem;
+}
+
+.space-y-3 > * + * {
+  margin-top: 0.75rem;
+}
+
+.space-y-4 > * + * {
+  margin-top: 1rem;
+}
+
+// Mejorar el aspecto de los elementos listados
+.item-list-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: #f3f4f6;
+    border-color: #d1d5db;
+  }
+
+  .item-info {
+    flex: 1;
+    min-width: 0;
+
+    .item-name {
+      font-weight: 500;
+      color: #374151;
+      font-size: 0.875rem;
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .item-code {
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-top: 0.25rem;
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .item-actions {
+    margin-left: 0.5rem;
+    flex-shrink: 0;
+  }
+}
+
+// Estados vacíos mejorados
+.empty-state {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  color: #6b7280;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border: 2px dashed #e5e7eb;
+
+  i {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    display: block;
+    opacity: 0.6;
+  }
+
+  p {
+    font-size: 0.875rem;
+    margin: 0;
+  }
+}
+
+// Mejorar los tags de PrimeNG
+::ng-deep {
+  .p-tag {
+    &.p-tag-info {
+      background-color: #dbeafe;
+      color: #1e40af;
+    }
+    
+    &.p-tag-secondary {
+      background-color: #f1f5f9;
+      color: #475569;
+    }
+    
+    &.p-tag-contrast {
+      background-color: #1f2937;
+      color: #f9fafb;
+    }
+  }
+
+  // Mejorar dropdowns
+  .p-dropdown {
+    .p-dropdown-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .p-select {
+    .p-select-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  // Mejorar paneles de dropdown
+  .p-dropdown-panel,
+  .p-select-panel {
+    z-index: 10000;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .p-dialog {
+    .p-dialog-content {
+      padding: 1rem;
+    }
+  }
+
+  .grid.grid-cols-1 {
+    grid-template-columns: 1fr !important;
+    
+    .p-button {
+      width: 100%;
+    }
+  }
+  
+  .flex.items-center.gap-3.flex-wrap {
+    flex-direction: column;
+    align-items: stretch;
+    
+    .p-button {
+      width: 100%;
+    }
+  }
+}
+
+// Truncate utilities
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.max-w-32 {
+  max-width: 8rem;
+}
+
+.max-w-xs {
+  max-width: 20rem;
+}
+::ng-deep {
+  // Grid container mejorado
+  .grid.grid-cols-1 {
+    display: grid;
+    gap: 0.75rem;
+    align-items: end;
+    
+    // Layout específico para desktop
+    @media (min-width: 768px) {
+      &.md\:grid-cols-\[1fr_120px_auto\] {
+        grid-template-columns: 1fr 120px auto;
+        gap: 0.75rem;
+      }
+    }
+    
+    // Layout para móvil
+    @media (max-width: 767px) {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+      
+      .p-button {
+        width: 100%;
+        margin-top: 0.5rem;
+      }
+    }
+  }
+
+  // ✅ Corregir p-inputnumber para que el placeholder no se vea mal
+  .p-inputnumber {
+    width: 100%;
+    position: relative;
+    
+    .p-inputnumber-input {
+      width: 100% !important;
+      padding-right: 2.5rem !important; // Espacio para botones de incremento
+      text-align: left !important;
+      box-sizing: border-box;
+      min-width: 0;
+    }
+    
+    // Botones de incremento/decremento
+    .p-inputnumber-button-group {
+      position: absolute;
+      right: 0;
+      top: 0;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      
+      .p-button {
+        width: 2rem !important;
+        height: 50% !important;
+        padding: 0 !important;
+        min-width: auto !important;
+        border-radius: 0 !important;
+        
+        &:first-child {
+          border-top-right-radius: 6px !important;
+        }
+        
+        &:last-child {
+          border-bottom-right-radius: 6px !important;
+        }
+      }
+    }
+    
+    // Si no tiene botones de incremento, asegurar que el input ocupe todo el ancho
+    &:not(.p-inputnumber-buttons-stacked) .p-inputnumber-input {
+      padding-right: 0.75rem !important;
+    }
+  }
+
+  // ✅ Mejorar p-select para que sea consistente
+  .p-select {
+    width: 100%;
+    
+    .p-select-label {
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding-right: 2rem; // Espacio para el dropdown arrow
+    }
+    
+    .p-select-dropdown {
+      right: 0.75rem;
+    }
+  }
+
+  // ✅ Botones en el grid
+  .p-button {
+    &.w-full {
+      width: 100% !important;
+    }
+    
+    &.md\:w-auto {
+      @media (min-width: 768px) {
+        width: auto !important;
+        min-width: 100px;
+        flex-shrink: 0;
+      }
+    }
+  }
+
+  // ✅ Asegurar que los componentes del grid tengan la misma altura
+  .grid.grid-cols-1.md\:grid-cols-\[1fr_120px_auto\] {
+    > div {
+      display: flex;
+      align-items: end;
+      
+      .p-select,
+      .p-inputnumber,
+      .p-button {
+        height: 2.5rem; // Altura estándar
+      }
+    }
+  }
+
+  // ✅ Mejorar las listas de elementos
+  .space-y-2 > * + * {
+    margin-top: 0.5rem;
+  }
+
+  // Cards de elementos mejorados
+  .bg-gray-50.border.border-gray-200.rounded-lg {
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background-color: #f3f4f6;
+      border-color: #d1d5db;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  // ✅ Estados vacíos mejorados
+  .text-center.py-4.text-gray-500.bg-gray-50.rounded-lg {
+    border: 2px dashed #e5e7eb;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      border-color: #d1d5db;
+      background-color: #f9fafb;
+    }
+    
+    i {
+      opacity: 0.6;
+      transition: opacity 0.2s ease;
+    }
+    
+    &:hover i {
+      opacity: 0.8;
+    }
+  }
+
+  // ✅ Mejorar spacing de labels
+  label.block.font-medium.mb-2 {
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.9rem;
+  }
+
+  // ✅ Placeholders más visibles
+  .p-inputnumber-input::placeholder,
+  .p-select-label.p-placeholder {
+    color: #9ca3af !important;
+    font-style: italic;
+    opacity: 1 !important;
+  }
+
+  // ✅ Focus states mejorados
+  .p-inputnumber:not(.p-disabled):not(.p-invalid).p-focus,
+  .p-select:not(.p-disabled):not(.p-invalid).p-focus {
+    outline: 0 none;
+    outline-offset: 0;
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.2);
+    border-color: #3b82f6;
+  }
+}
+
+// ✅ Responsive específico para el modal
+@media (max-width: 768px) {
+  ::ng-deep {
+    .p-dialog .p-dialog-content {
+      padding: 1rem;
+    }
+    
+    // Grid se vuelve completamente vertical en móvil
+    .grid.grid-cols-1 {
+      &.md\:grid-cols-\[1fr_120px_auto\] {
+        grid-template-columns: 1fr !important;
+        
+        > div {
+          width: 100%;
+          
+          .p-select,
+          .p-inputnumber,
+          .p-button {
+            width: 100% !important;
+          }
+        }
+      }
+    }
+    
+    // Ajustar altura de componentes en móvil
+    .p-select,
+    .p-inputnumber,
+    .p-button {
+      height: 2.75rem; // Ligeramente más alto en móvil para mejor touch
+    }
+    
+    // Spacing mejorado en móvil
+    .space-y-4 > * + * {
+      margin-top: 1.5rem;
+    }
+  }
+}
+
+// ✅ Estilos adicionales para mejor UX
+::ng-deep {
+  // Animaciones suaves
+  .p-inputnumber,
+  .p-select,
+  .p-button {
+    transition: all 0.2s ease;
+  }
+  
+  // Disabled states
+  .p-inputnumber.p-disabled,
+  .p-select.p-disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  // Loading states
+  .p-button.p-button-loading {
+    .p-button-label {
+      opacity: 0.6;
+    }
+  }
+  
+  // Mejorar el panel de dropdown
+  .p-select-panel {
+    z-index: 10001;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    margin-top: 2px;
+  }
+  
+  // Items del dropdown
+  .p-select-list {
+    padding: 0.25rem 0;
+    
+    .p-select-option {
+      padding: 0.5rem 0.75rem;
+      cursor: pointer;
+      
+      &:hover {
+        background-color: #f3f4f6;
+      }
+      
+      &.p-select-option-selected {
+        background-color: #dbeafe;
+        color: #1d4ed8;
+      }
+    }
+  }
+}
+
+// ✅ Fix específico para z-index conflicts
+::ng-deep {
+  .p-dialog {
+    z-index: 1100;
+    
+    .p-select-panel,
+    .p-dropdown-panel {
+      z-index: 1101 !important;
+    }
+  }
+}

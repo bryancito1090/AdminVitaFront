@@ -115,7 +115,8 @@
     'max-h-[auto] opacity-100': !agregar_tarea_card 
   }">
   <div class="w-full p-4">
-    <app-crud-tarea-mecanica [codigoOT]="codigo" [action]="'agregar'" (onTareaCreated)="onTareaCreada($event)"></app-crud-tarea-mecanica>
+    <app-crud-tarea-mecanica [codigoOT]="codigo" [action]="'agregar'"
+      (onTareaCreated)="onTareaCreada($event)"></app-crud-tarea-mecanica>
   </div>
 </div>
 
@@ -150,27 +151,47 @@
         <td *ngFor="let col of columns">
 
           <ng-container *ngIf="col.field === 'estado' 
-                || col.field === 'duracion' 
-                || col.field === 'requiereServicioExterno'
-                || col.field === 'requiereRepuesto';
-                else normalData">
+        || col.field === 'duracion' 
+        || col.field === 'requiereServicioExterno'
+        || col.field === 'requiereRepuesto';
+        else normalData">
             <div class="flex justify-center">
-              <p-tag *ngIf="col.field === 'estado'" [value]="GetEstado(rowData[col.field])"
-                [severity]="getSeverityEstado(rowData[col.field])"></p-tag>
+              <!-- ✅ Estado unificado con colores similares pero diferenciados -->
+              <p-tag *ngIf="col.field === 'estado'" [value]="getTextoEstadoUnificado(rowData[col.field])"
+                [severity]="getSeverityEstadoUnificado(rowData[col.field], rowData.esExterna)"
+                [class]="rowData.esExterna ? 'tarea-externa-tag' : 'tarea-interna-tag'">
+              </p-tag>
+
+              <!-- ✅ Información específica para campos de tareas externas -->
               <p-tag *ngIf="col.field === 'requiereServicioExterno' || col.field === 'requiereRepuesto'"
-                value="{{rowData[col.field] ? 'Si' : 'No'}}" [severity]="rowData[col.field] ? 'success':'warn'"></p-tag>
-              <p-tag *ngIf="col.field === 'duracion'" [value]="rowData[col.field] + ' Unidades'"></p-tag>
+                [value]="rowData.esExterna ? 'Servicio Externo' : (rowData[col.field] ? 'Si' : 'No')"
+                [severity]="rowData.esExterna ? 'info' : (rowData[col.field] ? 'success':'warn')">
+              </p-tag>
+
+              <p-tag *ngIf="col.field === 'duracion'"
+                [value]="rowData.esExterna ? 'Gestión Externa' : (rowData[col.field] + ' Unidades')"
+                [severity]="rowData.esExterna ? 'info' : 'secondary'">
+              </p-tag>
             </div>
           </ng-container>
 
           <ng-template #normalData>
             <p *ngIf="col.field === 'detalle'">{{ rowData[col.field] }}</p>
             <div *ngIf="col.field === 'codigo'" class="flex justify-center">
-              <p-tag [value]="rowData[col.field]" severity="info" size="small" class="font-mono">
+              <p-tag [value]="rowData[col.field]" [severity]="rowData.esExterna ? 'info' : 'secondary'" size="small"
+                class="font-mono">
               </p-tag>
             </div>
+
+            <!-- ✅ Sección de mecánicos mejorada -->
             <ng-container *ngIf="col.field === 'mecanicos'">
-              <div class="flex flex-col gap-1">
+              <!-- Si es tarea externa, mostrar mensaje especial -->
+              <div *ngIf="rowData.esExterna" class="flex justify-center">
+                <p-tag value="Gestión Externa" severity="info" size="small"></p-tag>
+              </div>
+
+              <!-- Si no es externa, mostrar mecánicos normalmente -->
+              <div *ngIf="!rowData.esExterna" class="flex flex-col gap-1">
                 <!-- Si hay 2 o menos mecánicos, mostrarlos directamente -->
                 <ng-container *ngIf="rowData['mecanicos'].length <= 2">
                   <p *ngFor="let item of rowData['mecanicos']; let last = last" class="text-sm">
@@ -188,18 +209,23 @@
                       class="text-xs" />
                   </div>
                 </ng-container>
+
+                <!-- Si no hay mecánicos asignados -->
+                <div *ngIf="rowData['mecanicos'].length === 0" class="flex justify-center">
+                  <span class="text-xs text-gray-500">Sin asignar</span>
+                </div>
               </div>
             </ng-container>
+
+            <!-- ✅ Observaciones (funciona para ambas: internas y externas) -->
             <ng-container *ngIf="col.field === 'observaciones'">
               <div class="flex flex-col gap-1">
-                <!-- Si hay 2 o menos observaciones, mostrarlas completas -->
                 <ng-container *ngIf="rowData['observaciones']?.length <= 2">
                   <p *ngFor="let item of rowData['observaciones']" class="text-sm">
                     {{ item.detalle }}
                   </p>
                 </ng-container>
 
-                <!-- Si hay más de 2 observaciones, mostrar solo la primera y el contador -->
                 <ng-container *ngIf="rowData['observaciones']?.length > 2">
                   <p class="text-sm">
                     {{ rowData['observaciones'][0].detalle }}
@@ -207,27 +233,27 @@
                   <p class="text-xs text-gray-500">
                     y {{ rowData['observaciones'].length - 1 }} más...
                   </p>
-                  <p-button 
-                    label="Ver todas" 
-                    icon="pi pi-eye" 
-                    size="small" 
-                    severity="secondary" 
-                    variant="text"
-                    [rounded]="true"
-                    (onClick)="mostrarObservaciones(rowData['observaciones'], rowData['codigo'])"
+                  <p-button label="Ver todas" icon="pi pi-eye" size="small" severity="secondary" variant="text"
+                    [rounded]="true" (onClick)="mostrarObservaciones(rowData['observaciones'], rowData['codigo'])"
                     class="text-xs" />
                 </ng-container>
+
+                <!-- Si no hay observaciones -->
+                <div *ngIf="!rowData['observaciones']?.length" class="flex justify-center">
+                  <span class="text-xs text-gray-500">Sin observaciones</span>
+                </div>
               </div>
             </ng-container>
           </ng-template>
 
+          <!-- ✅ Acciones usando métodos unificados -->
           <div *ngIf="col.field =='actions'" class="flex justify-start w-full gap-2">
-            <ng-container *ngIf="rowData['estado'] !== 3 && rowData['estado'] !== 4 && rowData['estado'] !== 5">
+            <ng-container *ngIf="puedeEditarTarea(rowData['estado'])">
               <p-button icon="pi pi-pen-to-square" [rounded]="true" [text]="true" [raised]="true" severity="secondary"
                 (onClick)="abrirModalEdicion(rowData['codigo'], rowData['mecanicos'])">
               </p-button>
             </ng-container>
-            <ng-container *ngIf="rowData['estado'] == 6 || rowData['estado'] == 7 || rowData['estado'] == 8">
+            <ng-container *ngIf="estadoRequiereAtencion(rowData['estado'])">
               <p-button icon="pi pi-exclamation-triangle" [rounded]="true" [text]="true" [raised]="true" severity="warn"
                 (onClick)="autorizacionTareaOT(rowData['codigo'])" />
             </ng-container>
@@ -295,12 +321,8 @@
           <label>Fecha programa de inicio OT</label>
         </p-floatlabel>
         <label class="block font-medium mt-2">Observación *</label>
-        <textarea 
-          formControlName="observacion"
-          placeholder="Agrega una observación para la OT..."
-          rows="3"
-          class="w-full p-2 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        ></textarea>
+        <textarea formControlName="observacion" placeholder="Agrega una observación para la OT..." rows="3"
+          class="w-full p-2 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
       </div>
     </ng-container>
     <div class="flex justify-end gap-2">
@@ -315,148 +337,188 @@
 <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
 
 <!-- Dialog para editar tarea -->
+<!-- Dialog para editar tarea -->
 <p-dialog [(visible)]="displayModal" [modal]="true" [style]="{width: '500px'}">
   <ng-template pTemplate="header">
     <div class="flex items-center justify-between w-full">
       <div class="flex flex-col">
-        <h3 class="text-lg font-semibold text-gray-900">Editar Tarea</h3>
-        <div *ngIf="selectedTarea" class="flex items-center gap-3 mt-1">
-          <p-tag [value]="selectedTarea.codigo" severity="info" size="small" class="font-mono">
+        <h3 class="text-lg font-semibold text-gray-900">
+          {{ selectedTarea?.esExterna ? 'Editar Tarea Externa' : 'Editar Tarea' }}
+        </h3>
+        <div *ngIf="selectedTarea" class="flex items-center gap-3 mt-1 flex-wrap">
+          <p-tag [value]="selectedTarea.codigo" [severity]="selectedTarea.esExterna ? 'info' : 'secondary'" size="small"
+            class="font-mono">
           </p-tag>
-          <span class="text-sm text-gray-600">{{ selectedTarea.detalle }}</span>
-          <p-tag [value]="obtenerTextoEstadoTarea(selectedTarea.estado)"
-            [severity]="obtenerSeverityEstadoTarea(selectedTarea.estado)" size="small">
+          <span class="text-sm text-gray-600 truncate max-w-xs">{{ selectedTarea.detalle }}</span>
+          <p-tag
+            [value]="selectedTarea.esExterna ? 'Tarea Externa - ' + obtenerTextoEstadoTarea(selectedTarea.estado) : obtenerTextoEstadoTarea(selectedTarea.estado)"
+            [severity]="selectedTarea.esExterna ? 'info' : obtenerSeverityEstadoTarea(selectedTarea.estado)"
+            size="small">
           </p-tag>
         </div>
       </div>
     </div>
   </ng-template>
-  <div class="flex flex-col gap-4">
 
+  <div class="flex flex-col gap-4">
+    <!-- ✅ MOSTRAR ESTADO TANTO PARA TAREAS INTERNAS COMO EXTERNAS -->
     <div>
       <label class="block font-medium mb-2">Estado</label>
       <div class="flex gap-3 items-end">
-        <p-dropdown [options]="estadosTarea" [(ngModel)]="formEstado" optionLabel="name" optionValue="code"
-          placeholder="Selecciona un estado" class="flex-1" [disabled]="loadingActualizarEstado" appendTo="body"
-          [virtualScroll]="true" [virtualScrollItemSize]="43" [showClear]="true" [filter]="true" filterBy="name"
-          filterPlaceholder="Buscar estado..." scrollHeight="300px">
+        <div class="flex-1">
+          <p-dropdown [options]="estadosTarea" [(ngModel)]="formEstado" optionLabel="name" optionValue="code"
+            placeholder="Selecciona un estado" class="w-full" [disabled]="loadingActualizarEstado" appendTo="body"
+            [virtualScroll]="true" [virtualScrollItemSize]="43" [showClear]="true" [filter]="true" filterBy="name"
+            filterPlaceholder="Buscar estado..." scrollHeight="300px">
 
-          <!-- Template para las opciones -->
-          <ng-template let-option pTemplate="item">
-            <div class="flex items-center gap-2 p-2">
-              <p-tag [value]="option.name" [severity]="option.severity || 'secondary'" size="small">
-              </p-tag>
-            </div>
-          </ng-template>
+            <!-- Template para las opciones -->
+            <ng-template let-option pTemplate="item">
+              <div class="flex items-center gap-2 p-2">
+                <p-tag [value]="option.name" [severity]="option.severity || 'secondary'" size="small">
+                </p-tag>
+              </div>
+            </ng-template>
 
-          <!-- Template para el valor seleccionado -->
-          <ng-template let-selectedOption pTemplate="selectedItem">
-            <div class="flex items-center gap-2" *ngIf="selectedOption">
-              <p-tag [value]="selectedOption.name" [severity]="selectedOption.severity || 'secondary'" size="small">
-              </p-tag>
-            </div>
-          </ng-template>
-        </p-dropdown>
+            <!-- Template para el valor seleccionado -->
+            <ng-template let-selectedOption pTemplate="selectedItem">
+              <div class="flex items-center gap-2" *ngIf="selectedOption">
+                <p-tag [value]="selectedOption.name" [severity]="selectedOption.severity || 'secondary'" size="small">
+                </p-tag>
+              </div>
+            </ng-template>
+          </p-dropdown>
+        </div>
 
         <p-button label="Actualizar Estado" icon="pi pi-refresh" severity="primary" [loading]="loadingActualizarEstado"
-          [disabled]="!estadoHaCambiado()" (onClick)="actualizarEstadoTarea(selectedTarea.idTarea)">
+          [disabled]="!estadoHaCambiado()" (onClick)="actualizarEstadoTarea(selectedTarea.idTarea)" class="shrink-0">
         </p-button>
       </div>
     </div>
 
-    <div>
-        <label class="block font-medium mb-2">Mecánicos Asignados</label>
-        <div class="flex items-end justify-center gap-3">
-            <p-select 
-                [options]="mecanicosDisponiblesAux" 
-                [(ngModel)]="formMecanico"
-                optionLabel="nombreCompleto"
-                optionValue="idMecanico"
-                placeholder="Selecciona mecánicos"
-                class="flex-1">
-            </p-select>
-            <p-inputnumber
-                type="number" 
-                fluid
-                [(ngModel)]="duracionEstimadaMecanicosDialogEdit"
-                placeholder="Duración(U)"/>
-            <p-button 
-            class="min-w-36" 
-            fluid 
-            label="Agregar" 
-            [disabled]="formMecanico && duracionEstimadaMecanicosDialogEdit ? false:true"
-            (click)="agregarMecanicoTarea()"
-            />
-        </div>
-        <ng-container *ngFor="let mecanico of mecanicosTarea">
-            <div class="flex items-center justify-between px-2 py-1 mt-2 bg-gray-200 border rounded-md border-gray-300">
-                <span class="text-gray-700">{{ mecanico.nombreCompleto }}</span>
-                <button 
-                pButton 
-                type="button" 
-                icon="pi pi-times" 
-                class="p-button-rounded p-button-danger p-button-sm"
-                (click)="eliminarMecanicoTarea(mecanico)"
-                >
-                </button>
+    <!-- ✅ Mensaje informativo diferenciado -->
+    <div *ngIf="selectedTarea?.esExterna" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div class="flex items-start">
+        <i class="pi pi-info-circle text-blue-600 text-xl mr-3 mt-0.5 flex-shrink-0"></i>
+        <div>
+          <h4 class="text-blue-800 font-semibold mb-1">Tarea Externa</h4>
+          <p class="text-blue-700 text-sm mb-2">Esta tarea es gestionada por servicios externos.</p>
+          <div class="space-y-1 text-sm">
+            <div class="flex items-center gap-2">
+              <span class="font-medium">Solicitante:</span>
+              <span>{{ selectedTarea.solicitante || 'No especificado' }}</span>
             </div>
-        </ng-container>
+            <div *ngIf="selectedTarea.requiereAutorizacion" class="flex items-center gap-2">
+              <i class="pi pi-exclamation-triangle text-amber-500"></i>
+              <span class="text-amber-700">Requiere autorización</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div>
-        <label class="block font-medium mb-2">Repuestos Asignados</label>
-        <div class="flex items-end justify-center gap-3">
-            <p-select 
-            [options]="repuestosDisponiblesAux"
-            [(ngModel)]="formRepuesto"
-            optionLabel="nombre"
-            optionValue="idItem"
-            placeholder="Selecciona repuesto"
-            class="flex-1"
-            appendTo="body"
-            >
-                <ng-template let-item pTemplate="item">
-                    <div class="flex flex-col px-2">
-                        <span class="font-semibold text-gray-800">{{ item.codigo }} - {{ item.nombre }}</span>
-                        <small class="text-sm text-gray-600 ">{{ item.descripcion }}</small>
-                        <small class="text-xs text-blue-600 ">Stock disponible: {{ item.stock }}</small>
-                    </div>
-                </ng-template>
+
+    <!-- ✅ Solo mostrar mecánicos para tareas internas -->
+    <div *ngIf="!selectedTarea?.esExterna" class="space-y-4">
+      <div>
+        <label class="block font-medium mb-2">Mecánicos Asignados</label>
+        <div class="grid grid-cols-1 md:grid-cols-[1fr_120px_auto] gap-3 items-end">
+          <div>
+            <p-select [options]="mecanicosDisponiblesAux" [(ngModel)]="formMecanico" optionLabel="nombreCompleto"
+              optionValue="idMecanico" placeholder="Selecciona mecánico" class="w-full" appendTo="body" [filter]="true"
+              filterBy="nombreCompleto">
             </p-select>
-
-            <p-inputnumber 
-            [(ngModel)]="cantidadRepuesto" 
-            placeholder="Cantidad"
-            fluid
-            [min]="1"
-            [max]="1000"
-            [useGrouping]="false"
-            ></p-inputnumber>
-
-            <p-button 
-            class="min-w-36" 
-            label="Agregar"
-            fluid
-            [disabled]="formRepuesto && cantidadRepuesto ? false:true"
-            (onClick)="agregarRepuestoTarea()"
-            />
+          </div>
+          <div>
+            <p-inputnumber [(ngModel)]="duracionEstimadaMecanicosDialogEdit" placeholder="Duración" class="w-full"
+              [min]="1" [useGrouping]="false" suffix=" U">
+            </p-inputnumber>
+          </div>
+          <div>
+            <p-button label="Agregar" icon="pi pi-plus"
+              [disabled]="!formMecanico || !duracionEstimadaMecanicosDialogEdit" (click)="agregarMecanicoTarea()"
+              class="w-full md:w-auto">
+            </p-button>
+          </div>
         </div>
 
-        <ng-container *ngFor="let repuesto of repuestosTarea">
-            <div class="flex items-center justify-between px-2 py-1 mt-2 bg-gray-200 border rounded-md border-gray-300">
-              <div class="flex items-center justify-between gap-2 w-full">
-                <span class="text-gray-700">{{ repuesto.nombre }}</span>
-                <span class="text-gray-700 mr-20">{{ repuesto.cantidad }}</span>
+        <!-- Lista de mecánicos -->
+        <div class="mt-3 space-y-2" *ngIf="(mecanicosTarea?.length || 0) > 0">
+          <div *ngFor="let mecanico of mecanicosTarea"
+            class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-medium text-gray-800 text-sm block truncate">{{ mecanico.nombreCompleto }}</span>
+                <p-tag *ngIf="mecanico.duracionEstimada" [value]="mecanico.duracionEstimada + ' U'" severity="secondary"
+                  size="small">
+                </p-tag>
               </div>
-            <button 
-                pButton 
-                icon="pi pi-times" 
-                class="p-button-rounded p-button-danger p-button-sm"
-                (click)="eliminarRepuestoTarea(repuesto)">
-            </button>
+              <span *ngIf="mecanico.especialidad" class="text-xs text-gray-500 block truncate">{{ mecanico.especialidad
+                }}</span>
             </div>
-        </ng-container>
+            <button pButton icon="pi pi-times" class="p-button-rounded p-button-danger p-button-sm ml-2"
+              (click)="eliminarMecanicoTarea(mecanico)" title="Eliminar mecánico">
+            </button>
+          </div>
+        </div>
+        <div *ngIf="!mecanicosTarea?.length" class="text-center py-4 text-gray-500 bg-gray-50 rounded-lg mt-3">
+          <i class="pi pi-users text-xl mb-2 block"></i>
+          <p class="text-sm">No hay mecánicos asignados</p>
+        </div>
+      </div>
+
+      <!-- Repuestos section -->
+      <div>
+        <label class="block font-medium mb-2">Repuestos Asignados</label>
+        <div class="grid grid-cols-1 md:grid-cols-[1fr_120px_auto] gap-3 items-end">
+          <div>
+            <p-select [options]="repuestosDisponiblesAux" [(ngModel)]="formRepuesto" optionLabel="nombre"
+              optionValue="idItem" placeholder="Selecciona repuesto" class="w-full" appendTo="body" [filter]="true"
+              filterBy="nombre,codigo">
+              <ng-template let-item pTemplate="item">
+                <div class="flex flex-col px-2 py-2">
+                  <span class="font-semibold text-gray-800 text-sm">{{ item.codigo }} - {{ item.nombre }}</span>
+                  <small class="text-xs text-gray-600 truncate">{{ item.descripcion }}</small>
+                  <small class="text-xs text-blue-600">Stock: {{ item.stock }}</small>
+                </div>
+              </ng-template>
+            </p-select>
+          </div>
+          <div>
+            <p-inputnumber [(ngModel)]="cantidadRepuesto" placeholder="Cantidad" class="w-full" [min]="1" [max]="1000"
+              [useGrouping]="false">
+            </p-inputnumber>
+          </div>
+          <div>
+            <p-button label="Agregar" icon="pi pi-plus" [disabled]="!formRepuesto || !cantidadRepuesto"
+              (onClick)="agregarRepuestoTarea()" class="w-full md:w-auto">
+            </p-button>
+          </div>
         </div>
 
+        <!-- Lista de repuestos -->
+        <div class="mt-3 space-y-2" *ngIf="(repuestosTarea?.length || 0) > 0">
+          <div *ngFor="let repuesto of repuestosTarea"
+            class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-medium text-gray-800 text-sm truncate">{{ repuesto.nombre }}</span>
+                <p-tag [value]="'x' + repuesto.cantidad" severity="secondary" size="small"></p-tag>
+              </div>
+              <span class="text-xs text-gray-500 block truncate">{{ repuesto.codigo }}</span>
+            </div>
+            <button pButton icon="pi pi-times" class="p-button-rounded p-button-danger p-button-sm ml-2"
+              (click)="eliminarRepuestoTarea(repuesto)" title="Eliminar repuesto">
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="!repuestosTarea?.length" class="text-center py-4 text-gray-500 bg-gray-50 rounded-lg mt-3">
+          <i class="pi pi-box text-xl mb-2 block"></i>
+          <p class="text-sm">No hay repuestos asignados</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ✅ Sección de observaciones (disponible para ambos tipos) -->
     <div class="border-t pt-4">
       <h4 class="text-md font-semibold mb-3 text-gray-800">Agregar Observación</h4>
 
@@ -473,7 +535,7 @@
         <!-- Subir imagen opcional -->
         <div>
           <label class="block font-medium mb-2 text-sm">Imagen (Opcional)</label>
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-3 flex-wrap">
             <input type="file" #fileInput accept="image/*" (change)="onFileSelected($event)" class="hidden">
 
             <p-button label="Seleccionar imagen" icon="pi pi-upload" severity="secondary" size="small"
@@ -483,7 +545,7 @@
             <!-- Preview de imagen seleccionada -->
             <div *ngIf="selectedFile" class="flex items-center gap-2 text-sm">
               <i class="pi pi-check text-green-600"></i>
-              <span class="text-gray-600">{{ selectedFile.name }}</span>
+              <span class="text-gray-600 truncate max-w-32">{{ selectedFile.name }}</span>
               <p-button icon="pi pi-times" severity="secondary" size="small" [text]="true" [rounded]="true"
                 (onClick)="removeSelectedFile()" [disabled]="loadingCrearObservacion">
               </p-button>
