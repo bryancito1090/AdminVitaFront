@@ -133,15 +133,48 @@ export class InventarioComponent implements OnInit {
     this.initData();
     this.configurarMesActual();
   }
-  getItems(){
-    this.itemService.getItemsList().subscribe({
-      next: (response) => {
-        this.Items = response;
+ getItems(){
+  this.itemService.getItemsList().subscribe({
+    next: (response) => {
+      // ✅ Verificar que response sea un array válido
+      this.Items = Array.isArray(response) ? response : [];
+      this.loading = false;
+      
+      // ✅ Mostrar mensaje informativo si no hay items
+      if (this.Items.length === 0) {
+        console.log('No se encontraron items en el inventario');
+        // Opcional: mostrar un toast informativo
+        // this.toastr.info('No hay items en el inventario. Puedes agregar el primero.', 'Inventario vacío');
+      }
+    },
+    error: (err) => {
+      console.error('Error al cargar items:', err);
+      
+      // ✅ Manejar diferentes tipos de errores
+      if (err.status === 500) {
+        // Error del servidor (probablemente base de datos vacía)
+        console.log('El servidor no pudo cargar los items. Iniciando con inventario vacío.');
+        this.Items = []; // Array vacío
         this.loading = false;
-      },
-      error: (err) => console.error(err)
-    })
-  }
+        
+        // ✅ Mostrar mensaje al usuario
+        this.toastr.info('El inventario está vacío. Puedes agregar tu primer item.', 'Inventario vacío');
+      } else if (err.status === 404) {
+        // No encontrado
+        console.log('No se encontraron items en el inventario.');
+        this.Items = [];
+        this.loading = false;
+        this.toastr.info('No hay items en el inventario.', 'Inventario vacío');
+      } else {
+        // Otros errores
+        console.error('Error inesperado:', err);
+        this.Items = [];
+        this.loading = false;
+        this.toastr.error('Error al cargar el inventario. Inténtalo de nuevo.', 'Error');
+      }
+    }
+  });
+}
   initData(){
     this.cols = HeadersTables.InventarioList; 
     this.colsMovimientos = HeadersTables.MovimientosItemList;

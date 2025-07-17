@@ -359,9 +359,29 @@ crearTarea(tarea: any, token: any) {
     }
   });
 }
-// ✅ MÉTODO PARA TAREAS CON SOLICITUD DE REPUESTO - TAMBIÉN CORREGIDO
 async crearTareaConSolicitud(authResult: { acceso: boolean, id: number | null, token: any }) {
   try {
+    // Validar que el código de OT esté presente
+    if (!this.codigoOT || this.codigoOT.trim() === '') {
+      this.toastr.error('No se encontró el código de la orden de trabajo', 'Error de validación');
+      this.onTareaCreated.emit(false);
+      return;
+    }
+
+    // Validar que haya mecánicos asignados para tareas internas
+    if (this.tipo_tarea === 'interna' && this.list_mecanicos.length === 0) {
+      this.toastr.error('Debe asignar al menos un mecánico para tareas con solicitud de repuesto', 'Error de validación');
+      this.onTareaCreated.emit(false);
+      return;
+    }
+
+    // Validar datos de solicitud de repuesto
+    if (!this.datosSolicitudRepuesto.detalle || this.datosSolicitudRepuesto.detalle.trim() === '') {
+      this.toastr.error('El detalle de la solicitud de repuesto es obligatorio', 'Error de validación');
+      this.onTareaCreated.emit(false);
+      return;
+    }
+
     // Buscar el estado "Espera repuesto" 
     const estadoEsperaRepuesto = this.estados_tarea.find(estado => 
       estado.name.toLowerCase().includes('espera') && 
@@ -369,32 +389,43 @@ async crearTareaConSolicitud(authResult: { acceso: boolean, id: number | null, t
     );
     const estadoTarea = estadoEsperaRepuesto ? estadoEsperaRepuesto.code : 6; // Fallback
 
-    // ✅ PREPARAR MECÁNICOS CON VALIDACIÓN DE TIPOS
+    // Preparar mecánicos con validación de tipos
     const mecanicosFormateados = this.list_mecanicos.map(mecanico => ({
       idMecanico: Number(mecanico.idMecanico),
       duracionEstimada: Number(mecanico.duracionEstimada)
     }));
 
+    // Validar que el authResult tenga los datos necesarios
+    if (!authResult.id || !authResult.token) {
+      this.toastr.error('Error en la autenticación del usuario', 'Error de validación');
+      this.onTareaCreated.emit(false);
+      return;
+    }
+
     const nuevaTarea = {
-      codigoOrdenTrabajo: this.codigoOT,
+      codigoOrdenTrabajo: this.codigoOT.toString().trim(), // Asegurar que sea string
       idUsuario: Number(authResult.id), 
       detalle: this.detalleTarea.trim(),
-      estado: estadoTarea,
+      estado: Number(estadoTarea),
       esManual: true,
       requiereRepuesto: true, 
-      requiereServicioExterno: this.tipo_tarea === 'externa' ? true : false,
+      requiereServicioExterno: this.tipo_tarea === 'externa',
       requiereAutorizacion: this.requ_auth,
-      tipoMantenimiento: this.tipo_mantenimiento === 'preventivo' ? true : false,
-      duracion: Number(this.duracion_tarea),
+      tipoMantenimiento: this.tipo_mantenimiento === 'preventivo',
+      duracion: Number(this.duracion_tarea) || 0,
       mecanicos: mecanicosFormateados,
-      repuestos: [],
+      repuestos: [] // Vacío porque la solicitud se crea después
     };
+
+    console.log('📝 Datos de la tarea a crear:', nuevaTarea);
     
     // Crear la tarea primero
     this.tareaService.createTarea(nuevaTarea, authResult.token).subscribe({
       next: async (tareaResponse) => {
+        console.log('✅ Respuesta de creación de tarea:', tareaResponse);
         this.toastr.success('Tarea creada correctamente', 'Éxito');
 
+        // Buscar el ID de la tarea en múltiples propiedades posibles
         const idTarea = tareaResponse.idTareaOt || 
                        tareaResponse.id || 
                        tareaResponse.idTarea || 
@@ -407,24 +438,36 @@ async crearTareaConSolicitud(authResult: { acceso: boolean, id: number | null, t
                        tareaResponse.identificador ||
                        tareaResponse.codigo;
 
+        console.log('🔍 ID de tarea extraído:', idTarea);
 
         if (idTarea) {
           // Crear la solicitud de repuesto
           await this.crearSolicitudRepuesto(idTarea);
         } else {
-          this.toastr.error('No se pudo crear la solicitud de repuesto: ID de tarea no encontrado', 'Error');
+          console.error('❌ No se encontró ID de tarea en la respuesta:', tareaResponse);
+          this.toastr.warning('Tarea creada, pero no se pudo crear la solicitud de repuesto automáticamente', 'Advertencia');
         }
 
         this.resetForm();
         this.onTareaCreated.emit(true);
       },
       error: (error) => {
-        this.toastr.error('Error al crear la tarea', 'Error');
+        console.error('❌ Error al crear la tarea:', error);
+        
+        if (error.error?.message) {
+          this.toastr.error(error.error.message, 'Error del servidor');
+        } else if (error.message) {
+          this.toastr.error(error.message, 'Error');
+        } else {
+          this.toastr.error('Error al crear la tarea con solicitud de repuesto', 'Error');
+        }
+        
         this.onTareaCreated.emit(false);
       }
     });
 
   } catch (error) {
+    console.error('❌ Error en crearTareaConSolicitud:', error);
     this.toastr.error('Error en el proceso de creación', 'Error');
     this.onTareaCreated.emit(false);
   }
