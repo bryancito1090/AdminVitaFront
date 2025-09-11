@@ -122,7 +122,7 @@
                     <label>Obligada a Contabilidad</label>
                     <div class="flex flex-wrap gap-4">
                         <div *ngFor="let bool of booleanRadio" class="field-checkbox">
-                            <p-radiobutton [inputId]="bool.key" [value]="bool" formControlName="obligadaContabilidad" />
+                            <p-radiobutton [inputId]="bool.key" [value]="bool.key==1 ? true:false" formControlName="obligadaContabilidad" />
                             <label [for]="bool.key" class="ml-2">{{ bool.name }}</label>
                         </div>
                     </div>
