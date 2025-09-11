@@ -10,7 +10,7 @@ export interface GetMecanicoT {
 
 export interface ManoDeObra {
     codigo: string;
-    nombreCodigo: string;
+    nombreCompleto: string;
     esSupervisor: boolean;
     codigoTarea: string;
     especialidad: string;

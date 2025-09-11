@@ -13,11 +13,11 @@
             <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Tarea:</label>
             <div class="flex gap-6">
                 <div class="flex items-center">
-                    <p-radiobutton name="Interna" value="interna" [(ngModel)]="tipo_tarea" inputId="tipo_tarea1" />
+                    <p-radiobutton name="Interna" value="interna" [(ngModel)]="tipo_tarea" inputId="tipo_tarea1" (onChange)="onTipoTareaChange()" />
                     <label for="tipo_tarea1" class="ml-2 text-sm">Interna</label>
                 </div>
                 <div class="flex items-center">
-                    <p-radiobutton name="Externa" value="externa" [(ngModel)]="tipo_tarea" inputId="tipo_tarea2" />
+                    <p-radiobutton name="Externa" value="externa" [(ngModel)]="tipo_tarea" inputId="tipo_tarea2" (onChange)="onTipoTareaChange()" />
                     <label for="tipo_tarea2" class="ml-2 text-sm">Externa</label>
                 </div>
             </div>
@@ -39,53 +39,43 @@
         </div>
     </div>
 
-    <!-- Contenido para Tareas Internas -->
-    <ng-container>
+    <!-- Detalles de la Tarea (siempre visible) -->
+    <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6">
+        <h3 class="text-lg font-semibold text-gray-700 mb-4">Detalles de la Tarea</h3>
         
-        <!-- Detalles de la Tarea -->
-        <div class="bg-white border border-gray-200 rounded-lg p-4 mb-6">
-            <h3 class="text-lg font-semibold text-gray-700 mb-4">Detalles de la Tarea</h3>
-            
-            <!-- Detalle Tarea -->
-            <div class="mb-4">
-                <p-floatlabel variant="in">
-                    <input fluid pInputText id="detalle_tarea" [(ngModel)]="detalleTarea" autocomplete="off" />
-                    <label for="detalle_tarea">Detalle Tarea</label>
-                </p-floatlabel>
-            </div>
+        <!-- Detalle Tarea -->
+        <div class="mb-4">
+            <p-floatlabel variant="in">
+                <input fluid pInputText id="detalle_tarea" [(ngModel)]="detalleTarea" autocomplete="off" />
+                <label for="detalle_tarea">Detalle Tarea</label>
+            </p-floatlabel>
+        </div>
 
-            <!-- Duración, Estado y Autorización -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <p-floatlabel variant="in">
-                    <p-inputnumber [(ngModel)]="duracion_tarea" inputId="duracion_tarea"/>
-                    <label for="duracion_tarea">Duración ( 1 Unidad = 20 minutos)</label>
-                </p-floatlabel>
-                
-                <p-select 
-                    [options]="estados_tarea" 
-                    [(ngModel)]="estado_tarea" 
-                    optionLabel="name" 
-                    optionValue="code" 
-                    placeholder="Estado" 
-                    [disabled]="true"
-                    class="w-full" />
-                
-                <div class="flex flex-col">
-                    <label class="text-sm font-medium text-gray-700 mb-2">Requiere Autorización:</label>
-                    <div class="flex gap-4">
-                        <div class="flex items-center">
-                            <p-radiobutton name="requ_auth1" [value]="true" [(ngModel)]="requ_auth" inputId="requ_auth1" />
-                            <label for="requ_auth1" class="ml-2 text-sm">Sí</label>
-                        </div>
-                        <div class="flex items-center">
-                            <p-radiobutton name="requ_auth2" [value]="false" [(ngModel)]="requ_auth" inputId="requ_auth2" />
-                            <label for="requ_auth2" class="ml-2 text-sm">No</label>
-                        </div>
+        <!-- Duración y Autorización -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <p-floatlabel variant="in">
+                <p-inputnumber [(ngModel)]="duracion_tarea" inputId="duracion_tarea" [disabled]="tipo_tarea === 'externa'" />
+                <label for="duracion_tarea">Duración ( 1 Unidad = 20 minutos)</label>
+            </p-floatlabel>
+            
+            <div class="flex flex-col">
+                <label class="text-sm font-medium text-gray-700 mb-2">Requiere Autorización:</label>
+                <div class="flex gap-4">
+                    <div class="flex items-center">
+                        <p-radiobutton name="requ_auth1" [value]="true" [(ngModel)]="requ_auth" inputId="requ_auth1" />
+                        <label for="requ_auth1" class="ml-2 text-sm">Sí</label>
+                    </div>
+                    <div class="flex items-center">
+                        <p-radiobutton name="requ_auth2" [value]="false" [(ngModel)]="requ_auth" inputId="requ_auth2" />
+                        <label for="requ_auth2" class="ml-2 text-sm">No</label>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
+    <!-- Contenido para Tareas Internas (solo visible cuando es interna) -->
+    <ng-container *ngIf="tipo_tarea === 'interna'">
         <!-- Solicitud de Repuesto -->
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <h3 class="text-lg font-semibold text-blue-800 mb-4">Solicitud de Repuesto</h3>
@@ -141,7 +131,7 @@
                 <ng-container *ngIf="requ_repuestos === true">
                     <div class="flex justify-between items-center mb-4">
                         <p class="text-sm text-gray-600">Gestiona los repuestos e insumos necesarios para esta tarea</p>
-                        <p-button severity="success" icon="pi pi-plus" label="Agregar Repuesto" (onClick)="showDialogRepuestos()"></p-button>
+                        <p-button severity="success" icon="pi pi-plus" label="Adjuntar Repuesto a la Tarea" (onClick)="showDialogRepuestos()"></p-button>
                     </div>
                     
                     <div *ngIf="list_repuestos.length == 0" class="text-center py-8 text-gray-500">
@@ -184,7 +174,7 @@
             
             <div class="flex justify-between items-center mb-4">
                 <p class="text-sm text-gray-600">Asigna los mecánicos responsables de ejecutar esta tarea</p>
-                <p-button severity="warn" icon="pi pi-plus" label="Agregar Mecánico" (onClick)="showDialogMecanicos()"></p-button>
+                <p-button severity="warn" icon="pi pi-plus" label="Adjuntar Mecánico a la Tarea" (onClick)="showDialogMecanicos()"></p-button>
             </div>
             
             <div *ngIf="list_mecanicos.length === 0" class="text-center py-8 text-gray-500">
@@ -216,20 +206,18 @@
                 </p-table>
             </div>
         </div>
+    </ng-container>
 
-        <!-- Botón de Acción -->
-        <div class="flex justify-end pt-4 border-t border-gray-200">
-            <p-button 
-                label="Agregar Tarea" 
-                icon="pi pi-plus" 
-                size="large"
-                (onClick)="agregarTarea()">
-            </p-button>
-        </div>
-    </ng-container>    
+    <!-- Botón de Acción -->
+    <div class="flex justify-end pt-4 border-t border-gray-200">
+        <p-button 
+            label="Agregar Tarea" 
+            icon="pi pi-plus" 
+            size="large"
+            (onClick)="agregarTarea()">
+        </p-button>
+    </div>
 </div>
-
-<!-- DIALOGS -->
 
 <!-- Dialog para Solicitud de Repuesto -->
 <p-dialog 
