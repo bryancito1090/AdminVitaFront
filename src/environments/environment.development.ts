@@ -1,6 +1,7 @@
 export const environment = {
     production: 'false',
     domain: 'https://localhost:7267',
+    //domain: 'https://servicios.istpet.edu.ec/apiVita',
     apiEndpoint: '/api',
     authentication: '/Autenticate',
     ordenesTrabajo: '/OrdenesTrabajo',
