@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ClienteService } from '../../../services/cliente.service';
@@ -157,6 +157,18 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
   mensajeError: any;
   mensajeExito: any;
 
+  // Configuración general de los mensajes Toastr
+  toastOptions = {
+    timeOut: 3000,
+    positionClass: 'toast-bottom-right',
+    progressBar: true,
+    closeButton: true
+  };
+
+  // Referencias a los componentes de registro
+  @ViewChild('registroCliente') registroCliente!: RegistroClienteComponent;
+  @ViewChild('registroVehiculo') registroVehiculo!: RegistroVehiculoComponent;
+
   constructor(
     private router: Router,
     private validacionService: ValidacionService,
@@ -192,13 +204,13 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
           if (this.ordenData.idUsuario === 158) {
           }
         } else {
-          this.toastr.error('Error al obtener información del usuario', 'Error de autenticación');
+          this.toastr.error('Error al obtener información del usuario', 'Error de autenticación', this.toastOptions);
         }
       } else {
-        this.toastr.error('Error al obtener información del usuario', 'Error de autenticación');
+        this.toastr.error('Error al obtener información del usuario', 'Error de autenticación', this.toastOptions);
       }
     } catch (error) {
-      this.toastr.error('Error al obtener información del usuario', 'Error de autenticación');
+      this.toastr.error('Error al obtener información del usuario', 'Error de autenticación', this.toastOptions);
     }
   }
   cargarSupervisores() {
@@ -209,13 +221,13 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
         this.cargandoMecanicos = false;
 
         if (this.mecanicos.length === 0) {
-          this.toastr.warning('No se encontraron mecánicos disponibles', 'Advertencia');
+          this.toastr.warning('No se encontraron mecánicos disponibles', 'Advertencia', this.toastOptions);
         }
       },
       error: (error) => {
         console.error('Error al cargar mecánicos:', error);
         this.cargandoMecanicos = false;
-        this.toastr.error('No se pudieron cargar los mecánicos', 'Error');
+        this.toastr.error('No se pudieron cargar los mecánicos', 'Error', this.toastOptions);
         this.mecanicos = [
           { idMecanico: 0, nombre: 'No se pudieron cargar mecánicos' }
         ];
@@ -243,7 +255,7 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
 
   validarCliente() {
     if (!this.documento || this.documento.trim() === '') {
-      this.toastr.warning('Por favor ingrese un documento válido', 'Advertencia');
+      this.toastr.warning('Por favor ingrese un documento válido', 'Advertencia', this.toastOptions);
       return;
     }
     this.cargandoCliente = true;
@@ -259,18 +271,18 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
           this.ordenData.idCliente = this.clienteActual.idPersona;
 
           if (this.clienteActual.esClienteActivo) {
-            this.toastr.success('Cliente encontrado', 'Éxito');
+            this.toastr.success('Cliente encontrado', 'Éxito', this.toastOptions);
           } else {
-            this.toastr.info('El cliente existe pero no está activo', 'Información');
+            this.toastr.info('El cliente existe pero no está activo', 'Información', this.toastOptions);
           }
         },
         error: (error: any) => {
           console.error('Error al validar el cliente:', error);
           this.cargandoCliente = false;
           if (error.status === 404) {
-            this.toastr.warning('Cliente no encontrado', 'No existe');
+            this.toastr.warning('Cliente no encontrado', 'No existe', this.toastOptions);
           } else {
-            this.toastr.error('Error al validar el cliente', 'Error');
+            this.toastr.error('Error al validar el cliente', 'Error', this.toastOptions);
           }
         }
       });
@@ -278,7 +290,7 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
 
   validarVehiculo() {
     if (!this.placa || this.placa.trim() === '') {
-      this.toastr.warning('Por favor ingrese una placa válida', 'Advertencia');
+      this.toastr.warning('Por favor ingrese una placa válida', 'Advertencia', this.toastOptions);
       return;
     }
 
@@ -305,11 +317,11 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
           this.cargandoVehiculo = false;
 
           if (this.vehiculoActual.estado === 0) {
-            this.toastr.success('Vehículo encontrado - Estado: Operativo', 'Éxito');
+            this.toastr.success('Vehículo encontrado - Estado: Operativo', 'Éxito', this.toastOptions);
           } else if (this.vehiculoActual.estado === 1) {
-            this.toastr.info('Vehículo encontrado - Estado: En Mantenimiento', 'Información');
+            this.toastr.info('Vehículo encontrado - Estado: En Mantenimiento', 'Información', this.toastOptions);
           } else if (this.vehiculoActual.estado === 2) {
-            this.toastr.warning('Vehículo encontrado - Estado: De Baja', 'Precaución');
+            this.toastr.warning('Vehículo encontrado - Estado: De Baja', 'Precaución', this.toastOptions);
           }
         },
         error: (error) => {
@@ -317,9 +329,9 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
           this.cargandoVehiculo = false;
 
           if (error.status === 404) {
-            this.toastr.warning('Vehículo no encontrado', 'No existe');
+            this.toastr.warning('Vehículo no encontrado', 'No existe', this.toastOptions);
           } else {
-            this.toastr.error('Error al validar el vehículo', 'Error');
+            this.toastr.error('Error al validar el vehículo', 'Error', this.toastOptions);
           }
         }
       });
@@ -329,23 +341,23 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
   }
   validarDatosOrden(): boolean {
     if (!this.clienteActual || !this.vehiculoActual) {
-      this.toastr.warning('Debe seleccionar un cliente y un vehículo antes de crear la orden', 'Datos incompletos');
+      this.toastr.warning('Debe seleccionar un cliente y un vehículo antes de crear la orden', 'Datos incompletos', this.toastOptions);
       return false;
     }
     if (!this.ordenData.idMecanico) {
-      this.toastr.warning('Debe seleccionar un mecánico', 'Datos incompletos');
+      this.toastr.warning('Debe seleccionar un mecánico', 'Datos incompletos', this.toastOptions);
       return false;
     }
     if (!this.ordenData.detalle || this.ordenData.detalle.trim() === '') {
-      this.toastr.warning('Debe ingresar una descripción del mantenimiento', 'Datos incompletos');
+      this.toastr.warning('Debe ingresar una descripción del mantenimiento', 'Datos incompletos', this.toastOptions);
       return false;
     }
     if (!this.ordenData.kilometraje || this.ordenData.kilometraje <= 0) {
-      this.toastr.warning('Debe ingresar un kilometraje válido', 'Datos incompletos');
+      this.toastr.warning('Debe ingresar un kilometraje válido', 'Datos incompletos', this.toastOptions);
       return false;
     }
     if (!this.ordenData.fechaProgramada) {
-      this.toastr.warning('Debe seleccionar una fecha programada', 'Datos incompletos');
+      this.toastr.warning('Debe seleccionar una fecha programada', 'Datos incompletos', this.toastOptions);
       return false;
     }
     return true;
@@ -356,7 +368,7 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
     // ✅ Verificación mejorada con más detalles
     if (!this.ordenData.idUsuario || this.ordenData.idUsuario === 0) {
       console.error('❌ idUsuario no válido:', this.ordenData.idUsuario);
-      this.toastr.error('No se pudo obtener la información del usuario. Por favor, inicie sesión nuevamente.', 'Error de autenticación');
+      this.toastr.error('No se pudo obtener la información del usuario. Por favor, inicie sesión nuevamente.', 'Error de autenticación', this.toastOptions);
       return;
     }
 
@@ -376,7 +388,7 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
 
         try {
           const response = await firstValueFrom(this.ordenTrabajoService.agendarOrdenMecanico(this.ordenData));
-          this.toastr.success('Orden de trabajo creada exitosamente', 'Éxito');
+          this.toastr.success('Orden de trabajo creada exitosamente', 'Éxito', this.toastOptions);
 
           if (this.hayImagenesParaSubir()) {
             await this.subirImagenes();
@@ -385,11 +397,11 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
           this.creandoOrden = false;
           this.router.navigate([`/mecanica/${response.codigo}`]);
         } catch (error) {
-          this.toastr.error('No se pudo crear la orden de trabajo', 'Error');
+          this.toastr.error('No se pudo crear la orden de trabajo', 'Error', this.toastOptions);
           this.creandoOrden = false;
         }
       } else {
-        this.toastr.error('Código incorrecto o cancelado', 'Error');
+        this.toastr.error('Código incorrecto o cancelado', 'Error', this.toastOptions);
       }
     });
   }
@@ -466,7 +478,7 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
               this.procesarArchivo(archivoComprimido, tipo);
 
               // Mostrar mensaje de que se comprimió la imagen
-              this.toastr.info('La imagen ha sido comprimida para mejorar el rendimiento', 'Imagen optimizada');
+              this.toastr.info('La imagen ha sido comprimida para mejorar el rendimiento', 'Imagen optimizada', this.toastOptions);
             }
           }, 'image/jpeg', 0.85);
         }
@@ -477,13 +489,13 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
   }
   procesarArchivo(file: File, tipo: string): void {
     if (!file.type.startsWith('image/')) {
-      this.toastr.warning('Solo se permiten archivos de imagen (JPG, PNG, etc.)', 'Formato no válido');
+      this.toastr.warning('Solo se permiten archivos de imagen (JPG, PNG, etc.)', 'Formato no válido', this.toastOptions);
       return;
     }
 
     const maxSizeInBytes = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSizeInBytes) {
-      this.toastr.warning('La imagen debe ser menor a 5MB', 'Archivo muy grande');
+      this.toastr.warning('La imagen debe ser menor a 5MB', 'Archivo muy grande', this.toastOptions);
       return;
     }
 
@@ -557,14 +569,14 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
         acceptLabel: 'Sí, eliminar imagen',
         rejectLabel: 'Cancelar',
         accept: () => {
-          this.toastr.info('Procesando su solicitud...', 'Eliminando imagen');
+          this.toastr.info('Procesando su solicitud...', 'Eliminando imagen', this.toastOptions);
 
           // Llamar al servicio para eliminar el adjunto
           this.adjuntoService.eliminarAdjuntoCompleto(idAdjunto).subscribe({
             next: (respuesta) => {
               // Si la eliminación fue exitosa
               if (respuesta) {
-                this.toastr.success(`Imagen ${tipoImagen} eliminada correctamente`, 'Éxito');
+                this.toastr.success(`Imagen ${tipoImagen} eliminada correctamente`, 'Éxito', this.toastOptions);
 
                 // Limpiar la vista previa y el ID según el tipo
                 switch (tipo) {
@@ -590,20 +602,20 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
                     break;
                 }
               } else {
-                this.toastr.error(`No se pudo eliminar la imagen ${tipoImagen}`, 'Error');
+                this.toastr.error(`No se pudo eliminar la imagen ${tipoImagen}`, 'Error', this.toastOptions);
               }
             },
             error: (error) => {
               console.error('Error al eliminar el adjunto:', error);
 
               if (error.status === 400) {
-                this.toastr.error(`No se puede eliminar esta imagen. Verifique que no esté en uso`, 'Error');
+                this.toastr.error(`No se puede eliminar esta imagen. Verifique que no esté en uso`, 'Error', this.toastOptions);
               } else if (error.status === 401 || error.status === 403) {
-                this.toastr.error('No tiene permisos para realizar esta acción', 'Error de autorización');
+                this.toastr.error('No tiene permisos para realizar esta acción', 'Error de autorización', this.toastOptions);
               } else if (error.status === 404) {
-                this.toastr.error('No se encontró la imagen especificada', 'Error');
+                this.toastr.error('No se encontró la imagen especificada', 'Error', this.toastOptions);
               } else {
-                this.toastr.error(`Error al eliminar la imagen ${tipoImagen}: ` + (error.error?.mensaje || error.message), 'Error');
+                this.toastr.error(`Error al eliminar la imagen ${tipoImagen}: ` + (error.error?.mensaje || error.message), 'Error', this.toastOptions);
               }
             }
           });
@@ -709,7 +721,7 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
       }
 
       if (this.imagenesSubidas > 0) {
-        this.toastr.success(`Se subieron ${this.imagenesSubidas} imágenes nuevas exitosamente`, 'Éxito');
+        this.toastr.success(`Se subieron ${this.imagenesSubidas} imágenes nuevas exitosamente`, 'Éxito', this.toastOptions);
       }
 
       this.cargandoImagenes = false;
@@ -719,10 +731,10 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
       this.cargandoImagenes = false;
 
       if (this.imagenesSubidas > 0) {
-        this.toastr.warning(`Se subieron ${this.imagenesSubidas} de ${this.totalImagenes} imágenes nuevas`, 'Advertencia');
+        this.toastr.warning(`Se subieron ${this.imagenesSubidas} de ${this.totalImagenes} imágenes nuevas`, 'Advertencia', this.toastOptions);
         return true; // Consideramos éxito parcial
       } else {
-        this.toastr.error('No se pudieron subir las imágenes nuevas', 'Error');
+        this.toastr.error('No se pudieron subir las imágenes nuevas', 'Error', this.toastOptions);
         return false;
       }
     }
@@ -737,7 +749,7 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error al cargar los tipos de vehículo:', error);
-        this.toastr.error('No se pudieron cargar los tipos de vehículo', 'Error');
+        this.toastr.error('No se pudieron cargar los tipos de vehículo', 'Error', this.toastOptions);
       }
     });
   }
@@ -822,12 +834,12 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
             });
 
             // Informar al usuario
-            this.toastr.info(`Se han encontrado ${adjuntos.length} imágenes del vehículo`, 'Imágenes cargadas');
+          this.toastr.info(`Se han encontrado ${adjuntos.length} imágenes del vehículo`, 'Imágenes cargadas', this.toastOptions);
           }
         },
         error: (error) => {
           console.error('Error al obtener adjuntos del vehículo:', error);
-          this.toastr.warning('No se pudieron cargar las imágenes del vehículo', 'Advertencia');
+          this.toastr.warning('No se pudieron cargar las imágenes del vehículo', 'Advertencia', this.toastOptions);
         }
       });
   }
@@ -891,28 +903,35 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
         this.ordenData.idVehiculo = 0;
 
         // Notificar al usuario
-        this.toastr.info('Se ha retirado el vehículo', 'Información');
+        this.toastr.info('Se ha retirado el vehículo', 'Información', this.toastOptions);
       }
     });
   }
   crearNuevoPropietario() {
-    this.mostrarDialogRegistroCliente = true;
+    this.registroCliente.mostrarDialogo();
   }
 
   onClienteRegistrado(evento: { documento: string, cliente: any }) {
+    this.toastr.success('Cliente registrado correctamente', 'Éxito', this.toastOptions);
     this.documento = evento.documento;
+    this.registroCliente.cerrarDialogo();
 
-    // Dar un delay para que el backend procese el registro
     setTimeout(() => {
       this.validarCliente();
     }, 500);
   }
 
   onCerrarDialogCliente() {
-    this.mostrarDialogRegistroCliente = false;
+    this.registroCliente.cerrarDialogo();
   }
+
   onVehiculoRegistrado(placa: string) {
+    this.toastr.success('Vehículo registrado correctamente', 'Éxito', this.toastOptions);
     this.placa = placa;
-    this.validarVehiculo();
+    this.registroVehiculo.cerrarDialogo();
+
+    setTimeout(() => {
+      this.validarVehiculo();
+    }, 500);
   }
 }
