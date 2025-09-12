@@ -14,6 +14,8 @@
   border-bottom: none !important;
   font-weight: 600 !important;
   font-size: 1.125rem !important;
+  border-top-left-radius: 16px !important;
+  border-top-right-radius: 16px !important;
 }
 
 .vehiculo-dialog .p-dialog-header .p-dialog-title {
@@ -32,6 +34,7 @@
   padding: 0 !important;
   background: #f8fafc !important;
   overflow-y: auto !important;
+  overflow-x: hidden !important;
   max-height: calc(90vh - 140px) !important;
 }
 
@@ -185,6 +188,21 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+@media (max-width: 575px) {
+  .vehiculo-dialog {
+    width: 100vw !important;
+    margin: 0 !important;
+  }
+
+  .vehiculo-dialog .p-dialog-content {
+    max-height: calc(100vh - 80px) !important;
+  }
+
+  .dialog-content {
+    padding: 1rem;
+  }
 }
 
 .info-item p {

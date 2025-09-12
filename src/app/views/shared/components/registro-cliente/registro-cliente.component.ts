@@ -6,7 +6,7 @@ import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { ButtonModule } from 'primeng/button';
 import { DropdownModule } from 'primeng/dropdown';
 import { CalendarModule } from 'primeng/calendar';
-import { TabViewModule } from 'primeng/tabview';
+import { StepperModule } from 'primeng/stepper';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
@@ -22,7 +22,7 @@ import { CommonModule } from '@angular/common';
     DialogModule,
     InputTextModule,
     RadioButtonModule,
-    TabViewModule,
+    StepperModule,
     CalendarModule,
     DropdownModule,
     ButtonModule
@@ -45,8 +45,8 @@ export class RegistroClienteComponent {
   // Tipo de documento
   tipoDocumento: string = 'cedula';
   
-  // Pestañas activas
-  activeTabIndex: number = 0;
+  // Paso activo del stepper
+  activeStep: number = 0;
   
   // Mensajes
   mensajeExito: string = '';
@@ -112,7 +112,7 @@ export class RegistroClienteComponent {
     this.isPersonaNatural = isPersonaNatural;
     this.mostrarCamposPersonaNatural = isPersonaNatural;
     this.mostrarCamposEmpresa = !isPersonaNatural;
-    this.activeTabIndex = 0;
+    this.activeStep = 0;
     
     // Resetear tipo de documento según el tipo de persona
     this.tipoDocumento = isPersonaNatural ? 'cedula' : 'ruc';
@@ -128,7 +128,7 @@ export class RegistroClienteComponent {
     this.mostrarCamposPersonaNatural = true;
     this.mostrarCamposEmpresa = false;
     this.tipoDocumento = 'cedula';
-    this.activeTabIndex = 0;
+    this.activeStep = 0;
     
     this.datosPersonaNatural = {
       documento: '', 
@@ -158,6 +158,86 @@ export class RegistroClienteComponent {
     
     this.mensajeExito = '';
     this.mensajeError = '';
+  }
+
+  // ======== LÓGICA DEL STEPPER ========
+  nextStep(): void {
+    if (this.activeStep === 0 && this.validarPaso1()) {
+      this.activeStep = 1;
+    } else if (this.activeStep === 1 && !this.isPersonaNatural && this.validarPaso2()) {
+      this.activeStep = 2;
+    }
+  }
+
+  prevStep(): void {
+    if (this.activeStep > 0) {
+      this.activeStep--;
+    }
+  }
+
+  isStep1Complete(): boolean {
+    if (this.isPersonaNatural) {
+      return (
+        this.datosPersonaNatural.documento !== '' &&
+        this.datosPersonaNatural.nombres !== '' &&
+        this.datosPersonaNatural.apellidos !== ''
+      );
+    }
+    return (
+      this.datosEmpresa.documento !== '' &&
+      this.datosEmpresa.nombre !== '' &&
+      this.datosEmpresa.razonSocial !== '' &&
+      this.datosEmpresa.representanteLegal !== ''
+    );
+  }
+
+  isStep2Complete(): boolean {
+    if (this.isPersonaNatural) {
+      return (
+        this.datosPersonaNatural.email !== '' &&
+        this.datosPersonaNatural.celular !== '' &&
+        this.datosPersonaNatural.telefono !== '' &&
+        this.datosPersonaNatural.direccion !== ''
+      );
+    }
+    return (
+      this.datosEmpresa.email !== '' &&
+      this.datosEmpresa.celular !== '' &&
+      this.datosEmpresa.telefono !== '' &&
+      this.datosEmpresa.direccion !== ''
+    );
+  }
+
+  private validarPaso1(): boolean {
+    if (this.isPersonaNatural) {
+      if (!this.validarDocumento(this.datosPersonaNatural.documento, this.tipoDocumento)) return false;
+      if (!this.validarNombre(this.datosPersonaNatural.nombres)) return false;
+      if (!this.validarApellidos(this.datosPersonaNatural.apellidos)) return false;
+      if (!this.validarFechaNacimiento(this.datosPersonaNatural.fechaNacimiento)) return false;
+      if (!this.datosPersonaNatural.genero) {
+        this.toastr.warning('El género es obligatorio', 'Campo requerido');
+        return false;
+      }
+    } else {
+      if (!this.validarDocumento(this.datosEmpresa.documento, 'ruc')) return false;
+      if (!this.validarNombre(this.datosEmpresa.nombre)) return false;
+      if (!this.validarRazonSocial(this.datosEmpresa.razonSocial)) return false;
+      if (!this.validarRepresentanteLegal(this.datosEmpresa.representanteLegal)) return false;
+    }
+    return true;
+  }
+
+  private validarPaso2(): boolean {
+    if (this.isPersonaNatural) {
+      return this.validarEmail(this.datosPersonaNatural.email) &&
+             this.validarCelular(this.datosPersonaNatural.celular) &&
+             this.validarTelefono(this.datosPersonaNatural.telefono) &&
+             this.validarDireccion(this.datosPersonaNatural.direccion);
+    }
+    return this.validarEmail(this.datosEmpresa.email) &&
+           this.validarCelular(this.datosEmpresa.celular) &&
+           this.validarTelefono(this.datosEmpresa.telefono) &&
+           this.validarDireccion(this.datosEmpresa.direccion);
   }
 
   // VALIDACIONES DETALLADAS BASADAS EN LA BASE DE DATOS
@@ -842,31 +922,6 @@ private extraerMensajeError(respuesta: any): string {
   
   return 'Respuesta inesperada del servidor';
 }
-  cambiarPestana(index: number) {
-    if (index < this.activeTabIndex || this.validarPestañaActual()) {
-      this.activeTabIndex = index;
-    }
-  }
-
-  validarPestañaActual(): boolean {
-    if (this.activeTabIndex === 0) {
-      if (this.isPersonaNatural) {
-        return this.datosPersonaNatural.documento !== '' && 
-               this.datosPersonaNatural.nombres !== '' && 
-               this.datosPersonaNatural.apellidos !== '';
-      } else {
-        return this.datosEmpresa.documento !== '' && 
-               this.datosEmpresa.nombre !== '' && 
-               this.datosEmpresa.razonSocial !== '' && 
-               this.datosEmpresa.representanteLegal !== '';
-      }
-    } else if (this.activeTabIndex === 1) {
-      return true;
-    }
-    
-    return false;
-  }
-
   // Método para limitar caracteres en tiempo real
   limitarCaracteres(event: any, maxLength: number): void {
     const valor = event.target.value;
