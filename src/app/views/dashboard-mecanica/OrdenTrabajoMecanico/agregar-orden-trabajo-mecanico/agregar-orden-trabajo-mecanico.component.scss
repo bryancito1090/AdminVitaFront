@@ -2,10 +2,10 @@
 .header-container {
     display: flex;
     align-items: center;
-    background-color: #f0f2f5;
+    background-color: #ffffff;
     padding: 0.8rem 1.5rem;
-    border-radius: 0.5rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid #e5e7eb;
+    box-shadow: none;
     margin-bottom: 1rem;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   }
@@ -36,26 +36,26 @@
 /* blocks.component.css - Estilos para bloques que siguen el mismo estilo del header */
 
 /* Contenedor principal del bloque */
-.block-container {
+  .block-container {
     border: 1px solid #e1e4e8;
     border-radius: 0.5rem;
-    background-color: #f0f2f5;
+    background-color: #ffffff;
     color: #333;
     margin-bottom: 1rem;
     overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: none;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   }
   
   /* Título del bloque */
   .block-title {
-    background-color: #1f295b;
-    color: #fff;
-    text-align: center;
-    padding: 0.8rem 0;
+    background-color: transparent;
+    color: #1f2937;
+    text-align: left;
+    padding: 0.8rem 1rem;
     margin: 0;
     font-size: 1.1rem;
-    font-weight: 500;
+    font-weight: 600;
     border-bottom: 1px solid #e1e4e8;
   }
   

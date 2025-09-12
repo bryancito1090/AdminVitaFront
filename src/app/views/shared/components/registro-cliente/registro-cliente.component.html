@@ -70,145 +70,96 @@
       </div>
     </div>
     
-    <!-- Pestañas del formulario -->
-    <p-tabView [(activeIndex)]="activeTabIndex" 
-           class="form-tabs card-style"
-           [scrollable]="false">
-      <!-- Pestaña de Información Básica -->
-      <p-tabPanel header="Información Básica" [disabled]="cargando">
+    <!-- Stepper del formulario -->
+    <p-stepper [(value)]="activeStep" [linear]="true" class="form-stepper">
+      <!-- Paso Información Básica -->
+      <p-step-panel header="Información Básica">
         <div class="form-section" *ngIf="mostrarCamposPersonaNatural">
-          <!-- ✅ Para persona natural -->
-            <div class="form-field">
-            <label class="form-label required" for="documentoPN">
-                Número de {{ tipoDocumento === 'cedula' ? 'cédula' : 'pasaporte' }}
-            </label>
-            <input pInputText 
-                    id="documentoPN" 
-                    type="text" 
-                    [(ngModel)]="datosPersonaNatural.documento" 
-                    name="documentoPN" 
-                    [placeholder]="tipoDocumento === 'cedula' ? 'Ingrese 10 dígitos' : 'Ingrese 6-12 caracteres'"
-                    [maxlength]="tipoDocumento === 'cedula' ? 10 : 12"
-                    (input)="soloNumeros($event, tipoDocumento)"
-                    (blur)="validarCampo('persona', 'documento', datosPersonaNatural.documento)">
-            <small class="form-hint">
-                {{ tipoDocumento === 'cedula' ? 'Solo números, exactamente 10 dígitos' : 'Letras y números, entre 6-12 caracteres' }}
-            </small>
-            </div>
-          
+          <div class="form-field">
+            <label class="form-label required" for="documentoPN">Número de {{ tipoDocumento === 'cedula' ? 'cédula' : 'pasaporte' }}</label>
+            <input pInputText id="documentoPN" type="text" [(ngModel)]="datosPersonaNatural.documento" name="documentoPN"
+                   [placeholder]="tipoDocumento === 'cedula' ? 'Ingrese 10 dígitos' : 'Ingrese 6-12 caracteres'" [maxlength]="tipoDocumento === 'cedula' ? 10 : 12"
+                   (input)="soloNumeros($event, tipoDocumento)" (blur)="validarCampo('persona', 'documento', datosPersonaNatural.documento)">
+            <small class="form-hint">{{ tipoDocumento === 'cedula' ? 'Solo números, exactamente 10 dígitos' : 'Letras y números, entre 6-12 caracteres' }}</small>
+          </div>
+
           <div class="form-row">
             <div class="form-field">
               <label class="form-label required" for="nombres">Nombres</label>
-              <input pInputText id="nombres" type="text" [(ngModel)]="datosPersonaNatural.nombres" 
-                     name="nombres" placeholder="Nombres completos">
+              <input pInputText id="nombres" type="text" [(ngModel)]="datosPersonaNatural.nombres" name="nombres" placeholder="Nombres completos">
             </div>
-            
             <div class="form-field">
               <label class="form-label required" for="apellidos">Apellidos</label>
-              <input pInputText id="apellidos" type="text" [(ngModel)]="datosPersonaNatural.apellidos" 
-                     name="apellidos" placeholder="Apellidos completos">
+              <input pInputText id="apellidos" type="text" [(ngModel)]="datosPersonaNatural.apellidos" name="apellidos" placeholder="Apellidos completos">
             </div>
           </div>
-          
+
           <div class="form-row">
             <div class="form-field">
               <label class="form-label" for="fechaNacimiento">Fecha de nacimiento</label>
-              <p-calendar id="fechaNacimiento" 
-                          [(ngModel)]="datosPersonaNatural.fechaNacimiento" 
-                          [showIcon]="true" 
-                          [monthNavigator]="true" 
-                          [yearNavigator]="true" 
-                          yearRange="1900:2030" 
-                          name="fechaNacimiento"
-                          appendTo="body">
-              </p-calendar>
+              <p-calendar id="fechaNacimiento" [(ngModel)]="datosPersonaNatural.fechaNacimiento" [showIcon]="true" [monthNavigator]="true" [yearNavigator]="true" yearRange="1900:2030" name="fechaNacimiento" appendTo="body"></p-calendar>
             </div>
             <div class="form-field">
-            <label class="form-label" for="genero">Género</label>
-            <p-dropdown 
-                id="genero" 
-                [options]="generos" 
-                [(ngModel)]="datosPersonaNatural.genero" 
-                name="genero" 
-                placeholder="Seleccionar"
-                appendTo="body">
-            </p-dropdown>
+              <label class="form-label" for="genero">Género</label>
+              <p-dropdown id="genero" [options]="generos" [(ngModel)]="datosPersonaNatural.genero" name="genero" placeholder="Seleccionar" appendTo="body"></p-dropdown>
             </div>
           </div>
         </div>
-        
+
         <div class="form-section" *ngIf="mostrarCamposEmpresa">
           <div class="form-field">
-              <label class="form-label required" for="documentoEmpresa">Número de RUC</label>
-                <input pInputText 
-                        id="documentoEmpresa" 
-                        type="text" 
-                        [(ngModel)]="datosEmpresa.documento" 
-                        name="documentoEmpresa" 
-                        placeholder="Ingrese 13 dígitos"
-                        maxlength="13"
-                        (input)="soloNumeros($event, 'ruc')"
-                        (blur)="validarCampo('empresa', 'documento', datosEmpresa.documento)">
-                <small class="form-hint">Solo números, exactamente 13 dígitos</small>
+            <label class="form-label required" for="documentoEmpresa">Número de RUC</label>
+            <input pInputText id="documentoEmpresa" type="text" [(ngModel)]="datosEmpresa.documento" name="documentoEmpresa" placeholder="Ingrese 13 dígitos" maxlength="13" (input)="soloNumeros($event, 'ruc')" (blur)="validarCampo('empresa', 'documento', datosEmpresa.documento)">
+            <small class="form-hint">Solo números, exactamente 13 dígitos</small>
           </div>
-          
-          
+
           <div class="form-row">
             <div class="form-field">
               <label class="form-label required" for="nombreEmpresa">Nombre comercial</label>
-              <input pInputText id="nombreEmpresa" type="text" [(ngModel)]="datosEmpresa.nombre" 
-                     name="nombreEmpresa" placeholder="Nombre comercial">
+              <input pInputText id="nombreEmpresa" type="text" [(ngModel)]="datosEmpresa.nombre" name="nombreEmpresa" placeholder="Nombre comercial">
             </div>
-            
             <div class="form-field">
               <label class="form-label required" for="razonSocial">Razón social</label>
-              <input pInputText id="razonSocial" type="text" [(ngModel)]="datosEmpresa.razonSocial" 
-                     name="razonSocial" placeholder="Razón social completa">
+              <input pInputText id="razonSocial" type="text" [(ngModel)]="datosEmpresa.razonSocial" name="razonSocial" placeholder="Razón social completa">
             </div>
           </div>
-          
+
           <div class="form-field">
             <label class="form-label required" for="representanteLegal">Representante legal</label>
-            <input pInputText id="representanteLegal" type="text" [(ngModel)]="datosEmpresa.representanteLegal" 
-                   name="representanteLegal" placeholder="Nombre completo del representante">
+            <input pInputText id="representanteLegal" type="text" [(ngModel)]="datosEmpresa.representanteLegal" name="representanteLegal" placeholder="Nombre completo del representante">
           </div>
         </div>
-      </p-tabPanel>
-      
-      <!-- Pestaña de Contacto -->
-      <p-tabPanel header="Datos de Contacto" [disabled]="cargando">
+
+        <div class="stepper-nav">
+          <button pButton type="button" label="Siguiente" (click)="nextStep()" [disabled]="!isStep1Complete()"></button>
+        </div>
+      </p-step-panel>
+
+      <!-- Paso Datos de Contacto -->
+      <p-step-panel header="Datos de Contacto">
         <div class="form-section" *ngIf="mostrarCamposPersonaNatural">
           <div class="form-row">
             <div class="form-field">
               <label class="form-label required" for="email">Email</label>
-              <input pInputText id="email" type="email" [(ngModel)]="datosPersonaNatural.email" 
-                     name="email" placeholder="correo@ejemplo.com"
-                     (blur)="validarCampo('persona', 'email', datosPersonaNatural.email)">
+              <input pInputText id="email" type="email" [(ngModel)]="datosPersonaNatural.email" name="email" placeholder="correo@ejemplo.com" (blur)="validarCampo('persona', 'email', datosPersonaNatural.email)">
             </div>
-            
             <div class="form-field">
               <label class="form-label" for="celular">Celular</label>
-              <input pInputText id="celular" type="tel" [(ngModel)]="datosPersonaNatural.celular" 
-                     name="celular" placeholder="+099 000 0000"
-                     (blur)="validarCampo('persona', 'celular', datosPersonaNatural.celular)">
+              <input pInputText id="celular" type="tel" [(ngModel)]="datosPersonaNatural.celular" name="celular" placeholder="+099 000 0000" (blur)="validarCampo('persona', 'celular', datosPersonaNatural.celular)">
             </div>
           </div>
-          
+
           <div class="form-row">
             <div class="form-field">
               <label class="form-label" for="telefono">Teléfono</label>
-              <input pInputText id="telefono" type="tel" [(ngModel)]="datosPersonaNatural.telefono" 
-                     name="telefono" placeholder="02 000 0000"
-                     (blur)="validarCampo('persona', 'telefono', datosPersonaNatural.telefono)">
+              <input pInputText id="telefono" type="tel" [(ngModel)]="datosPersonaNatural.telefono" name="telefono" placeholder="02 000 0000" (blur)="validarCampo('persona', 'telefono', datosPersonaNatural.telefono)">
             </div>
-            
             <div class="form-field">
               <label class="form-label required" for="direccion">Dirección</label>
-              <input pInputText id="direccion" type="text" [(ngModel)]="datosPersonaNatural.direccion" 
-                     name="direccion" placeholder="Dirección completa">
+              <input pInputText id="direccion" type="text" [(ngModel)]="datosPersonaNatural.direccion" name="direccion" placeholder="Dirección completa">
             </div>
           </div>
-          
+
           <div class="form-field">
             <label class="form-label">Es Local</label>
             <div class="selection-options">
@@ -229,39 +180,30 @@
             </div>
           </div>
         </div>
-        
+
         <div class="form-section" *ngIf="mostrarCamposEmpresa">
           <div class="form-row">
             <div class="form-field">
               <label class="form-label required" for="emailEmpresa">Email</label>
-              <input pInputText id="emailEmpresa" type="email" [(ngModel)]="datosEmpresa.email" 
-                     name="emailEmpresa" placeholder="empresa@ejemplo.com"
-                     (blur)="validarCampo('empresa', 'email', datosEmpresa.email)">
+              <input pInputText id="emailEmpresa" type="email" [(ngModel)]="datosEmpresa.email" name="emailEmpresa" placeholder="empresa@ejemplo.com" (blur)="validarCampo('empresa', 'email', datosEmpresa.email)">
             </div>
-            
             <div class="form-field">
               <label class="form-label" for="celularEmpresa">Celular</label>
-              <input pInputText id="celularEmpresa" type="tel" [(ngModel)]="datosEmpresa.celular" 
-                     name="celularEmpresa" placeholder="+593 00 000 0000"
-                     (blur)="validarCampo('empresa', 'celular', datosEmpresa.celular)">
+              <input pInputText id="celularEmpresa" type="tel" [(ngModel)]="datosEmpresa.celular" name="celularEmpresa" placeholder="+593 00 000 0000" (blur)="validarCampo('empresa', 'celular', datosEmpresa.celular)">
             </div>
           </div>
-          
+
           <div class="form-row">
             <div class="form-field">
               <label class="form-label" for="telefonoEmpresa">Teléfono</label>
-              <input pInputText id="telefonoEmpresa" type="tel" [(ngModel)]="datosEmpresa.telefono" 
-                     name="telefonoEmpresa" placeholder="02 000 0000"
-                     (blur)="validarCampo('empresa', 'telefono', datosEmpresa.telefono)">
+              <input pInputText id="telefonoEmpresa" type="tel" [(ngModel)]="datosEmpresa.telefono" name="telefonoEmpresa" placeholder="02 000 0000" (blur)="validarCampo('empresa', 'telefono', datosEmpresa.telefono)">
             </div>
-            
             <div class="form-field">
               <label class="form-label required" for="direccionEmpresa">Dirección</label>
-              <input pInputText id="direccionEmpresa" type="text" [(ngModel)]="datosEmpresa.direccion" 
-                     name="direccionEmpresa" placeholder="Dirección completa">
+              <input pInputText id="direccionEmpresa" type="text" [(ngModel)]="datosEmpresa.direccion" name="direccionEmpresa" placeholder="Dirección completa">
             </div>
           </div>
-          
+
           <div class="form-field">
             <label class="form-label">Es Local</label>
             <div class="selection-options">
@@ -282,11 +224,19 @@
             </div>
           </div>
         </div>
-      </p-tabPanel>
-      
-      <!-- Pestaña adicional solo para empresas -->
-      <p-tabPanel header="Información Adicional" [disabled]="cargando || isPersonaNatural">
-        <div class="form-section" *ngIf="mostrarCamposEmpresa">
+
+        <div class="stepper-nav" *ngIf="isPersonaNatural">
+          <button pButton type="button" label="Atrás" class="p-button-text" (click)="prevStep()"></button>
+        </div>
+        <div class="stepper-nav" *ngIf="!isPersonaNatural">
+          <button pButton type="button" label="Atrás" class="p-button-text" (click)="prevStep()"></button>
+          <button pButton type="button" label="Siguiente" (click)="nextStep()" [disabled]="!isStep2Complete()"></button>
+        </div>
+      </p-step-panel>
+
+      <!-- Paso Información Adicional para empresas -->
+      <p-step-panel header="Información Adicional" *ngIf="!isPersonaNatural">
+        <div class="form-section">
           <div class="form-field">
             <label class="form-label">Obligada a llevar contabilidad</label>
             <div class="selection-options">
@@ -307,16 +257,18 @@
             </div>
           </div>
         </div>
-      </p-tabPanel>
-    </p-tabView>
+        <div class="stepper-nav">
+          <button pButton type="button" label="Atrás" class="p-button-text" (click)="prevStep()"></button>
+        </div>
+      </p-step-panel>
+    </p-stepper>
   </div>
-  
+
   <!-- Footer del diálogo -->
     <div class="dialog-footer">
-      <button pButton type="button" label="Cancelar" icon="pi pi-times" 
-              class="p-button-text" (click)="cerrarDialogo()"></button>
-      <button pButton type="button" label="Registrar" icon="pi pi-save" 
-              [disabled]="cargando" (click)="registrarCliente()">
+      <button pButton type="button" label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="cerrarDialogo()"></button>
+      <button pButton type="button" label="Registrar" icon="pi pi-save"
+              [disabled]="!canRegister()" (click)="registrarCliente()">
         <span *ngIf="cargando" class="loading-text">
           <i class="pi pi-spinner pi-spin"></i> Registrando...
         </span>
