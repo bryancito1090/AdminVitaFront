@@ -227,6 +227,8 @@
 
         <div class="stepper-nav" *ngIf="isPersonaNatural">
           <button pButton type="button" label="Atrás" class="p-button-text" (click)="prevStep()"></button>
+          <button pButton type="button" label="Registrar" (click)="registrarCliente()" [disabled]="cargando || !isStep2Complete()"></button>
+
         </div>
         <div class="stepper-nav" *ngIf="!isPersonaNatural">
           <button pButton type="button" label="Atrás" class="p-button-text" (click)="prevStep()"></button>
@@ -259,6 +261,7 @@
         </div>
         <div class="stepper-nav">
           <button pButton type="button" label="Atrás" class="p-button-text" (click)="prevStep()"></button>
+          <button pButton type="button" label="Registrar" (click)="registrarCliente()" [disabled]="cargando || !isStep2Complete()"></button>
         </div>
       </p-step-panel>
     </p-stepper>
