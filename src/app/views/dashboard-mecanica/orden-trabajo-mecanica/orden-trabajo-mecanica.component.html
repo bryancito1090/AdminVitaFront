@@ -364,79 +364,91 @@
     </div>
   </ng-template>
 
-  <div class="flex flex-col gap-4">
-    <!-- ✅ MOSTRAR ESTADO TANTO PARA TAREAS INTERNAS COMO EXTERNAS -->
-    <div>
-      <label class="block font-medium mb-2">Estado</label>
-      <div class="flex gap-3 items-end">
-        <div class="flex-1">
-          <p-dropdown [options]="estadosTarea" [(ngModel)]="formEstado" optionLabel="name" optionValue="code"
-            placeholder="Selecciona un estado" class="w-full" [disabled]="loadingActualizarEstado" appendTo="body"
-            [virtualScroll]="true" [virtualScrollItemSize]="43" [showClear]="true" [filter]="true" filterBy="name"
-            filterPlaceholder="Buscar estado..." scrollHeight="300px">
+  <div class="otm-modal-grid">
+    <!-- Estado -->
+    <section class="otm-modal-card">
+      <header class="otm-card-header">
+        <h4 class="otm-card-title">Estado de la tarea</h4>
+      </header>
+      <p-divider></p-divider>
+      <div class="otm-card-content space-y-4">
+        <div class="space-y-2">
+          <label class="block font-medium">Estado</label>
+          <div class="otm-inline-actions">
+            <p-dropdown [options]="estadosTarea" [(ngModel)]="formEstado" optionLabel="name" optionValue="code"
+              placeholder="Selecciona un estado" class="w-full" [disabled]="loadingActualizarEstado" appendTo="body"
+              [virtualScroll]="true" [virtualScrollItemSize]="43" [showClear]="true" [filter]="true" filterBy="name"
+              filterPlaceholder="Buscar estado..." scrollHeight="300px">
 
-            <!-- Template para las opciones -->
-            <ng-template let-option pTemplate="item">
-              <div class="flex items-center gap-2 p-2">
-                <p-tag [value]="option.name" [severity]="option.severity || 'secondary'" size="small">
-                </p-tag>
-              </div>
-            </ng-template>
+              <!-- Template para las opciones -->
+              <ng-template let-option pTemplate="item">
+                <div class="flex items-center gap-2 p-2">
+                  <p-tag [value]="option.name" [severity]="option.severity || 'secondary'" size="small">
+                  </p-tag>
+                </div>
+              </ng-template>
 
-            <!-- Template para el valor seleccionado -->
-            <ng-template let-selectedOption pTemplate="selectedItem">
-              <div class="flex items-center gap-2" *ngIf="selectedOption">
-                <p-tag [value]="selectedOption.name" [severity]="selectedOption.severity || 'secondary'" size="small">
-                </p-tag>
-              </div>
-            </ng-template>
-          </p-dropdown>
+              <!-- Template para el valor seleccionado -->
+              <ng-template let-selectedOption pTemplate="selectedItem">
+                <div class="flex items-center gap-2" *ngIf="selectedOption">
+                  <p-tag [value]="selectedOption.name" [severity]="selectedOption.severity || 'secondary'" size="small">
+                  </p-tag>
+                </div>
+              </ng-template>
+            </p-dropdown>
+          </div>
         </div>
 
-        <p-button label="Actualizar Estado" icon="pi pi-refresh" severity="primary" [loading]="loadingActualizarEstado"
-          [disabled]="!estadoHaCambiado()" (onClick)="actualizarEstadoTarea(selectedTarea.idTarea)" class="shrink-0">
-        </p-button>
-      </div>
-    </div>
-
-    <!-- ✅ Mensaje informativo diferenciado -->
-    <div *ngIf="selectedTarea?.esExterna" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-      <div class="flex items-start">
-        <i class="pi pi-info-circle text-blue-600 text-xl mr-3 mt-0.5 flex-shrink-0"></i>
-        <div>
-          <h4 class="text-blue-800 font-semibold mb-1">Tarea Externa</h4>
-          <p class="text-blue-700 text-sm mb-2">Esta tarea es gestionada por servicios externos.</p>
-          <div class="space-y-1 text-sm">
-            <div class="flex items-center gap-2">
-              <span class="font-medium">Solicitante:</span>
-              <span>{{ selectedTarea.solicitante || 'No especificado' }}</span>
-            </div>
-            <div *ngIf="selectedTarea.requiereAutorizacion" class="flex items-center gap-2">
-              <i class="pi pi-exclamation-triangle text-amber-500"></i>
-              <span class="text-amber-700">Requiere autorización</span>
+        <!-- ✅ Mensaje informativo diferenciado -->
+        <div *ngIf="selectedTarea?.esExterna" class="otm-external-alert">
+          <div class="flex items-start">
+            <i class="pi pi-info-circle text-blue-600 text-xl mr-3 mt-0.5 flex-shrink-0"></i>
+            <div>
+              <h4 class="text-blue-800 font-semibold mb-1">Tarea Externa</h4>
+              <p class="text-blue-700 text-sm mb-2">Esta tarea es gestionada por servicios externos.</p>
+              <div class="space-y-1 text-sm">
+                <div class="flex items-center gap-2">
+                  <span class="font-medium">Solicitante:</span>
+                  <span>{{ selectedTarea.solicitante || 'No especificado' }}</span>
+                </div>
+                <div *ngIf="selectedTarea.requiereAutorizacion" class="flex items-center gap-2">
+                  <i class="pi pi-exclamation-triangle text-amber-500"></i>
+                  <span class="text-amber-700">Requiere autorización</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+      <footer class="otm-card-footer">
+        <p-button label="Actualizar Estado" icon="pi pi-refresh" severity="primary" [loading]="loadingActualizarEstado"
+          [disabled]="!estadoHaCambiado()" (onClick)="actualizarEstadoTarea(selectedTarea.idTarea)" class="w-full sm:w-auto">
+        </p-button>
+      </footer>
+    </section>
 
     <!-- ✅ Solo mostrar mecánicos para tareas internas -->
-    <div *ngIf="!selectedTarea?.esExterna" class="space-y-4">
-      <div>
-        <label class="block font-medium mb-2">Mecánicos Asignados</label>
+    <section *ngIf="!selectedTarea?.esExterna" class="otm-modal-card">
+      <header class="otm-card-header">
+        <h4 class="otm-card-title">Mecánicos asignados</h4>
+      </header>
+      <p-divider></p-divider>
+      <div class="otm-card-content space-y-4">
         <div class="grid grid-cols-1 md:grid-cols-[1fr_120px_auto] gap-3 items-end">
           <div>
+            <label class="block font-medium mb-2">Selecciona un mecánico</label>
             <p-select [options]="mecanicosDisponiblesAux" [(ngModel)]="formMecanico" optionLabel="nombreCompleto"
               optionValue="idMecanico" placeholder="Selecciona mecánico" class="w-full" appendTo="body" [filter]="true"
               filterBy="nombreCompleto">
             </p-select>
           </div>
           <div>
+            <label class="block font-medium mb-2">Duración estimada</label>
             <p-inputnumber [(ngModel)]="duracionEstimadaMecanicosDialogEdit" placeholder="Duración" class="w-full"
               [min]="1" [useGrouping]="false" suffix=" U">
             </p-inputnumber>
           </div>
-          <div>
+          <div class="flex md:justify-end">
             <p-button label="Agregar" icon="pi pi-plus"
               [disabled]="!formMecanico || !duracionEstimadaMecanicosDialogEdit" (click)="agregarMecanicoTarea()"
               class="w-full md:w-auto">
@@ -445,7 +457,7 @@
         </div>
 
         <!-- Lista de mecánicos -->
-        <div class="mt-3 space-y-2" *ngIf="(mecanicosTarea?.length || 0) > 0">
+        <div class="space-y-2" *ngIf="(mecanicosTarea?.length || 0) > 0">
           <div *ngFor="let mecanico of mecanicosTarea"
             class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
             <div class="flex-1 min-w-0">
@@ -463,21 +475,24 @@
             </button>
           </div>
         </div>
-        <div *ngIf="!mecanicosTarea?.length" class="text-center py-4 text-gray-500 bg-gray-50 rounded-lg mt-3">
+        <div *ngIf="!mecanicosTarea?.length" class="text-center py-4 text-gray-500 bg-gray-50 rounded-lg">
           <i class="pi pi-users text-xl mb-2 block"></i>
           <p class="text-sm">No hay mecánicos asignados</p>
         </div>
       </div>
+    </section>
 
-      <!-- Repuestos section -->
-      <!-- Repuestos section - Reemplaza la sección existente -->
-      <div>
-        <label class="block font-medium mb-2">Repuestos e Insumos Asignados</label>
-
+    <!-- Repuestos e insumos -->
+    <section *ngIf="!selectedTarea?.esExterna" class="otm-modal-card">
+      <header class="otm-card-header">
+        <h4 class="otm-card-title">Repuestos e insumos asignados</h4>
+      </header>
+      <p-divider></p-divider>
+      <div class="otm-card-content space-y-4">
         <!-- ✅ Selector de tipo -->
-        <div class="bg-gray-50 p-3 rounded mb-3">
+        <div class="otm-type-selector">
           <label class="block font-medium text-gray-700 mb-2">Tipo de ítem:</label>
-          <div class="flex gap-6">
+          <div class="flex flex-wrap gap-6">
             <div class="flex items-center">
               <input type="radio" id="repuesto" [(ngModel)]="tipoItemSeleccionado" value="repuesto"
                 (change)="onTipoItemChange()" />
@@ -532,25 +547,17 @@
             </div>
           </div>
 
-          <!-- ✅ Grid para cantidad y botón -->
-          <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end">
-            <div>
-              <label class="block font-medium text-gray-700 mb-2">Cantidad:</label>
-              <p-inputnumber [(ngModel)]="cantidadRepuesto" placeholder="Cantidad" class="w-full" [min]="0.01"
-                [max]="1000" [step]="tipoItemSeleccionado === 'insumo' ? 0.01 : 1" [useGrouping]="false">
-              </p-inputnumber>
-            </div>
-            <div>
-              <p-button label="Agregar" icon="pi pi-plus"
-                [disabled]="!formRepuesto || !cantidadRepuesto || (tipoItemSeleccionado === 'insumo' && mostrarMagnitudes && !selectedMagnitudId)"
-                (onClick)="agregarRepuestoTarea()" class="w-full md:w-auto">
-              </p-button>
-            </div>
+          <!-- ✅ Grid para cantidad -->
+          <div>
+            <label class="block font-medium text-gray-700 mb-2">Cantidad:</label>
+            <p-inputnumber [(ngModel)]="cantidadRepuesto" placeholder="Cantidad" class="w-full" [min]="0.01"
+              [max]="1000" [step]="tipoItemSeleccionado === 'insumo' ? 0.01 : 1" [useGrouping]="false">
+            </p-inputnumber>
           </div>
         </div>
 
         <!-- Lista de repuestos (sin cambios) -->
-        <div class="mt-3 space-y-2" *ngIf="(repuestosTarea?.length || 0) > 0">
+        <div class="space-y-2" *ngIf="(repuestosTarea?.length || 0) > 0">
           <div *ngFor="let repuesto of repuestosTarea"
             class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
             <div class="flex-1 min-w-0">
@@ -566,18 +573,26 @@
           </div>
         </div>
 
-        <div *ngIf="!repuestosTarea?.length" class="text-center py-4 text-gray-500 bg-gray-50 rounded-lg mt-3">
+        <div *ngIf="!repuestosTarea?.length" class="text-center py-4 text-gray-500 bg-gray-50 rounded-lg">
           <i class="pi pi-box text-xl mb-2 block"></i>
           <p class="text-sm">No hay repuestos asignados</p>
         </div>
       </div>
-    </div>
+      <footer class="otm-card-footer">
+        <p-button label="Agregar repuesto" icon="pi pi-plus"
+          [disabled]="!formRepuesto || !cantidadRepuesto || (tipoItemSeleccionado === 'insumo' && mostrarMagnitudes && !selectedMagnitudId)"
+          (onClick)="agregarRepuestoTarea()" class="w-full sm:w-auto">
+        </p-button>
+      </footer>
+    </section>
 
     <!-- ✅ Sección de observaciones (disponible para ambos tipos) -->
-    <div class="border-t pt-4">
-      <h4 class="text-md font-semibold mb-3 text-gray-800">Agregar Observación</h4>
-
-      <div class="space-y-3">
+    <section class="otm-modal-card lg:col-span-2">
+      <header class="otm-card-header">
+        <h4 class="otm-card-title">Observaciones</h4>
+      </header>
+      <p-divider></p-divider>
+      <div class="otm-card-content space-y-4">
         <!-- Campo de detalle -->
         <div>
           <label class="block font-medium mb-2 text-sm">Detalle de la observación *</label>
@@ -613,22 +628,20 @@
             </div>
           </div>
         </div>
-
-        <!-- Botón para crear observación -->
-        <div class="flex justify-end">
-          <p-button label="Agregar Observación" icon="pi pi-plus" severity="success" size="small"
-            [loading]="loadingCrearObservacion"
-            [disabled]="!observacionDetalle || observacionDetalle.trim().length === 0"
-            (onClick)="crearObservacionTarea()">
-          </p-button>
-        </div>
       </div>
-    </div>
+      <footer class="otm-card-footer">
+        <p-button label="Agregar observación" icon="pi pi-plus" severity="success" size="small"
+          [loading]="loadingCrearObservacion"
+          [disabled]="!observacionDetalle || observacionDetalle.trim().length === 0"
+          (onClick)="crearObservacionTarea()" class="w-full sm:w-auto">
+        </p-button>
+      </footer>
+    </section>
+  </div>
 
-    <div class="flex justify-end gap-2 mt-4">
-      <p-button label="Cancelar" severity="secondary" (onClick)="cerrarModalEditTarea()">
-      </p-button>
-    </div>
+  <div class="otm-modal-footer">
+    <p-button label="Cancelar" severity="secondary" (onClick)="cerrarModalEditTarea()" class="w-full sm:w-auto">
+    </p-button>
   </div>
 </p-dialog>
 
