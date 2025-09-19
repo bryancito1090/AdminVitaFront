@@ -28,7 +28,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { SkeletonCompletePageComponent } from "../../../shared/components/skeleton/skeleton-complete-page.component";
 import { DropdownModule } from 'primeng/dropdown';
 import { ImpuestoService } from '../../../services/impuesto.service';
-import { catchError, forkJoin, map } from 'rxjs';
+import { forkJoin } from 'rxjs';
 import { ArchivosService } from '../../../services/archivos.service';
 import { DomSanitizer, SafeResourceUrl} from '@angular/platform-browser';
 import { ImageModule } from 'primeng/image';
@@ -110,6 +110,7 @@ export class AgregarAdquisicionComponent implements OnInit {
   loadingMagnitudes: boolean = false;
   impuestos: any[] = [];
   impuestoSeleccionado: any;
+  impuestoPorcentajeMap: Map<number, number> = new Map();
   idCompraActual: number | null = null;
   selectedItemId: number | null = null;
   loadingItems: boolean = false;
@@ -207,6 +208,9 @@ this.compraService.getCompraDetallada(id).subscribe({
     this.impuestoService.getImpuestos().subscribe({
       next: (data) => {
         this.impuestos = data;
+        this.impuestoPorcentajeMap = new Map(
+          (data || []).map((impuesto: any) => [impuesto.idImpuesto, impuesto.porcentaje])
+        );
         // Establecer el IVA 15% como predeterminado (idImpuesto: 4)
         const impuestoPredeterminado = this.impuestos.find(imp => imp.idImpuesto === 4);
         if (impuestoPredeterminado) {
@@ -895,61 +899,36 @@ private recalcularTotalesCompletos() {
     this.calcularImpuestosPorDetalle(this.detallesCompra);
   }
   calcularImpuestosPorDetalle(detalles: any[]) {
-  if (!detalles || detalles.length === 0) {
+    if (!detalles || detalles.length === 0) {
+      this.impuestoTotal = 0;
+      this.total = this.subtotal;
+      return;
+    }
+
+    detalles.forEach(detalle => {
+      if (!detalle.idImpuesto) {
+        detalle.idImpuesto = 4;
+      }
+    });
+
     this.impuestoTotal = 0;
-    this.total = this.subtotal;
-    return;
+
+    detalles.forEach(detalle => {
+      const porcentaje = this.impuestoPorcentajeMap.get(detalle.idImpuesto) ?? 15;
+      const porcentajeDecimal = porcentaje / 100;
+
+      detalle.porcentajeImpuesto = porcentaje;
+      detalle.impuestoCalculado = detalle.subtotal * porcentajeDecimal;
+      this.impuestoTotal += detalle.impuestoCalculado;
+    });
+
+    this.iva = this.subtotal > 0 ? this.impuestoTotal / this.subtotal : 0;
+    this.total = this.subtotal + this.impuestoTotal - this.descuento;
+
+    setTimeout(() => {
+      console.log('Forzando actualización de vista...');
+    }, 50);
   }
-  
-  detalles.forEach(detalle => {
-    if (!detalle.idImpuesto) {
-      detalle.idImpuesto = 4; 
-    }
-  });
-  
-  const peticionesImpuestos = detalles.map(detalle => {
-    return this.impuestoService.getPorcentajeImpuesto(detalle.idImpuesto).pipe(
-      map(respuesta => {
-        return {
-          detalle,
-          porcentaje: respuesta.porcentaje  
-        };
-      }),
-      catchError(error => {
-        console.error(`Error al obtener porcentaje para detalle ${detalle.codigo}:`, error);
-        return [{ detalle, porcentaje: 15 }]; 
-      })
-    );
-  });
-  
-  forkJoin(peticionesImpuestos).subscribe({
-    next: (resultados) => {
-      this.impuestoTotal = 0; 
-      
-      resultados.forEach(resultado => {
-        const { detalle, porcentaje } = resultado;
-        const porcentajeDecimal = porcentaje / 100;
-        detalle.porcentajeImpuesto = porcentaje;
-        detalle.impuestoCalculado = detalle.subtotal * porcentajeDecimal;
-        this.impuestoTotal += detalle.impuestoCalculado;
-        
-      });
-      
-      this.iva = this.subtotal > 0 ? this.impuestoTotal / this.subtotal : 0;
-      this.total = this.subtotal + this.impuestoTotal - this.descuento;
-      
-      setTimeout(() => {
-        console.log('Forzando actualización de vista...');
-      }, 50);
-    },
-    error: (err) => {
-      console.error('Error al calcular impuestos:', err);
-      this.toastr.error('No se pudieron calcular los impuestos correctamente', 'Error');
-      this.impuestoTotal = this.subtotal * 0.15; // Fallback 15%
-      this.total = this.subtotal + this.impuestoTotal - this.descuento;
-    }
-  });
-}
   cargarArchivo(fileName: string) {
   this.archivosService.getArchivo(fileName).subscribe({
     next: (blob: Blob) => {
