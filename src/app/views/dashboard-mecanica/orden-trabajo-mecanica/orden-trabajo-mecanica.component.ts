@@ -167,7 +167,7 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
       prioridad: [0, Validators.required],
       supervisor: [null, Validators.required],
       fechaProgramada: [new Date(), Validators.required],
-      observacion: ['']
+      observacion: ['', Validators.required]
     });
   }
 

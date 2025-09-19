@@ -323,6 +323,10 @@
         <label class="block font-medium mt-2">Observación *</label>
         <textarea formControlName="observacion" placeholder="Agrega una observación para la OT..." rows="3"
           class="w-full p-2 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+        <p class="text-sm text-red-500 mt-1"
+          *ngIf="fb_editOt.get('observacion')?.touched && fb_editOt.get('observacion')?.invalid">
+          La observación es obligatoria.
+        </p>
       </div>
     </ng-container>
     <div class="flex justify-end gap-2">
