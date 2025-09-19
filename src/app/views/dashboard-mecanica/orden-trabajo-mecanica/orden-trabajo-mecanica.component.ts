@@ -124,7 +124,7 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
 
   displayModal = false;
   formEstado: number | null = null;
-  formMecanico: any;
+  formMecanico: number | null = null;
   displayMecanicosDialog: boolean = false;
   mecanicosTareaSeleccionada: any[] = [];
   codigoTareaSeleccionada: string = '';
@@ -780,7 +780,8 @@ private cargarMagnitudesCompatibles(item: any) {
     this.GetItemsByTarea(this.selectedTarea.idTareaOt);
     this.getItemsDisponibles();
     this.formEstado = this.selectedTarea.estado;
-    this.formMecanico = [...this.selectedTarea.mecanicos];
+    this.formMecanico = null;
+    this.duracionEstimadaMecanicosDialogEdit = null;
     this.displayModal = true;
   }
 
@@ -1071,10 +1072,15 @@ private cargarMagnitudesCompatibles(item: any) {
     dialogRef.onClose.subscribe((result: { acceso: boolean }) => {
       this.modalActivo = false;
       if (result?.acceso) {
+        if (this.formMecanico === null || this.duracionEstimadaMecanicosDialogEdit === null) {
+          return;
+        }
+
+        const idMecanico = Number(this.formMecanico);
         const peticion = {
           idTareaOt: this.selectedTarea.idTareaOt,
           mecanicos: [{
-            idMecanico: this.formMecanico,
+            idMecanico,
             duracionEstimada: this.duracionEstimadaMecanicosDialogEdit
           }]
         };
