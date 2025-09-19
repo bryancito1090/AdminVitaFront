@@ -500,7 +500,8 @@
             <p-select [options]="repuestosDisponiblesAux" optionLabel="nombre" optionValue="idItem"
               [(ngModel)]="formRepuesto" (onChange)="onItemSelectionChange($event.value)"
               [placeholder]="tipoItemSeleccionado === 'repuesto' ? 'Busca y selecciona un repuesto' : 'Busca y selecciona un insumo'"
-              [filter]="true" [loading]="loadingItems" appendTo="body" filterBy="nombre,codigo" class="w-full">
+              [filter]="true" [loading]="loadingItems" filterBy="nombre,codigo" class="w-full"
+              [panelStyle]="{ minWidth: '16rem', width: 'min(32rem, 90vw)' }" panelStyleClass="otm-repuestos-panel">
               <ng-template let-item pTemplate="item">
                 <div class="flex flex-col px-2 py-2">
                   <span class="font-semibold text-gray-800 text-sm">{{ item.codigo }} - {{ item.nombre }}</span>
