@@ -516,7 +516,8 @@ p-card {
   // ✅ Mejorar p-select para que sea consistente
   .p-select {
     width: 100%;
-    
+    max-width: 32rem;
+
     .p-select-label {
       width: 100%;
       overflow: hidden;
@@ -527,6 +528,20 @@ p-card {
     
     .p-select-dropdown {
       right: 0.75rem;
+    }
+  }
+
+  .otm-repuestos-panel {
+    max-width: min(32rem, 90vw);
+    width: min(32rem, 90vw);
+    border-radius: 0.75rem;
+    border: 1px solid #d1d5db;
+    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.18);
+    overflow: hidden;
+
+    .p-select-items-wrapper {
+      max-height: min(24rem, 60vh);
+      overflow-y: auto;
     }
   }
 
