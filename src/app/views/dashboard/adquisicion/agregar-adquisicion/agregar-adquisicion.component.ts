@@ -406,24 +406,30 @@ this.compraService.getCompraDetallada(id).subscribe({
       idImpuesto: this.impuestoSeleccionado?.idImpuesto || 4  
     };
     console.log("detalle Im", detalleCompraPeticion)
-    const detalleCompra = {
+    const detalleCompra: any = {
       codigo: this.selectedItem.codigo,
       description: this.selectedItem.nombre + ' - ' + this.selectedItem.descripcion,
-      magnitud: idMagnitudSeleccionada ? 
-        this.magnitudes.find(magnitud => magnitud.idMagnitud === idMagnitudSeleccionada)?.nombre : 
+      magnitud: idMagnitudSeleccionada ?
+        this.magnitudes.find(magnitud => magnitud.idMagnitud === idMagnitudSeleccionada)?.nombre :
         'N/A',
-      cantidad: cantidadOriginal, 
-      cantidadConvertida: cantidadFinal !== cantidadOriginal ? 
+      cantidad: cantidadOriginal,
+      cantidadConvertida: cantidadFinal !== cantidadOriginal ?
         `(${cantidadFinal} ${this.magnitudOrigenItem?.unidad})` : '',
       cantidadBase: cantidadOriginal,
       valorUnitario: valorUnitario,
       subtotal: cantidadOriginal * valorUnitario,
-      idImpuesto: this.impuestoSeleccionado?.idImpuesto || 4  
+      idImpuesto: this.impuestoSeleccionado?.idImpuesto || 4
     };
-    
+
+    if (this.impuestoSeleccionado?.porcentaje !== undefined) {
+      detalleCompra.porcentajeImpuesto = this.impuestoSeleccionado.porcentaje;
+      detalleCompra.impuestoCalculado = detalleCompra.subtotal * (this.impuestoSeleccionado.porcentaje / 100);
+    }
+
     this.detallesCompraPeticion.push(detalleCompraPeticion);
     this.detallesCompra.push(detalleCompra);
-    this.detalleCompraHandler();  
+    this.detalleCompraHandler();
+    this.calcularImpuestosPorDetalle(this.detallesCompra);
     this.fb_detalleAdquisicion.reset();
     this.toastr.success('Detalle agregado correctamente!', 'Éxito');
   }
@@ -437,6 +443,7 @@ this.compraService.getCompraDetallada(id).subscribe({
             this.detallesCompra.splice(index, 1);
             this.detallesCompraPeticion.splice(index, 1);
             this.detalleCompraHandler(); // Recalcular totales
+            this.calcularImpuestosPorDetalle(this.detallesCompra);
           }
           this.toastr.success('Detalle eliminado correctamente', 'Éxito');
         },
@@ -451,6 +458,7 @@ this.compraService.getCompraDetallada(id).subscribe({
         this.detallesCompra.splice(index, 1);
         this.detallesCompraPeticion.splice(index, 1);
         this.detalleCompraHandler();
+        this.calcularImpuestosPorDetalle(this.detallesCompra);
         this.toastr.success('Detalle eliminado correctamente', 'Éxito');
       }
     }
@@ -884,6 +892,7 @@ private recalcularTotalesCompletos() {
       this.fb_adquisicion.get('id_impuesto')?.setValue(this.impuestoSeleccionado.idImpuesto);
     }
     this.detalleCompraHandler();
+    this.calcularImpuestosPorDetalle(this.detallesCompra);
   }
   calcularImpuestosPorDetalle(detalles: any[]) {
   if (!detalles || detalles.length === 0) {
