@@ -342,7 +342,9 @@
 
 <!-- Dialog para editar tarea -->
 <!-- Dialog para editar tarea -->
-<p-dialog [(visible)]="displayModal" [modal]="true" [style]="{width: '500px'}">
+<p-dialog [(visible)]="displayModal" [modal]="true"
+  [style]="{ width: 'min(95vw, 1100px)' }"
+  [breakpoints]="{ '1600px': 'min(90vw, 1200px)', '1400px': 'min(92vw, 1100px)', '1024px': '95vw', '768px': '98vw' }">
   <ng-template pTemplate="header">
     <div class="flex items-center justify-between w-full">
       <div class="flex flex-col">
@@ -434,7 +436,7 @@
       </header>
       <p-divider></p-divider>
       <div class="otm-card-content space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-[1fr_120px_auto] gap-3 items-end">
+        <div class="grid otm-mechanics-grid gap-3 items-end">
           <div>
             <label class="block font-medium mb-2">Selecciona un mecánico</label>
             <p-select [options]="mecanicosDisponiblesAux" [(ngModel)]="formMecanico" optionLabel="nombreCompleto"
@@ -448,7 +450,7 @@
               [min]="1" [useGrouping]="false" suffix=" U">
             </p-inputnumber>
           </div>
-          <div class="flex md:justify-end">
+          <div class="flex otm-mechanics-grid__actions">
             <p-button label="Agregar" icon="pi pi-plus"
               [disabled]="!formMecanico || !duracionEstimadaMecanicosDialogEdit" (click)="agregarMecanicoTarea()"
               class="w-full md:w-auto">
