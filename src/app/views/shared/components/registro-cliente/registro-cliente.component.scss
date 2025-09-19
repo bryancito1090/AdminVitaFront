@@ -1,621 +1,121 @@
-/* ===== ESTILOS GENERALES DEL DIÁLOGO ===== */
-.cliente-dialog {
-  border-radius: 16px !important;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
-  border: none !important;
-  overflow: hidden !important;
-}
-
-.cliente-dialog .p-dialog-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  color: white !important;
-  padding: 1.5rem 2rem !important;
-  border-bottom: none !important;
-  font-weight: 600 !important;
-  font-size: 1.125rem !important;
-}
-
-.cliente-dialog .p-dialog-header .p-dialog-title {
-  color: white !important;
-}
-
-.cliente-dialog .p-dialog-header .p-dialog-header-icon {
-  color: white !important;
-}
-
-.cliente-dialog .p-dialog-header .p-dialog-header-icon:hover {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-}
-
-.cliente-dialog .p-dialog-content {
-  padding: 0 !important;
-  background: #f8fafc !important;
-}
-
-/* ===== CONTENIDO DEL DIÁLOGO ===== */
-.dialog-content {
-  padding: 2rem;
-  background: #f8fafc;
-  min-height: 400px;
-}
-
-/* ===== MENSAJES DE ALERTA ===== */
-.alert {
-  padding: 1rem 1.25rem;
-  border-radius: 12px;
-  margin-bottom: 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-weight: 500;
-  animation: slideIn 0.3s ease-out;
-}
-
-.alert-danger {
-  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-  color: #dc2626;
-  border: 1px solid #f87171;
-}
-
-.alert-success {
-  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-  color: #059669;
-  border: 1px solid #34d399;
-}
-
-.alert i {
-  font-size: 1.125rem;
-}
-
-/* ===== SECCIONES DEL FORMULARIO ===== */
-.form-section {
-  background: white;
-  border-radius: 16px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e2e8f0;
-  transition: all 0.3s ease;
-}
-
-.form-section:hover {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-}
-
-.section-title {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1e293b;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid #e2e8f0;
-}
-
-.section-title i {
-  color: #667eea;
-  font-size: 1.25rem;
-}
-
-/* ===== OPCIONES DE SELECCIÓN ===== */
-.selection-options {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.selection-option {
-  flex: 1;
-  min-width: 200px;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1rem;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-}
-
-.selection-option:hover {
-  border-color: #667eea;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 15px -3px rgba(102, 126, 234, 0.2);
-}
-
-.selection-option.selected {
-  border-color: #667eea;
-  background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
-  box-shadow: 0 8px 15px -3px rgba(102, 126, 234, 0.3);
-}
-
-.selection-option.selected::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #667eea, #764ba2);
-}
-
-.selection-option-label {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  cursor: pointer;
-  font-weight: 500;
-  color: #374151;
-  width: 100%;
-}
-
-.selection-option-label input[type="radio"] {
-  display: none;
-}
-
-.selection-radio {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #d1d5db;
-  border-radius: 50%;
-  position: relative;
-  transition: all 0.3s ease;
-  flex-shrink: 0;
-}
-
-.selection-option.selected .selection-radio {
-  border-color: #667eea;
-  background: #667eea;
-}
-
-.selection-option.selected .selection-radio::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 8px;
-  height: 8px;
-  background: white;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.selection-text {
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-/* ===== PESTAÑAS ===== */
-/* ===== PESTAÑAS RESPONSIVE ===== */
-@media (max-width: 768px) {
-  .form-tabs .p-tabview-nav {
-    flex-direction: column !important;
-    padding: 0 !important;
-    border-radius: 12px !important;
-    overflow: hidden !important;
-  }
-  
-  .form-tabs .p-tabview-nav .p-tabview-nav-content {
-    width: 100% !important;
-    overflow: visible !important;
-  }
-  
-  .form-tabs .p-tabview-nav ul {
-    display: flex !important;
-    flex-direction: column !important;
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-  
-  .form-tabs .p-tabview-nav li {
-    width: 100% !important;
-    margin: 0 !important;
-    border-bottom: 1px solid #e2e8f0 !important;
-  }
-  
-  .form-tabs .p-tabview-nav li:last-child {
-    border-bottom: none !important;
-  }
-  
-  .form-tabs .p-tabview-nav li .p-tabview-nav-link {
-    width: 100% !important;
-    justify-content: center !important;
-    text-align: center !important;
-    padding: 1rem 1.5rem !important;
-    border-radius: 0 !important;
-    font-size: 0.9rem !important;
-    font-weight: 600 !important;
-  }
-  
-  .form-tabs .p-tabview-nav li.p-highlight .p-tabview-nav-link {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    color: white !important;
-    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.2) !important;
-  }
-  
-  .form-tabs .p-tabview-nav li:not(.p-highlight) .p-tabview-nav-link:hover {
-    background: #f8fafc !important;
-    color: #667eea !important;
-  }
-  
-  .form-tabs .p-tabview-panels {
-    margin-top: 0 !important;
-  }
-  
-  .form-tabs .p-tabview-panel {
-    padding: 1.5rem !important;
-    margin-top: 1rem !important;
-  }
-}
-
-/* Para pantallas muy pequeñas */
-@media (max-width: 480px) {
-  .form-tabs .p-tabview-nav li .p-tabview-nav-link {
-    padding: 0.875rem 1rem !important;
-    font-size: 0.85rem !important;
-  }
-  
-  .form-tabs .p-tabview-panel {
-    padding: 1rem !important;
-  }
-}
-
-/* ===== MEJORA VISUAL ADICIONAL ===== */
-@media (max-width: 768px) {
-  .form-tabs {
-    margin-top: 0.5rem;
-  }
-  
-  .form-tabs .p-tabview-nav {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
-    border: 1px solid #e2e8f0 !important;
-  }
-  
-  /* Efecto activo más prominente en móvil */
-  .form-tabs .p-tabview-nav li.p-highlight .p-tabview-nav-link {
-    position: relative;
-  }
-  
-  .form-tabs .p-tabview-nav li.p-highlight .p-tabview-nav-link::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background: white;
-    opacity: 0.8;
-  }
-}
-/* ===== CAMPOS DEL FORMULARIO ===== */
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-label {
-  font-weight: 600;
-  color: #374151;
-  font-size: 0.875rem;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.form-label.required::after {
-  content: '*';
-  color: #dc2626;
-  font-weight: bold;
-}
-
-.form-field input,
-.form-field .p-inputtext,
-.form-field .p-dropdown,
-.form-field .p-calendar {
-  border: 2px solid #e2e8f0 !important;
-  border-radius: 8px !important;
-  padding: 0.75rem 1rem !important;
-  font-size: 0.875rem !important;
-  transition: all 0.3s ease !important;
-  background: white !important;
-}
-
-.form-field input:focus,
-.form-field .p-inputtext:focus,
-.form-field .p-dropdown:focus,
-.form-field .p-calendar:focus {
-  border-color: #667eea !important;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
-  outline: none !important;
-}
-
-.form-field .p-dropdown .p-dropdown-trigger {
-  color: #6b7280 !important;
-}
-
-.form-field .p-calendar .p-datepicker-trigger {
-  color: #6b7280 !important;
-}
-
-.form-hint {
-  color: #6b7280;
-  font-size: 0.75rem;
-  margin-top: 0.25rem;
-  font-style: italic;
-}
-/* ===== PESTAÑAS RESPONSIVE (CORREGIDO) ===== */
-@media (max-width: 768px) {
-  ::ng-deep .form-tabs {
-    .p-tabview-nav {
-      flex-direction: column !important;
-      padding: 0 !important;
-      border-radius: 12px !important;
-      overflow: hidden !important;
+// Estilos para el header del diálogo
+:host ::ng-deep {
+  .p-dialog.custom-dialog {
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    border: none;
+    
+    .p-dialog-header {
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
+      background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+      color: white;
+      border-bottom: none;
+      padding: 1.5rem 2rem;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       
-      .p-tabview-nav-content {
-        width: 100% !important;
-        overflow: visible !important;
+      &::before {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      }
+      
+      .p-dialog-title {
+        font-weight: 700;
+        font-size: 1.25rem;
+        letter-spacing: -0.025em;
+        color: white;
+        flex: 1;
+        text-align: center;
+        margin: 0;
+        padding: 0;
+      }
+      
+      .p-dialog-header-icons {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        position: relative;
+        z-index: 10;
+      }
+      
+      .p-dialog-header-icon {
+        color: #D1D5DB !important;
+        background: transparent !important;
+        border: 1px solid rgba(209, 213, 219, 0.3) !important;
+        width: 2.5rem !important;
+        height: 2.5rem !important;
+        border-radius: 8px !important;
+        transition: all 0.2s ease !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
         
-        ul {
-          display: flex !important;
-          flex-direction: column !important;
-          width: 100% !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          
-          li {
-            width: 100% !important;
-            margin: 0 !important;
-            border-bottom: 1px solid #e2e8f0 !important;
-            
-            &:last-child {
-              border-bottom: none !important;
-            }
-            
-            .p-tabview-nav-link {
-              width: 100% !important;
-              justify-content: center !important;
-              text-align: center !important;
-              padding: 1rem 1.5rem !important;
-              border-radius: 0 !important;
-              font-size: 0.9rem !important;
-              font-weight: 600 !important;
-              display: flex !important;
-              align-items: center !important;
-            }
-            
-            &.p-highlight .p-tabview-nav-link {
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-              color: white !important;
-              box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.2) !important;
-            }
-            
-            &:not(.p-highlight) .p-tabview-nav-link:hover {
-              background: #f8fafc !important;
-              color: #667eea !important;
-            }
-          }
+        &:hover {
+          color: #F3F4F6 !important;
+          background-color: rgba(255, 255, 255, 0.1) !important;
+          border-color: rgba(243, 244, 246, 0.4) !important;
+          transform: scale(1.05) !important;
+        }
+        
+        &:focus {
+          box-shadow: 0 0 0 2px rgba(209, 213, 219, 0.4) !important;
+          outline: none !important;
+        }
+        
+        .p-icon {
+          color: inherit !important;
+          font-size: 1rem !important;
         }
       }
     }
     
-    .p-tabview-panels {
-      margin-top: 0 !important;
-    }
-    
-    .p-tabview-panel {
-      padding: 1.5rem !important;
-      margin-top: 1rem !important;
+    .p-dialog-content {
+      padding: 0;
+      border-bottom-left-radius: 16px;
+      border-bottom-right-radius: 16px;
+      background: white;
     }
   }
-}
-
-/* Para pantallas muy pequeñas */
-@media (max-width: 480px) {
-  ::ng-deep .form-tabs {
-    .p-tabview-nav li .p-tabview-nav-link {
-      padding: 0.875rem 1rem !important;
-      font-size: 0.85rem !important;
+  
+  // Mejoras para el stepper
+  .p-stepper {
+    .p-stepper-header {
+      background: transparent;
+      
+      .p-stepper-number {
+        background: linear-gradient(135deg, #3B82F6, #2563EB);
+        color: white;
+        font-weight: 600;
+        border: none;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+      }
+      
+      .p-stepper-title {
+        color: #374151;
+        font-weight: 500;
+      }
+      
+      &.p-highlight {
+        .p-stepper-number {
+          background: linear-gradient(135deg, #10b981, #059669);
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        
+        .p-stepper-title {
+          color: #065f46;
+          font-weight: 600;
+        }
+      }
     }
-    
-    .p-tabview-panel {
-      padding: 1rem !important;
-    }
   }
-}
-/* ===== FOOTER DEL DIÁLOGO ===== */
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  padding: 1.5rem 2rem;
-  background: white;
-  border-top: 1px solid #e2e8f0;
-}
-
-.dialog-footer button {
-  border-radius: 8px !important;
-  padding: 0.75rem 1.5rem !important;
-  font-weight: 500 !important;
-  transition: all 0.3s ease !important;
-}
-
-.dialog-footer .p-button-text {
-  color: #6b7280 !important;
-  border: 2px solid #e2e8f0 !important;
-}
-
-.dialog-footer .p-button-text:hover {
-  background: #f1f5f9 !important;
-  border-color: #d1d5db !important;
-  color: #374151 !important;
-}
-
-.dialog-footer .p-button:not(.p-button-text) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  border: none !important;
-  color: white !important;
-}
-
-.dialog-footer .p-button:not(.p-button-text):hover:not(:disabled) {
-  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%) !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 8px 15px -3px rgba(102, 126, 234, 0.4) !important;
-}
-
-.dialog-footer .p-button:disabled {
-  opacity: 0.6 !important;
-  cursor: not-allowed !important;
-}
-
-.loading-text {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.loading-text i {
-  font-size: 0.875rem;
-}
-
-/* ===== ANIMACIONES ===== */
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-/* ===== RESPONSIVIDAD ===== */
-@media (max-width: 768px) {
-  .dialog-content {
-    padding: 1rem;
-  }
-  
-  .form-row {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .selection-options {
-    flex-direction: column;
-  }
-  
-  .selection-option {
-    min-width: unset;
-  }
-  
-  .dialog-footer {
-    padding: 1rem;
-    flex-direction: column;
-  }
-  
-  .dialog-footer button {
-    width: 100%;
-  }
-}
-
-@media (max-width: 480px) {
-  .form-section {
-    padding: 1rem;
-  }
-  
-  .form-tabs .p-tabview-panel {
-    padding: 1rem !important;
-  }
-  
-  .section-title {
-    font-size: 1rem;
-  }
-  
-  .form-tabs .p-tabview-nav li .p-tabview-nav-link {
-    padding: 0.75rem 1rem !important;
-    font-size: 0.875rem !important;
-  }
-}
-
-/* ===== MEJORAS ADICIONALES ===== */
-.form-section {
-  position: relative;
-  overflow: hidden;
-}
-
-.form-section::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #667eea, #764ba2);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.form-section:hover::before {
-  opacity: 1;
-}
-
-/* Estados de validación */
-.form-field.error input,
-.form-field.error .p-inputtext,
-.form-field.error .p-dropdown,
-.form-field.error .p-calendar {
-  border-color: #dc2626 !important;
-}
-
-.form-field.error input:focus,
-.form-field.error .p-inputtext:focus,
-.form-field.error .p-dropdown:focus,
-.form-field.error .p-calendar:focus {
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1) !important;
-}
-
-.form-field.success input,
-.form-field.success .p-inputtext,
-.form-field.success .p-dropdown,
-.form-field.success .p-calendar {
-  border-color: #059669 !important;
-}
-
-.form-field.success input:focus,
-.form-field.success .p-inputtext:focus,
-.form-field.success .p-dropdown:focus,
-.form-field.success .p-calendar:focus {
-  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1) !important;
-}
-
-/* Efecto de cristal para el diálogo */
-.cliente-dialog {
-  backdrop-filter: blur(10px) !important;
-}
-
-.cliente-dialog .p-dialog-mask {
-  background: rgba(0, 0, 0, 0.4) !important;
-  backdrop-filter: blur(2px) !important;
 }

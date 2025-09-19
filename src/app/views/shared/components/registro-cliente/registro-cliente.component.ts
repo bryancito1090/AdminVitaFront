@@ -10,6 +10,7 @@ import { TabViewModule } from 'primeng/tabview';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
+import { StepperModule } from 'primeng/stepper';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 
@@ -25,7 +26,8 @@ import { CommonModule } from '@angular/common';
     TabViewModule,
     CalendarModule,
     DropdownModule,
-    ButtonModule
+    ButtonModule,
+    StepperModule
   ],
   templateUrl: './registro-cliente.component.html',
   styleUrls: ['./registro-cliente.component.scss'],
@@ -35,6 +37,9 @@ export class RegistroClienteComponent {
   @Output() clienteRegistrado = new EventEmitter<{ documento: any; cliente: any | null }>();
   
   visible: boolean = false;
+  
+  // Stepper control
+  currentStep: number = 1;
   
   // Tipos de cliente
   isPersonaNatural: boolean = true;
@@ -98,6 +103,7 @@ export class RegistroClienteComponent {
 
   mostrarDialogo(): void {
     this.resetearFormulario();
+    this.currentStep = 1;
     this.visible = true;
   }
 
@@ -158,6 +164,31 @@ export class RegistroClienteComponent {
     
     this.mensajeExito = '';
     this.mensajeError = '';
+    this.currentStep = 1;
+  }
+
+  // Métodos de validación para el stepper
+  isStep2Valid(): boolean {
+    if (this.isPersonaNatural) {
+      return !!(this.datosPersonaNatural.documento && 
+               this.datosPersonaNatural.nombres && 
+               this.datosPersonaNatural.apellidos);
+    } else {
+      return !!(this.datosEmpresa.documento && 
+               this.datosEmpresa.nombre && 
+               this.datosEmpresa.razonSocial && 
+               this.datosEmpresa.representanteLegal);
+    }
+  }
+
+  isStep3Valid(): boolean {
+    if (this.isPersonaNatural) {
+      return !!(this.datosPersonaNatural.email && 
+               this.datosPersonaNatural.direccion);
+    } else {
+      return !!(this.datosEmpresa.email && 
+               this.datosEmpresa.direccion);
+    }
   }
 
   // VALIDACIONES DETALLADAS BASADAS EN LA BASE DE DATOS
