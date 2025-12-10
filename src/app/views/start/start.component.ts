@@ -53,6 +53,6 @@ export class StartComponent {
     this.route.navigate(['/login']);
   }
   redirectToMecanica() {
-    this.route.navigate(['/mecanica']);
+    this.route.navigate(['/login_mecanica']);
   }
 }

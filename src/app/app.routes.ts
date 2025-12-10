@@ -18,6 +18,7 @@ import { OrdenTrabajoMecanicaComponent } from './views/dashboard-mecanica/orden-
 import { AppSimpleLayout } from './layout/component/app.simple-layout';
 import { administradorGuard } from './views/auth/guards/administrador.guard';
 import { mecanicaGuard } from './views/auth/guards/mecanica.guard';
+import { LoginMecanicaComponent } from './views/auth/components/login-mecanica/login-mecanica.component';
 
 export const appRoutes: Routes = [
     {   path: '', component: StartComponent },
@@ -38,6 +39,7 @@ export const appRoutes: Routes = [
             {path: 'persons/Mecanico', component: MecanicoComponent},
             {path: 'persons/Proveedor', component: ProveedorComponent},
         ]},
+    {   path: 'login_mecanica', component: LoginMecanicaComponent },
     {   path: 'mecanica', component: AppSimpleLayout,
         children: [
             { path: '', component: DashboardMecanicaComponent },
