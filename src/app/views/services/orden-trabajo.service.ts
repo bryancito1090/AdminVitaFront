@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { AuthService } from '../auth/service/auth.service';
 import { environment } from '../../../environments/environment.development';
 import { ExpandInfoOT, OrdenTrabajo, ordenTrabajoListResponse } from '../../../domain/response/OrdenTrabajoResponse.model';
-import { ActualizarOrdenRequest, AgendarOrdenTrabajo } from '../../../domain/request/OrdenTrabajoRequest.model';
+import { ActualizarOrdenRequest, AgendarOrdenMecanicoRequest, AgendarOrdenTrabajo } from '../../../domain/request/OrdenTrabajoRequest.model';
 
 @Injectable({
   providedIn: 'root'
@@ -21,10 +21,14 @@ export class OrdenTrabajoService {
     return this.http.get<ordenTrabajoListResponse>(`${this.apiUrl}/GetOrdenes`, { headers });
   }
 
-  getOrdenTrabajoCodigo(code: string): Observable<OrdenTrabajo> {
-    const headers = this.auth.getAuthHeaders();
-    return this.http.get<OrdenTrabajo>(`${this.apiUrl}/${code}`, { headers });
-  }
+ getOrdenTrabajoCodigo(code: string): Observable<any> {
+   const headers = this.auth.getAuthHeaders();
+    return this.http.get(`${this.apiUrl}/${code}`, { headers });
+ }
+ getOrdenTrabajoCodigoMec(code: string): Observable<any> {
+   const headers = this.auth.getMecanicoAuthHeaders();
+    return this.http.get(`${this.apiUrl}/${code}`, { headers });
+ }
 
   updateOrdenTrabajo(data: ActualizarOrdenRequest): Observable<any> {
     const headers = this.auth.getAuthHeaders();
@@ -44,4 +48,9 @@ export class OrdenTrabajoService {
     const headers = this.auth.getAuthHeaders();
     return this.http.get(`${this.apiUrl}/ExportToExcel`, { headers, responseType: 'blob' });
   }
+  agendarOrdenMecanico(data: AgendarOrdenMecanicoRequest): Observable<any> {
+    const headers = this.auth.getMecanicoAuthHeaders();
+    return this.http.post<any>(`${this.apiUrl}/AgendarOrdenMecanico`, data, { headers });
+  }
+
 }

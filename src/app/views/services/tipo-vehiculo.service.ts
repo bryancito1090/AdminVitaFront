@@ -15,4 +15,7 @@ export class TipoVehiculoService {
   getOrdenesTrabajoListado(): Observable<any> {
       return this.http.get<any>(`${this.apiUrl}`);
   }
+  getTiposVehiculo(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}`);
+}
 }

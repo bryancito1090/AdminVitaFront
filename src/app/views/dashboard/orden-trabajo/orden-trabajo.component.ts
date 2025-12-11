@@ -37,10 +37,11 @@ import { Adjunto } from '../../../../domain/response/Adjunto.model';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { DatePipe } from '@angular/common';
-import { forkJoin, Observable } from 'rxjs';
+import { catchError, forkJoin, Observable, of } from 'rxjs';
 import { Image, ImageModule } from 'primeng/image';
 import { ArchivosService } from '../../services/archivos.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { TooltipModule } from 'primeng/tooltip';
 
 interface jsPDFWithAutoTable extends jsPDF {
   lastAutoTable: {
@@ -75,6 +76,7 @@ interface jsPDFWithAutoTable extends jsPDF {
     SkeletonExpandInfoComponent,
     SkeletonSimpleComponent,
     ImageModule,
+    TooltipModule
   ],
   standalone: true,
   templateUrl: './orden-trabajo.component.html',
@@ -106,6 +108,7 @@ export class OrdenTrabajoComponent implements OnInit {
   prioridad!: genericT[];
   supervisor!: genericT[];
   estadoVehiculo!: genericT[];
+  fechaProgramada: Date | string | null = null;
 
   selectedCodeObservacion!: string;
 
@@ -144,7 +147,8 @@ export class OrdenTrabajoComponent implements OnInit {
     celular: '',
     correo: '',
     direccion: '',
-    supervisor: 0
+    idSupervisor: 0,
+    supervisor: ''
   };
 
   iconValidarDocumento: string = 'pi pi-search';
@@ -167,6 +171,16 @@ export class OrdenTrabajoComponent implements OnInit {
     observaciones: [],
     solicitudes: []
   };
+estadosTarea = [
+  { name: 'Pendiente', code: 1 },
+  { name: 'En Progreso', code: 2 },
+  { name: 'Cancelado', code: 3 },
+  { name: 'Finalizado', code: 4 },
+  { name: 'Finalizado sin éxito', code: 5 },
+  { name: 'Espera Repuesto', code: 6 },
+  { name: 'Espera Mecánico', code: 7 },
+  { name: 'Espera Aprobación', code: 8 }
+];
 
   constructor(
     private otService: OrdenTrabajoService,
@@ -189,20 +203,7 @@ export class OrdenTrabajoComponent implements OnInit {
     this.prioridad = PrioridadesOT;
     this.estadoVehiculo = EstadosVehiculo;
     this.minDate = new Date();
-
-    this.otService.getOrdenesTrabajoListado().subscribe({
-      next: (response) => {
-        this.ordenes = response.ordenes.map(x => ({
-          ...x,
-          fechaProgramada: this.formatDate(x.fechaProgramada)
-        }));
-        this.loading = false;
-      },
-      error: (err: any) => {
-        console.log("Error al solicitar Ordenes de Trabajo: ", err);
-      },
-    });
-
+    this.GetOrdenesTrabajoList();
     this.mecService.getSupervisores().subscribe({
       next: (response) => {
         this.supervisor = response.map(x => ({
@@ -248,6 +249,20 @@ export class OrdenTrabajoComponent implements OnInit {
       this.iconValidarPlaca = 'pi pi-search';
     })
   }
+  GetOrdenesTrabajoList() {
+    this.otService.getOrdenesTrabajoListado().subscribe({
+      next: (response) => {
+        this.ordenes = response.ordenes.map(x => ({
+          ...x,
+          fechaProgramada: this.formatDate(x.fechaProgramada)
+        }));
+        this.loading = false;
+      },
+      error: (err: any) => {
+        console.log("Error al solicitar Ordenes de Trabajo: ", err);
+      },
+    });
+  }
   formatDate(dateString: string): string {
     if(dateString === 'Vacío') return 'Vacío';
     const date = new Date(dateString);
@@ -267,37 +282,55 @@ export class OrdenTrabajoComponent implements OnInit {
   showDialogAdd() {
     this.visibleAdd = true;
   }  
-  showDialogEdit(code: string) {
-    this.visibleEdit = true;
-    this.loadingEditDialog = true;
-    this.codeEditDialog = code;
-    this.otService.getOrdenTrabajoCodigo(code).subscribe({
-      next: (response: OrdenTrabajo) => {        
-        this.fb_editOt.patchValue({
-          detalle: response.detalle,
-          nombreCliente: response.nombreCliente,
-          placa: response.placa,
-          estado: response.estado,
-          prioridad: response.prioridad,
-          supervisor: response.supervisor,
-          fechaProgramada: new Date(response.fechaProgramada),
-          observacion: response.observacion,
-        })
-        this.fb_editOt.get('detalle')?.disable();
-        this.fb_editOt.get('nombreCliente')?.disable();
-        this.fb_editOt.get('placa')?.disable();
+showDialogEdit(code: string) {
+  this.visibleEdit = true;
+  this.loadingEditDialog = true;
+  this.codeEditDialog = code;
+  this.otService.getOrdenTrabajoCodigo(code).subscribe({
+    next: (response: OrdenTrabajo) => {      
+      console.log("Orden de Trabajo: ", response);  
+      
+      this.fb_editOt.patchValue({
+        detalle: response.detalle,
+        nombreCliente: response.nombreCliente,
+        placa: response.placa,
+        estado: response.estado, // ✅ Solo el código
+        prioridad: response.prioridad, // ✅ Solo el código
+        supervisor: response.idSupervisor, // ✅ Solo el código
+        fechaProgramada: new Date(response.fechaProgramada),
+        observacion: response.observacion,
+      })
+      
+      this.fb_editOt.get('detalle')?.disable();
+      this.fb_editOt.get('nombreCliente')?.disable();
+      this.fb_editOt.get('placa')?.disable();
 
-        this.loadingEditDialog = false;
-      },
-      error: (err) => {
-        console.log("Error al solicitar Orden de Trabajo: ", err);
-      }
-    }) 
-  }
-  showDialogExpand(code: string){
+      this.loadingEditDialog = false;
+    },
+    error: (err) => {
+      console.log("Error al solicitar Orden de Trabajo: ", err);
+    }
+  }) 
+}
+showDialogExpand(code: string){
     this.visibleExpand = true;
     this.loadingExpandDialog = true;
     this.codeExpandDialog = code;
+    this.expandDataTables = [];
+    this.expandCols = [];
+    this.ExpandOptionsValue = '';
+    this.selectedCodeObservacion = '';
+    
+    this.adjuntoImages = [];
+    this.adjuntos = [];
+    this.allTablesData = {
+      tareas: [],
+      repuestos: [],
+      mecanicos: [],
+      trabajosExternos: [],
+      observaciones: [],
+      solicitudes: []
+    };
     
     this.otService.getOrdenTrabajoCodigo(code).subscribe({
       next: (response) =>{
@@ -308,7 +341,7 @@ export class OrdenTrabajoComponent implements OnInit {
               {code: response.totalTareas, name: 'Tareas'},
               {code: response.totalRepuestos, name: 'Repuestos'},
               {code: response.totalRepuestos, name: 'Mecanicos'},
-              {code: response.totalTrabajosExternos, name: 'Trabajos Externos'},
+              {code: response.totalTrabajosExternos, name: 'Trab. Externos'},
               {code: response.totalObservaciones, name: 'Observaciones'},
               {code: response.totalSolicitudes, name: 'Solicitudes'}
             ];
@@ -321,56 +354,55 @@ export class OrdenTrabajoComponent implements OnInit {
       }
     })
   }
-  createOT():void{
-    //Contenido validacion
-    const ot: AgendarOrdenTrabajo = {
-      codigoUsuario: this.auth.getUserCode(),
-      idCliente: this.fb_addOt.get('clienteId')?.value,
-      idVehiculo: this.fb_addOt.get('vehiculoId')?.value,
-      idMecanico: this.fb_addOt.get('supervisor')?.value,
-      detalle: this.fb_addOt.get('detalle')?.value,
-      prioridad: this.fb_addOt.get('prioridad')?.value,
-      estado: 0, //Por defecto se pone en estado 'Activo'
-      fechaProgramada: this.fb_addOt.get('fechaProgramada')?.value,
-      observacion: this.fb_addOt.get('observacion')?.value,
-    }
-    this.otService.createOrdenTrabajo(ot).subscribe({
-      next: (response) => {
-        this.toastr.success(response.message, "Orden de Trabajo agendada exitosamente!");
-        this.visibleAdd = false;
-        console.log(response);
-      },
-      error: (err) => {
-        this.toastr.error(err.error, "Orden de Trabajo no pudo ser agendada!");
-        console.log(err);'' 
-      }
-    });
+  createOT(): void {
+  const fecha = this.fb_addOt.get('fechaProgramada')?.value;
+  const ot: AgendarOrdenTrabajo = {
+    codigoUsuario: this.auth.getUserCode() ?? '',
+    idCliente: Number(this.fb_addOt.get('clienteId')?.value),
+    idVehiculo: Number(this.fb_addOt.get('vehiculoId')?.value),
+    idMecanico: Number(this.fb_addOt.get('supervisor')?.value),
+    detalle: this.fb_addOt.get('detalle')?.value ?? '',
+    prioridad: Number(this.fb_addOt.get('prioridad')?.value),
+    estado: 0,
+    fechaProgramada: fecha instanceof Date
+      ? fecha.toISOString()
+      : (fecha ? fecha : ''),
+    observacion: this.fb_addOt.get('observacion')?.value ?? ''
+  };
+  console.log(ot);
+  this.otService.createOrdenTrabajo(ot).subscribe({
+    next: (response) => {
+      this.toastr.success(response.message, "Orden de Trabajo agendada exitosamente!");
+      this.visibleAdd = false;
+      this.GetOrdenesTrabajoList();
+    },
+    error: (err) => {
+      this.toastr.error(err.error, "Orden de Trabajo no pudo ser agendada!");
+       }
+  });
+}
+updateOT(): void {
+  const ot: ActualizarOrdenRequest = {
+    codigo: this.codeEditDialog,
+    estado: this.fb_editOt.get('estado')?.value, 
+    prioridad: this.fb_editOt.get('prioridad')?.value, 
+    idMecanico: this.fb_editOt.get('supervisor')?.value, 
+    fechaProgramada: this.fb_editOt.get('fechaProgramada')?.value,
+    observacion: this.fb_editOt.get('observacion')?.value,
   }
-  updateOT():void{
-    const ot: ActualizarOrdenRequest = {
-      codigo: this.codeEditDialog,
-      estado: this.fb_editOt.get('estado')?.value,
-      prioridad: this.fb_editOt.get('prioridad')?.value,
-      idMecanico: this.fb_editOt.get('supervisor')?.value,
-      fechaProgramada: this.fb_editOt.get('fechaProgramada')?.value,
-      observacion: this.fb_editOt.get('observacion')?.value,
+  console.log(ot);
+  this.otService.updateOrdenTrabajo(ot).subscribe({
+    next: (response) => {
+      this.toastr.success(response.message, "Actualización exitosa!");
+      this.visibleEdit = false;
+      this.GetOrdenesTrabajoList();
+    },
+    error: (err) => {
+      this.toastr.error(err.error, "Actualización sin éxito!");
+      console.log(err);
     }
-    console.log(ot);
-    
-    this.otService.updateOrdenTrabajo(ot).subscribe({
-      next: (response) => {
-        this.toastr.success(response.message, "Actualización exitosa!");
-        this.visibleEdit = false;
-        console.log(response);
-        
-      },
-      error: (err) => {
-        this.toastr.error(err.error, "Actualización sin éxito!");
-        console.log(err);
-        
-      }
-    });
-  }
+  });
+}
   GetEstado(id: number)  {
     const item = this.estado.find(x => x.code === id);  
     return item?.name;
@@ -419,9 +451,20 @@ export class OrdenTrabajoComponent implements OnInit {
           ordenExport[col.header] = this.GetPrioridad(Number(orden[col.field])) || '';
         }
         // Caso especial para fechas
-        else if (col.field.includes('fecha') && orden[col.field]) {
+         else if (col.field.includes('fecha') && orden[col.field]) {
+        // Si la fecha ya está formateada (como string dd/MM/yyyy), usarla directamente
+        if (typeof orden[col.field] === 'string' && orden[col.field].includes('/')) {
+          ordenExport[col.header] = orden[col.field];
+        } 
+        // Si es una fecha sin formatear, formatearla
+        else if (orden[col.field] !== 'Vacío') {
           ordenExport[col.header] = this.formatDate(orden[col.field]) || '';
         }
+        // Si es 'Vacío', mantenerlo
+        else {
+          ordenExport[col.header] = orden[col.field];
+        }
+      }
         // Caso especial para supervisor
         else if (col.field === 'supervisor' && orden[col.field]) {
           ordenExport[col.header] = this.getSupervisor(orden[col.field]) || '';
@@ -548,17 +591,22 @@ export class OrdenTrabajoComponent implements OnInit {
     this.archivoUrl = '';
     this.displayImage = true;
   }
-  tablesOptionHandler(){
+ tablesOptionHandler(){
     this.selectedCodeObservacion = '';
+    this.expandDataTables = [];
+    this.expandCols = [];
+    
     switch(this.ExpandOptionsValue){
       case 'Tareas':
         this.tareaService.getTareasByOT(this.codeExpandDialog).subscribe({
           next: (response) => {
+            console.log(response);
             this.expandDataTables = response;
             this.expandCols = HeadersTables.TareasList;
           },
           error: (err) => {
-            console.log(err);
+            this.expandDataTables = [];
+            this.expandCols = [];
           }
         })
         break;
@@ -566,10 +614,12 @@ export class OrdenTrabajoComponent implements OnInit {
         this.repuestoService.getRepuestosInsumosByOT(this.codeExpandDialog).subscribe({
           next: (response) => {
             this.expandDataTables = response;            
-            this.expandCols = HeadersTables. RepuestoseInsumosList;
+            this.expandCols = HeadersTables.RepuestoseInsumosList;
           },
           error: (err) => {
             console.log(err);
+            this.expandDataTables = [];
+            this.expandCols = [];
           }
         })
         break;
@@ -581,16 +631,23 @@ export class OrdenTrabajoComponent implements OnInit {
           },
           error: (err) => {
             console.log(err);
+            this.expandDataTables = [];
+            this.expandCols = [];
           }
         });
         break;
-      case 'Trabajos Externos':
+      case 'Trab. Externos':
         this.tareaService.getTareaExternaByOT(this.codeExpandDialog).subscribe({
           next: (response) => {
+            console.log(response);
             this.expandDataTables = response;
             this.expandCols = HeadersTables.TrabajoExternoList;
           },
-          error: (err) => console.log(err)
+          error: (err) => {
+            console.log(err);
+            this.expandDataTables = [];
+            this.expandCols = [];
+          }
         })
         break;
       case 'Observaciones': 
@@ -599,7 +656,11 @@ export class OrdenTrabajoComponent implements OnInit {
             this.expandDataTables = response;
             this.expandCols = HeadersTables.ObservacionesTareaList;
           },
-          error: (err) => console.log(err)
+          error: (err) => {
+            console.log(err);
+            this.expandDataTables = [];
+            this.expandCols = [];
+          }
         })
         break;
       case 'Solicitudes':
@@ -608,61 +669,111 @@ export class OrdenTrabajoComponent implements OnInit {
             this.expandDataTables = response;
             this.expandCols = HeadersTables.SolicitudTareaList;
           },
-          error: (err) => console.log(err)
+          error: (err) => {
+            console.log(err);
+            this.expandDataTables = [];
+            this.expandCols = [];
+          }
         })
         break;
     }
   }
-  exportCompletePDF() {
-    // Cargar todos los datos necesarios para el PDF
-    const requests = {
-      tareas: this.tareaService.getTareasByOT(this.codeExpandDialog),
-      repuestos: this.repuestoService.getRepuestosInsumosByOT(this.codeExpandDialog),
-      mecanicos: this.mecService.getManoObraOT(this.codeExpandDialog),
-      trabajosExternos: this.tareaService.getTareaExternaByOT(this.codeExpandDialog),
-      observaciones: this.tareaService.getObservacionesTarea(this.codeExpandDialog),
-      solicitudes: this.solicitudService.getSolicitudRepuestoTablaExpandOT(this.codeExpandDialog)
-    };
-  
-    forkJoin(requests).subscribe({
-      next: (results) => {
-        this.allTablesData = results;
-        
-        // Procesar observaciones y solicitudes para extraer los IDs de adjuntos
-        const adjuntoIds: number[] = [];
-        
-        // Extraer IDs de adjuntos de observaciones
-        if (results.observaciones && results.observaciones.length > 0) {
-          results.observaciones.forEach(obs => {
-            if (obs.idAdjunto) {
-              adjuntoIds.push(obs.idAdjunto);
-            }
-          });
-        }
-        
-        // Extraer IDs de adjuntos de solicitudes
-        if (results.solicitudes && results.solicitudes.length > 0) {
-          results.solicitudes.forEach(sol => {
-            if (sol.idAdjunto) {
-              adjuntoIds.push(Number(sol.idAdjunto));
-            }
-          });
-        }
-        
-        // Si hay adjuntos, cargarlos
-        if (adjuntoIds.length > 0) {
-          this.loadAdjuntos(adjuntoIds);
-        } else {
-          // Si no hay adjuntos, generar el PDF directamente
-          this.generateCompletePDF();
-        }
-      },
-      error: (err) => {
-        console.error('Error al cargar datos para el PDF:', err);
-        this.toastr.error('No se pudieron cargar todos los datos para el PDF', 'Error');
+exportCompletePDF() {
+  // Crear requests individuales con manejo de errores
+  const requests = {
+    tareas: this.tareaService.getTareasByOT(this.codeExpandDialog).pipe(
+      catchError(error => {
+        console.log('No hay tareas disponibles:', error);
+        return of([]); // Retorna array vacío si hay error
+      })
+    ),
+    repuestos: this.repuestoService.getRepuestosInsumosByOT(this.codeExpandDialog).pipe(
+      catchError(error => {
+        console.log('No hay repuestos disponibles:', error);
+        return of([]);
+      })
+    ),
+    mecanicos: this.mecService.getManoObraOT(this.codeExpandDialog).pipe(
+      catchError(error => {
+        console.log('No hay mecánicos disponibles:', error);
+        return of([]);
+      })
+    ),
+    trabajosExternos: this.tareaService.getTareaExternaByOT(this.codeExpandDialog).pipe(
+      catchError(error => {
+        console.log('No hay trabajos externos disponibles:', error);
+        return of([]);
+      })
+    ),
+    observaciones: this.tareaService.getObservacionesTarea(this.codeExpandDialog).pipe(
+      catchError(error => {
+        console.log('No hay observaciones disponibles:', error);
+        return of([]);
+      })
+    ),
+    solicitudes: this.solicitudService.getSolicitudRepuestoTablaExpandOT(this.codeExpandDialog).pipe(
+      catchError(error => {
+        console.log('No hay solicitudes disponibles:', error);
+        return of([]);
+      })
+    )
+  };
+
+  forkJoin(requests).subscribe({
+    next: (results) => {
+      console.log('Datos cargados para PDF:', results);
+      this.allTablesData = results;
+      
+      // Procesar observaciones y solicitudes para extraer los IDs de adjuntos
+      const adjuntoIds: number[] = [];
+      
+      // Extraer IDs de adjuntos de observaciones
+      if (results.observaciones && results.observaciones.length > 0) {
+        results.observaciones.forEach(obs => {
+          if (obs.idAdjunto) {
+            adjuntoIds.push(obs.idAdjunto);
+          }
+        });
       }
-    });
-  }
+      
+      // Extraer IDs de adjuntos de solicitudes
+      const solicitudesArray = Array.isArray(results.solicitudes) ? results.solicitudes : [];
+      if (solicitudesArray.length > 0) {
+        solicitudesArray.forEach(sol => {
+          if (sol.idAdjunto) {
+            adjuntoIds.push(Number(sol.idAdjunto));
+          }
+        });
+      }
+      
+      // Si hay adjuntos, cargarlos
+      if (adjuntoIds.length > 0) {
+        this.loadAdjuntos(adjuntoIds);
+      } else {
+        // Si no hay adjuntos, generar el PDF directamente
+        this.generateCompletePDF();
+      }
+    },
+    error: (err) => {
+      console.error('Error al cargar algunos datos para el PDF:', err);
+      // Incluso si hay errores, intentar generar el PDF con los datos disponibles
+      this.toastr.warning('Algunos datos no pudieron ser cargados, generando PDF con información disponible', 'Advertencia');
+      
+      // Inicializar allTablesData con arrays vacíos
+      this.allTablesData = {
+        tareas: [],
+        repuestos: [],
+        mecanicos: [],
+        trabajosExternos: [],
+        observaciones: [],
+        solicitudes: []
+      };
+      
+      this.generateCompletePDF();
+    }
+  });
+}
+
   // 3. Opcional: añadir un método para depurar las URLs de las imágenes
   private logImageUrls() {
     if (this.adjuntos && this.adjuntos.length > 0) {
@@ -856,66 +967,64 @@ export class OrdenTrabajoComponent implements OnInit {
     return (doc as jsPDFWithAutoTable).lastAutoTable?.finalY || (y + boxHeight);
   }
   // Generar el PDF completo con el nuevo layout
-    generateCompletePDF() {
-      const doc = new jsPDF('p', 'mm', 'a4') as jsPDFWithAutoTable;
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      
-      // Aplicar fondo y decoraciones
-      this.applyBackgroundToAllPages(doc);
-      
-      // Agregar logo 
-      this.addLogoToAllPages(doc);
-      
-      // Dejar más espacio para el logo
-      let y = 40; // Aumentado de 30 a 40
-      
-      // Título en MAYÚSCULAS y con más destaque
-      const titleRgb = this.hexToRgb('#1f295b');
-      doc.setFontSize(20); // Aumentado tamaño de fuente
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(titleRgb.r, titleRgb.g, titleRgb.b);
-      doc.text('ORDEN DE TRABAJO: ' + this.codeExpandDialog.toUpperCase(), pageWidth / 2, y, { align: 'center' });
-      y += 20; // Más espacio después del título
-      
-      // Fecha de generación
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'italic');
-      doc.setTextColor(100, 100, 100);
-      const currentDate = this.datePipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss');
-      doc.text(`Generado el: ${currentDate}`, pageWidth - 15, 15, { align: 'right' });
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(0, 0, 0);
-      
-      const fullWidth = 190;
-      const leftMargin = 10;
-      
-      // Sección: Descripción
-    this.addSectionTitle(doc, 'Descripción', y);
-    y += 7;
-    this.addKeyValueTable(doc, [
-      { key: 'Detalle', value: this.ExpandItem.detalle || 'No disponible' },
-      { key: 'Prioridad', value: this.GetPrioridad(this.ExpandItem.prioridad) || 'No disponible' },
-      { key: 'Estado', value: this.GetEstado(this.ExpandItem.estado) || 'No disponible' },
-      { key: 'Fecha inicio', value: this.formatDate(this.ExpandItem.fechaCreada ? this.ExpandItem.fechaCreada.toString() : 'Vacío') },
-      { key: 'Fecha programada', value: this.formatDate(this.ExpandItem.fechaProgramada ? this.ExpandItem.fechaProgramada.toString() : 'Vacío') },
-      { key: 'Fecha fin', value: this.formatDate(this.ExpandItem.fechaFinalizacion ? this.ExpandItem.fechaFinalizacion.toString() : 'Vacío') }
-    ], y);
-    y += 70; 
-        // Sección: Vehículo
-    this.addSectionTitle(doc, 'Vehículo', y);
-    y += 7;
-    this.addKeyValueTable(doc, [
-      { key: 'Código', value: this.ExpandItem.codigoVehiculo || 'No disponible' },
-      { key: 'Placa', value: this.ExpandItem.placa || 'No disponible' },
-      { key: 'Kilometraje', value: (this.ExpandItem.kilometraje || '0') + ' km' },
-      { key: 'Año', value: this.formatDate(this.ExpandItem.anio ? this.ExpandItem.anio.toString() : 'Vacío') },
-      { key: 'Estado (Institucional)', value: this.getEstadoVehiculo(this.ExpandItem.estadoVehiculo) || 'No disponible' },
-      { key: 'Propietario', value: this.ExpandItem.propietario || 'No disponible' }
-    ], y);
-    y += 70;
+ generateCompletePDF() {
+  const doc = new jsPDF('p', 'mm', 'a4') as jsPDFWithAutoTable;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   
+  // Aplicar fondo y decoraciones
+  this.applyBackgroundToAllPages(doc);
+  
+  // Agregar logo 
+  this.addLogoToAllPages(doc);
+  
+  // Dejar más espacio para el logo
+  let y = 40;
+  
+  // Título en MAYÚSCULAS y con más destaque
+  const titleRgb = this.hexToRgb('#1f295b');
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(titleRgb.r, titleRgb.g, titleRgb.b);
+  doc.text('ORDEN DE TRABAJO: ' + this.codeExpandDialog.toUpperCase(), pageWidth / 2, y, { align: 'center' });
+  y += 20;
+  
+  // Fecha de generación
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'italic');
+  doc.setTextColor(100, 100, 100);
+  const currentDate = this.datePipe.transform(new Date(), 'dd/MM/yyyy HH:mm:ss');
+  doc.text(`Generado el: ${currentDate}`, pageWidth - 15, 15, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(0, 0, 0);
+  
+  // Sección: Descripción
+  this.addSectionTitle(doc, 'Descripción', y);
+  y += 7;
+  this.addKeyValueTable(doc, [
+    { key: 'Detalle', value: this.ExpandItem.detalle || 'No disponible' },
+    { key: 'Prioridad', value: this.GetPrioridad(this.ExpandItem.prioridad) || 'No disponible' },
+    { key: 'Estado', value: this.GetEstado(this.ExpandItem.estado) || 'No disponible' },
+    { key: 'Fecha inicio', value: this.formatDate(this.ExpandItem.fechaCreada ? this.ExpandItem.fechaCreada.toString() : 'Vacío') },
+    { key: 'Fecha programada', value: this.formatDate(this.ExpandItem.fechaProgramada ? this.ExpandItem.fechaProgramada.toString() : 'Vacío') },
+    { key: 'Fecha fin', value: this.formatDate(this.ExpandItem.fechaFinalizacion ? this.ExpandItem.fechaFinalizacion.toString() : 'Vacío') }
+  ], y);
+  y += 70; 
+
+  // Sección: Vehículo
+  this.addSectionTitle(doc, 'Vehículo', y);
+  y += 7;
+  this.addKeyValueTable(doc, [
+    { key: 'Código', value: this.ExpandItem.codigoVehiculo || 'No disponible' },
+    { key: 'Placa', value: this.ExpandItem.placa || 'No disponible' },
+    { key: 'Kilometraje', value: (this.ExpandItem.kilometraje || '0') + ' km' },
+    { key: 'Año', value: this.formatDate(this.ExpandItem.anio ? this.ExpandItem.anio.toString() : 'Vacío') },
+    { key: 'Estado (Institucional)', value: this.getEstadoVehiculo(this.ExpandItem.estadoVehiculo) || 'No disponible' },
+    { key: 'Propietario', value: this.ExpandItem.propietario || 'No disponible' }
+  ], y);
+  y += 70;
+
   // Sección: Cliente
   this.addSectionTitle(doc, 'Cliente', y);
   y += 7;
@@ -924,91 +1033,68 @@ export class OrdenTrabajoComponent implements OnInit {
     { key: 'Celular', value: this.ExpandItem.celular || 'No disponible' },
     { key: 'Correo', value: this.ExpandItem.correo || 'No disponible' },
     { key: 'Dirección', value: this.ExpandItem.direccion || 'No disponible' },
-    { key: 'Supervisor', value: this.getSupervisor(this.ExpandItem.supervisor) || 'No disponible' }
+    { key: 'Supervisor', value: this.getSupervisor(this.ExpandItem.idSupervisor) || 'No disponible' }
   ], y);
-  y += 30;
-    // 1. Tareas
-    if (this.allTablesData.tareas && this.allTablesData.tareas.length > 0) {
-      y = this.checkAndAddPage(doc, y, 40);
-      y = this.addTableToDocument(doc, 'Tareas', this.allTablesData.tareas, HeadersTables.TareasList, y);
-      y += 15;
-    }
-    
-    // 2. Repuestos
-    if (this.allTablesData.repuestos && this.allTablesData.repuestos.length > 0) {
-      y = this.checkAndAddPage(doc, y, 40);
-      y = this.addTableToDocument(doc, 'Repuestos', this.allTablesData.repuestos, HeadersTables.RepuestoseInsumosList, y);
-      y += 15;
-    }
-    
-    // 3. Mecánicos
-    if (this.allTablesData.mecanicos && this.allTablesData.mecanicos.length > 0) {
-      y = this.checkAndAddPage(doc, y, 40);
-      y = this.addTableToDocument(doc, 'Mecánicos', this.allTablesData.mecanicos, HeadersTables.ManoDeObraList, y);
-      y += 15;
-    }
-    
-    // 4. Trabajos Externos
-    if (this.allTablesData.trabajosExternos && this.allTablesData.trabajosExternos.length > 0) {
-      y = this.checkAndAddPage(doc, y, 40);
-      y = this.addTableToDocument(doc, 'Trabajos Externos', this.allTablesData.trabajosExternos, HeadersTables.TrabajoExternoList, y);
-      y += 15;
-    }
-    
-      // 5. Observaciones con adjuntos
-if (this.allTablesData.observaciones && this.allTablesData.observaciones.length > 0) {
-  y = this.checkAndAddPage(doc, y, 40);
-  y = this.addTableToDocument(doc, 'Observaciones', this.allTablesData.observaciones, HeadersTables.ObservacionesTareaList, y);
-  
-  // Agregar imágenes de adjuntos de observaciones
-  if (this.adjuntoImages && this.adjuntoImages.length > 0) {
-    y += 10;
-    y = this.addAdjuntosToDocument(
-      doc, 
-      { text: 'Adjunto de Observaciones', style: 'subheading' },
-      this.allTablesData.observaciones
-        .filter(obs => obs.idAdjunto)
-        .map(obs => obs.idAdjunto), 
-      y
-    );
-    y += 15;
-  }
-}
+  y += 50;
 
-// 6. Solicitudes con adjuntos
-if (this.allTablesData.solicitudes && this.allTablesData.solicitudes.length > 0) {
-  y = this.checkAndAddPage(doc, y, 40);
-  y = this.addTableToDocument(doc, 'Solicitudes', this.allTablesData.solicitudes, HeadersTables.SolicitudTareaList, y);
-  
-  // Agregar imágenes de adjuntos de solicitudes
-  if (this.adjuntoImages && this.adjuntoImages.length > 0) {
-    y += 10;
-    y = this.addAdjuntosToDocument(
-      doc, 
-      { text: 'Adjunto de Solicitudes', style: 'subheading' },
-      this.allTablesData.solicitudes
-        .filter(sol => sol.idAdjunto)
-        .map(sol => sol.idAdjunto), 
-      y
-    );
-  }
-}
-    
-    // Agregar numeración de páginas con estilo mejorado
-    const totalPages = doc.getNumberOfPages();
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(80, 80, 80);
-      doc.text(`Página ${i} de ${totalPages}`, pageWidth - 20, pageHeight - 10);
-      
-      // Agregar un footer o pie de página en cada página
-      this.addFooter(doc, pageHeight);
+  // Solo agregar secciones que tengan datos
+  const secciones = [
+    { datos: this.allTablesData.tareas, titulo: 'Tareas', headers: HeadersTables.TareasList },
+    { datos: this.allTablesData.repuestos, titulo: 'Repuestos', headers: HeadersTables.RepuestoseInsumosList },
+    { datos: this.allTablesData.mecanicos, titulo: 'Mecánicos', headers: HeadersTables.ManoDeObraList },
+    { datos: this.allTablesData.trabajosExternos, titulo: 'Trabajos Externos', headers: HeadersTables.TrabajoExternoList },
+    { datos: this.allTablesData.observaciones, titulo: 'Observaciones', headers: HeadersTables.ObservacionesTareaList },
+    { datos: this.allTablesData.solicitudes, titulo: 'Solicitudes', headers: HeadersTables.SolicitudTareaList }
+  ];
+
+  secciones.forEach(seccion => {
+    if (seccion.datos && seccion.datos.length > 0) {
+      y = this.checkAndAddPage(doc, y, 40);
+      y = this.addTableToDocument(doc, seccion.titulo, seccion.datos, seccion.headers, y);
+      y += 15;
+
+      // Agregar adjuntos si corresponde
+      if ((seccion.titulo === 'Observaciones' || seccion.titulo === 'Solicitudes') && 
+          this.adjuntoImages && this.adjuntoImages.length > 0) {
+        
+        const adjuntosIds = seccion.datos
+          .filter(item => item.idAdjunto)
+          .map(item => item.idAdjunto);
+        
+        if (adjuntosIds.length > 0) {
+          y += 10;
+          y = this.addAdjuntosToDocument(
+            doc, 
+            { text: `Adjuntos de ${seccion.titulo}`, style: 'subheading' },
+            adjuntosIds, 
+            y
+          );
+          y += 15;
+        }
+      }
+    } else {
+      console.log(`Sección ${seccion.titulo} omitida: sin datos`);
     }
+  });
+
+  // Agregar numeración de páginas con estilo mejorado
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(80, 80, 80);
+    doc.text(`Página ${i} de ${totalPages}`, pageWidth - 20, pageHeight - 10);
     
-    // Guardar el PDF
-    doc.save(`Orden_Trabajo_${this.codeExpandDialog}_Completo.pdf`);
-  }   
+    // Agregar un footer o pie de página en cada página
+    this.addFooter(doc, pageHeight);
+  }
+  
+  // Guardar el PDF
+  doc.save(`Orden_Trabajo_${this.codeExpandDialog}_Completo.pdf`);
+  
+  // Mostrar mensaje de éxito
+  this.toastr.success('PDF generado exitosamente', 'Éxito');
+}
   // Método para agregar un pie de página
   private addFooter(doc: jsPDF, pageHeight: number) {
     const rgb = this.hexToRgb('#1f295b'); // Nuevo color institucional
@@ -1016,11 +1102,7 @@ if (this.allTablesData.solicitudes && this.allTablesData.solicitudes.length > 0)
     doc.setTextColor(rgb.r, rgb.g, rgb.b);
     doc.text('Confidencial - Uso exclusivo de ISTPET', 10, pageHeight - 10);
   }
-  // Método para el manejo de texto largo
-  private truncateText(text: string, maxLength: number): string {
-    if (!text) return 'No disponible';
-    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-  }
+
   // Método para verificar y agregar una nueva página si es necesario
   private checkAndAddPage(doc: jsPDF, y: number, requiredSpace: number): number {
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -1031,59 +1113,307 @@ if (this.allTablesData.solicitudes && this.allTablesData.solicitudes.length > 0)
     return y;
   }
   // Método para agregar una tabla al documento con estilo mejorado
-  private addTableToDocument(doc: jsPDF, title: string, data: any[], headers: any[], y: number): number {
-    // Agregar título de sección con caja
-    y = this.addSectionWithBox(doc, title, y);
-    y += 7;
+private addTableToDocument(doc: jsPDF, title: string, data: any[], headers: any[], y: number): number {
+  if (!data || data.length === 0) {
+    console.log(`No hay datos para la sección: ${title}`);
+    return y;
+  }
+
+  // Agregar título de sección con caja
+  y = this.addSectionWithBox(doc, title, y);
+  y += 10; // Más espacio después del título
+
+  // Preparar cabeceras y datos para la tabla
+  const tableHeaders = headers.map(col => col.header);
+  
+  // Calcular anchos de columnas dinámicamente
+  const columnWidths = this.calculateColumnWidths(headers, data, title);
+  
+  // Convertir color hex a decimal
+  const rgb = this.hexToRgb('#1f295b');
+
+  // Configuración mejorada de la tabla
+  autoTable(doc, {
+    head: [tableHeaders],
+    body: this.prepareTableBody(data, headers, title),
+    startY: y,
+    theme: 'grid',
+    styles: {
+      fontSize: 7,      // Tamaño reducido para que quepa más contenido
+      cellPadding: 2,   // Padding reducido
+      lineColor: [220, 220, 220],
+      textColor: [40, 40, 40],
+      overflow: 'linebreak',
+      cellWidth: 'wrap',
+      valign: 'middle',
+      halign: 'left',
+      fontStyle: 'normal',
+      minCellHeight: 12 // Altura mínima para mejor legibilidad
+    },
+    headStyles: {
+      fillColor: [rgb.r, rgb.g, rgb.b],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      fontSize: 8,      // Tamaño ligeramente mayor para headers
+      cellPadding: 3,   // Más padding para headers
+      halign: 'center',
+      valign: 'middle',
+      minCellHeight: 15 // Altura mínima mayor para headers
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252]
+    },
+    columnStyles: this.getColumnStyles(headers, columnWidths),
+    margin: { 
+      left: 10, 
+      right: 10 
+    },
+    tableWidth: 'auto',
+    showHead: 'everyPage', // Mostrar headers en cada página
+    didParseCell: (data) => this.styleTableCells(data, title),
+    willDrawCell: (data) => this.adjustCellContent(data),
+    // Configuración para mejor manejo del contenido
+    bodyStyles: {
+      lineColor: [220, 220, 220],
+      lineWidth: 0.1
+    }
+  });
+
+  return (doc as jsPDFWithAutoTable).lastAutoTable.finalY + 15;
+}
+
+// Métodos auxiliares para mejorar las tablas
+
+private calculateColumnWidths(headers: any[], data: any[], title: string): number[] {
+  const pageWidth = 190; // Ancho disponible en mm
+  const minWidth = 25;   // Ancho mínimo aumentado para mejor legibilidad
+  const maxWidth = 80;   // Ancho máximo aumentado
+  
+  // Anchuras base mejoradas según el tipo de contenido
+  const baseWidths = headers.map(header => {
+    const field = header.field;
     
-    // Preparar cabeceras y datos para la tabla
-    const tableHeaders = headers.map(col => col.header);
-    const tableData = data.map(item => 
-      headers.map(col => {
-        // Transformar el valor según el campo
-        if (col.field.includes('fecha') && item[col.field]) {
-          return this.datePipe.transform(item[col.field], 'dd/MM/yyyy') || 'N/A';
-        }
-        return item[col.field] !== undefined && item[col.field] !== null ? item[col.field].toString() : 'N/A';
-      })
-    );
+    // Columnas de ID/código - más espacio para mejor legibilidad
+    if (field === 'id' || field === 'codigo' || field === 'numero' || field === 'codigoTarea') {
+      return 30;
+    }
     
-    // Convertir color hex a decimal
-    const rgb = this.hexToRgb('#1f295b');
+    // Columnas de fecha - más espacio
+    if (field.includes('fecha')) {
+      return 35;
+    }
     
-    // Agregar la tabla al PDF con estilo mejorado
-    autoTable(doc, {
-      head: [tableHeaders],
-      body: tableData,
-      startY: y,
-      theme: 'grid',
-      styles: {
-        fontSize: 8,
-        cellPadding: 3,
-        lineColor: [220, 220, 220]
-      },
-      headStyles: {
-        fillColor: [rgb.r, rgb.g, rgb.b],
-        textColor: 255,
-        fontStyle: 'bold'
-      },
-      alternateRowStyles: {
-        fillColor: [248, 248, 252]
-      },
-      columnStyles: {
-        0: {cellWidth: 'auto'}, // Primera columna con ancho automático
-      },
-      margin: { left: 10, right: 10 },
-      didParseCell: function(data) {
-        if (data.row.index === 0) {
-          data.cell.styles.lineWidth = 0.5;
-        }
-      }
+    // Columnas de estado - espacio suficiente para el texto completo
+    if (field === 'estado' || field === 'aprobado') {
+      return 32;
+    }
+    
+    // Columnas con texto largo - más espacio
+    if (field === 'detalle' || field === 'descripcion' || field === 'observacion') {
+      return 60;
+    }
+    
+    // Columnas con listas (mecánicos, observaciones) - más espacio
+    if (field === 'mecanicos' || field === 'observaciones') {
+      return 45;
+    }
+    
+    // Columnas de cantidad y precio
+    if (field === 'cantidad' || field === 'precio' || field === 'total') {
+      return 25;
+    }
+    
+    // Columnas de nombre/nombre completo
+    if (field === 'nombre' || field === 'nombreCompleto' || field === 'nombreCliente') {
+      return 40;
+    }
+    
+    // Para otras columnas, calcular basado en el contenido del header y datos
+    const headerLength = header.header ? header.header.length * 2 : 20;
+    
+    const contentLengths = data.map(row => {
+      const value = row[field];
+      if (!value) return 0;
+      
+      const text = this.formatCellValue(value, field, title);
+      return text.length * 0.8; // Factor mejorado para mejor estimación
     });
     
-    // Usar aserción de tipo para acceder a lastAutoTable
-    return (doc as jsPDFWithAutoTable).lastAutoTable.finalY + 5;
+    const maxContentLength = Math.max(...contentLengths, headerLength);
+    return Math.min(Math.max(maxContentLength, minWidth), maxWidth);
+  });
+  
+  // Distribuir el ancho total de manera proporcional
+  const totalBaseWidth = baseWidths.reduce((sum, width) => sum + width, 0);
+  
+  // Si el ancho total es menor que el disponible, expandir proporcionalmente
+  if (totalBaseWidth < pageWidth) {
+    const scaleFactor = pageWidth / totalBaseWidth;
+    return baseWidths.map(width => Math.min(width * scaleFactor, maxWidth));
   }
+  
+  // Si excede el ancho, escalar hacia abajo manteniendo mínimos
+  if (totalBaseWidth > pageWidth) {
+    const scaleFactor = pageWidth / totalBaseWidth;
+    return baseWidths.map(width => Math.max(minWidth, width * scaleFactor));
+  }
+  
+  return baseWidths;
+}
+
+private prepareTableBody(data: any[], headers: any[], title: string): any[][] {
+  return data.map(row => {
+    return headers.map(header => {
+      const value = row[header.field];
+      return this.formatCellValue(value, header.field, title);
+    });
+  });
+}
+
+private formatCellValue(value: any, field: string, title: string): string {
+  // Valor nulo o indefinido
+  if (value === null || value === undefined) return 'N/A';
+  
+  // Transformar el valor según el campo específico
+  if (field === 'estado' && title === 'Tareas') {
+    return this.getEstadoTareaTexto(value);
+  } 
+  if (field === 'aprobado' && title === 'Solicitudes') {
+    return this.getEstadoAprobacion(value);
+  } 
+  if (field === 'mecanicos' && title === 'Tareas') {
+    return this.formatMecanicosField(value);
+  } 
+  if (field === 'observaciones' && title === 'Tareas') {
+    return this.formatObservacionesField(value);
+  } 
+  if (field === 'detalle' && title === 'Solicitudes') {
+    return this.formatDetalleField(value);
+  } 
+  if (field.includes('fecha') && value) {
+    return this.datePipe.transform(value, 'dd/MM/yyyy') || 'N/A';
+  } 
+  if (field === 'prioridad') {
+    return this.GetPrioridad(value) || value.toString();
+  } 
+  if (field === 'estado' && (title === 'Orden de Trabajo' || title === 'Descripción')) {
+    return this.GetEstado(value) || value.toString();
+  }
+  
+  // Valor por defecto
+  return value !== undefined && value !== null ? value.toString() : 'N/A';
+}
+
+private getColumnStyles(headers: any[], columnWidths: number[]): any {
+  const styles: any = {};
+  
+  headers.forEach((header, index) => {
+    styles[index] = {
+      cellWidth: columnWidths[index],
+      fontSize: 7,
+      overflow: 'linebreak',
+      minCellHeight: 12,
+      cellPadding: 2
+    };
+    
+    // Alineación especial para columnas numéricas
+    if (header.field === 'cantidad' || header.field === 'precio' || header.field === 'total' || 
+        header.field === 'kilometraje' || header.field === 'duracion') {
+      styles[index].halign = 'right';
+    }
+    
+    // Columnas de estado con alineación centrada
+    if (header.field === 'estado' || header.field === 'aprobado') {
+      styles[index].halign = 'center';
+    }
+    
+    // Columnas de código también centradas
+    if (header.field === 'codigo' || header.field === 'codigoTarea' || header.field === 'id') {
+      styles[index].halign = 'center';
+    }
+    
+    // Para columnas con mucho texto, permitir más altura
+    if (header.field === 'detalle' || header.field === 'observaciones' || header.field === 'mecanicos') {
+      styles[index].minCellHeight = 15;
+      styles[index].cellPadding = 3;
+    }
+  });
+  
+  return styles;
+}
+
+
+private styleTableCells(data: any, title: string) {
+  if (data.row.section === 'body') {
+    const cellText = data.cell.text[0];
+    const field = data.table.columns[data.column.index].headerKey;
+    
+    // Colorear estados de tareas
+    if (field === 'estado' && title === 'Tareas') {
+      if (cellText === 'Finalizado') {
+        data.cell.styles.textColor = [34, 139, 34];
+        data.cell.styles.fontStyle = 'bold';
+      } else if (cellText === 'En Progreso') {
+        data.cell.styles.textColor = [255, 140, 0];
+        data.cell.styles.fontStyle = 'bold';
+      } else if (cellText === 'Cancelado' || cellText === 'Finalizado sin éxito') {
+        data.cell.styles.textColor = [220, 20, 60];
+        data.cell.styles.fontStyle = 'bold';
+      } else if (cellText === 'Pendiente') {
+        data.cell.styles.textColor = [70, 130, 180];
+        data.cell.styles.fontStyle = 'bold';
+      }
+    }
+    
+    // Colorear estados de aprobación
+    if (field === 'aprobado') {
+      if (cellText === 'Aprobado') {
+        data.cell.styles.textColor = [34, 139, 34];
+        data.cell.styles.fontStyle = 'bold';
+      } else if (cellText === 'Rechazado') {
+        data.cell.styles.textColor = [220, 20, 60];
+        data.cell.styles.fontStyle = 'bold';
+      } else if (cellText === 'Pendiente') {
+        data.cell.styles.textColor = [255, 140, 0];
+        data.cell.styles.fontStyle = 'bold';
+      }
+    }
+    
+    // Ajustar altura de fila para contenido largo
+    const lineCount = data.cell.text.length;
+    if (lineCount > 1) {
+      data.cell.styles.minCellHeight = Math.max(12, 8 * lineCount);
+    }
+    
+    // Destacar columnas importantes
+    if (field === 'codigo' || field === 'codigoTarea') {
+      data.cell.styles.fontStyle = 'bold';
+    }
+  }
+  
+  // Mejorar el estilo de los headers
+  if (data.row.section === 'head') {
+    data.cell.styles.fontSize = 8;
+    data.cell.styles.fontStyle = 'bold';
+    data.cell.styles.cellPadding = 3;
+    data.cell.styles.minCellHeight = 15;
+  }
+}
+
+
+private adjustCellContent(data: any) {
+  // Ajustar el padding para celdas con mucho texto
+  if (data.cell.raw && data.cell.raw.length > 50) {
+    data.cell.styles.cellPadding = 3;
+    data.cell.styles.minCellHeight = 15;
+  }
+  
+  // Asegurar que el texto no sea demasiado pequeño
+  if (data.cell.styles.fontSize < 7) {
+    data.cell.styles.fontSize = 7;
+  }
+}
+
   private addSectionTitle(doc: jsPDF, title: string, y: number) {
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
@@ -1308,4 +1638,231 @@ if (this.allTablesData.solicitudes && this.allTablesData.solicitudes.length > 0)
       return '[DOC]';
     }
   }
+// Actualizar el método getSeverityAprobacion para que devuelva el tipo correcto
+
+// Método para obtener la severidad del estado de aprobación
+getSeverityAprobacion(aprobado: boolean | null): "success" | "info" | "warn" | "danger" | "secondary" | "contrast" | undefined {
+  if (aprobado === null) return 'warning' as "warn"; // PrimeNG usa 'warn' no 'warning'
+  return aprobado ? 'success' : 'danger';
+}
+
+// También agrega estos métodos si no los tienes:
+getEstadoAprobacion(aprobado: boolean | null): string {
+  if (aprobado === null) return 'Pendiente';
+  return aprobado ? 'Aprobado' : 'Rechazado';
+}
+
+aprobarSolicitud(codigo: string) {
+  this.solicitudService.actualizarAprobacionSolicitud(codigo, true).subscribe({
+    next: (response) => {
+      this.toastr.success('Solicitud aprobada exitosamente', 'Éxito');
+      // Recargar los datos de la tabla
+      this.tablesOptionHandler();
+    },
+    error: (error) => {
+      console.error('Error al aprobar solicitud:', error);
+      this.toastr.error('Error al aprobar la solicitud', 'Error');
+    }
+  });
+}
+
+rechazarSolicitud(codigo: string) {
+  this.solicitudService.actualizarAprobacionSolicitud(codigo, false).subscribe({
+    next: (response) => {
+      this.toastr.success('Solicitud rechazada exitosamente', 'Éxito');
+      // Recargar los datos de la tabla
+      this.tablesOptionHandler();
+    },
+    error: (error) => {
+      console.error('Error al rechazar solicitud:', error);
+      this.toastr.error('Error al rechazar la solicitud', 'Error');
+    }
+  });
+}
+getEstadoTareaTexto(estado: number | undefined | null): string {
+  if (estado === undefined || estado === null) return 'Cargando...';
+  
+  switch (estado) {
+    case 1: return 'Pendiente';
+    case 2: return 'En Progreso';
+    case 3: return 'Cancelado';
+    case 4: return 'Finalizado';
+    case 5: return 'Finalizado sin éxito';
+    case 6: return 'Espera Repuesto';
+    case 7: return 'Espera Mecánico';
+    case 8: return 'Espera Aprobación';
+    default: return 'Sin definir';
+  }
+}
+
+getEstadoTareaSeverity(estado: number | undefined | null): "success" | "info" | "warn" | "danger" | "secondary" | "contrast" {
+  if (estado === undefined || estado === null) return 'secondary';
+  
+  switch (estado) {
+    case 1: return 'info';      
+    case 2: return 'warn';      
+    case 3: return 'danger';    
+    case 4: return 'success';   
+    case 5: return 'danger';    
+    case 6: return 'warn';      
+    case 7: return 'warn';      
+    case 8: return 'info';      
+    default: return 'secondary';
+  }
+}
+private formatMecanicosField(mecanicos: any): string {
+  if (!mecanicos) return 'Sin asignar';
+  
+  try {
+    // Si es un array de objetos
+    if (Array.isArray(mecanicos)) {
+      if (mecanicos.length === 0) return 'Sin asignar';
+      
+      return mecanicos.map(m => {
+        if (typeof m === 'object') {
+          // Intentar diferentes propiedades comunes para el nombre
+          return m.nombre || m.nombreMecanico || m.mecanico || m.name || m.nombreCompleto || 'Mecánico sin nombre';
+        } else if (typeof m === 'string') {
+          return m;
+        }
+        return 'Mecánico';
+      }).join(', ');
+    }
+    
+    // Si es un solo objeto
+    if (typeof mecanicos === 'object') {
+      return mecanicos.nombre || mecanicos.nombreMecanico || mecanicos.mecanico || mecanicos.name || mecanicos.nombreCompleto || 'Mecánico sin nombre';
+    }
+    
+    // Si es un string
+    if (typeof mecanicos === 'string') {
+      return mecanicos;
+    }
+    
+    return 'Sin asignar';
+  } catch (error) {
+    console.error('Error formateando mecánicos:', error);
+    console.log('Datos de mecánicos:', mecanicos); // Para debugging
+    return 'Error en datos';
+  }
+}
+private debugMecanicosData(mecanicos: any): void {
+  console.log('=== DEBUG MECÁNICOS ===');
+  console.log('Tipo:', typeof mecanicos);
+  console.log('Es array:', Array.isArray(mecanicos));
+  console.log('Datos completos:', mecanicos);
+  
+  if (Array.isArray(mecanicos) && mecanicos.length > 0) {
+    console.log('Primer elemento:', mecanicos[0]);
+    console.log('Propiedades del primer elemento:', Object.keys(mecanicos[0]));
+  } else if (typeof mecanicos === 'object' && mecanicos !== null) {
+    console.log('Propiedades del objeto:', Object.keys(mecanicos));
+  }
+  console.log('=== FIN DEBUG ===');
+}
+
+private formatObservacionesField(observaciones: any): string {
+  if (!observaciones) return 'Sin observaciones';
+  
+  try {
+    // Si es un array
+    if (Array.isArray(observaciones)) {
+      if (observaciones.length === 0) return 'Sin observaciones';
+      
+      return observaciones.map(obs => {
+        if (typeof obs === 'object' && obs.descripcion) {
+          return obs.descripcion;
+        } else if (typeof obs === 'object' && obs.observacion) {
+          return obs.observacion;
+        } else if (typeof obs === 'string') {
+          return obs;
+        }
+        return 'Observación';
+      }).slice(0, 2).join('; ') + (observaciones.length > 2 ? '...' : '');
+    }
+    
+    // Si es un objeto
+    if (typeof observaciones === 'object') {
+      if (observaciones.descripcion) {
+        return this.truncateText(observaciones.descripcion, 100);
+      } else if (observaciones.observacion) {
+        return this.truncateText(observaciones.observacion, 100);
+      }
+    }
+    
+    // Si es un string
+    if (typeof observaciones === 'string') {
+      return this.truncateText(observaciones, 100);
+    }
+    
+    return 'Sin observaciones';
+  } catch (error) {
+    console.error('Error formateando observaciones:', error);
+    return 'Error en datos';
+  }
+}
+
+private formatDetalleField(detalle: any): string {
+  if (!detalle) return 'Sin detalle';
+  
+  try {
+    // Si es un objeto
+    if (typeof detalle === 'object') {
+      // Buscar campos comunes de detalle
+      if (detalle.descripcion) {
+        return this.truncateText(detalle.descripcion, 150);
+      } else if (detalle.detalle) {
+        return this.truncateText(detalle.detalle, 150);
+      } else if (detalle.observacion) {
+        return this.truncateText(detalle.observacion, 150);
+      } else if (detalle.motivo) {
+        return this.truncateText(detalle.motivo, 150);
+      } else {
+        // Si el objeto tiene propiedades, convertir a string legible
+        const propiedades = Object.keys(detalle).filter(key => 
+          detalle[key] && 
+          typeof detalle[key] === 'string' && 
+          detalle[key].length > 0
+        );
+        
+        if (propiedades.length > 0) {
+          return propiedades.map(prop => 
+            `${prop}: ${this.truncateText(detalle[prop], 50)}`
+          ).join('; ');
+        }
+      }
+    }
+    
+    // Si es un string
+    if (typeof detalle === 'string') {
+      return this.truncateText(detalle, 150);
+    }
+    
+    return 'Sin detalle disponible';
+  } catch (error) {
+    console.error('Error formateando detalle:', error);
+    return 'Error en datos';
+  }
+}
+
+// Método mejorado para truncar texto
+private truncateText(text: string, maxLength: number): string {
+  if (!text) return 'No disponible';
+  
+  // Limpiar el texto de caracteres especiales
+  const cleanText = text.toString().trim();
+  
+  if (cleanText.length <= maxLength) {
+    return cleanText;
+  }
+  
+  // Truncar y agregar puntos suspensivos
+  return cleanText.substring(0, maxLength - 3) + '...';
+}
+ formatCurrency(value: any): number {
+  if (value === null || value === undefined || value === '') {
+    return 0;
+  }
+  return typeof value === 'number' ? value : parseFloat(value) || 0;
+}
 }

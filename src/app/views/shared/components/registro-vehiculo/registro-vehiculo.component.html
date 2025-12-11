@@ -1,0 +1,157 @@
+<p-dialog [(visible)]="visible" [modal]="true" [draggable]="false" [resizable]="false"
+    [style]="{ width: '750px', maxWidth: '95vw' }" styleClass="vehiculo-dialog" [baseZIndex]="1000"
+    [breakpoints]="{ '1199px': '75vw', '575px': '90vw' }" header="Registrar Nuevo Vehículo">
+
+    <div class="dialog-content">
+        <!-- Mensajes de alerta -->
+        <div *ngIf="mensajeError" class="alert alert-danger">
+            <i class="pi pi-exclamation-circle"></i> {{ mensajeError }}
+        </div>
+        <div *ngIf="mensajeExito" class="alert alert-success">
+            <i class="pi pi-check-circle"></i> {{ mensajeExito }}
+        </div>
+
+        <!-- Sección de cliente -->
+        <div class="section-title">
+            <i class="pi pi-user"></i>
+            <span>Información del Cliente</span>
+        </div>
+
+        <div class="client-validation-section">
+            <div class="form-group required">
+                <label for="documentoVehiculo" class="form-label">Número de Cédula</label>
+                <div class="cedula-validation-container">
+                    <input pInputText type="text" id="documentoVehiculo" [(ngModel)]="documentoCliente"
+                        placeholder="Ej: 1712345678" maxlength="14" (input)="soloNumeros($event)"
+                        (keypress)="validarTecla($event)">
+                    <button pButton type="button" icon="pi pi-search" (click)="validarCliente()"
+                        [disabled]="cargandoCliente"
+                        label="{{ cargandoCliente ? 'Validando...' : 'Validar' }}"></button>
+                </div>
+            </div>
+
+            <!-- Sección de información del cliente validado -->
+            <div class="info-section" *ngIf="mostrarInfoCliente && clienteActual">
+                <div class="info-item">
+                    <p><strong>Nombre completo:</strong> {{ clienteActual.nombreCompleto }}</p>
+                    <p><strong>Documento:</strong> {{ clienteActual.documento }}</p>
+                    <p><strong>Estado:</strong>
+                        <span
+                            [ngClass]="{'text-success': clienteActual.esClienteActivo, 'text-warning': !clienteActual.esClienteActivo}">
+                            {{ clienteActual.esClienteActivo ? 'Activo' : 'Inactivo' }}
+                        </span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Mensaje de error cuando no se encuentra el cliente -->
+            <div class="alert alert-danger" *ngIf="errorCliente">
+                {{ errorCliente }}
+            </div>
+        </div>
+
+        <!-- Sección de información del vehículo -->
+        <div class="section-title">
+            <i class="pi pi-car"></i>
+            <span>Información del Vehículo</span>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="placaVehiculo" class="form-label">Número de Placa</label>
+                <input pInputText type="text" id="placaVehiculo" [(ngModel)]="vehiculo.placa"
+                    placeholder="Ej: ABC-1234">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group required">
+                <label for="marcaVehiculo" class="form-label">Marca</label>
+                <input pInputText type="text" id="marcaVehiculo" [(ngModel)]="vehiculo.marca" placeholder="Ej: Toyota"
+                    required>
+            </div>
+
+            <div class="form-group required">
+                <label for="modeloVehiculo" class="form-label">Modelo</label>
+                <input pInputText type="text" id="modeloVehiculo" [(ngModel)]="vehiculo.modelo"
+                    placeholder="Ej: Corolla" required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="versionVehiculo" class="form-label">Versión</label>
+                <input pInputText type="text" id="versionVehiculo" [(ngModel)]="vehiculo.version" placeholder="Ej: XLI">
+            </div>
+
+            <div class="form-group required">
+                <label for="anioVehiculo" class="form-label">Año</label>
+                <input pInputText type="number" id="anioVehiculo" [(ngModel)]="vehiculo.anio" placeholder="Ej: 2023"
+                    required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="chasisVehiculo" class="form-label">Número de Chasis</label>
+                <input pInputText type="text" id="chasisVehiculo" [(ngModel)]="vehiculo.numeroChasis"
+                    placeholder="Ej: JH4DA9380PS016458">
+            </div>
+
+            <div class="form-group required">
+                <label for="colorVehiculo" class="form-label">Color</label>
+                <input pInputText type="text" id="colorVehiculo" [(ngModel)]="vehiculo.color" placeholder="Ej: Azul"
+                    required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group required">
+                <label for="tipoVehiculoSelect" class="form-label">Tipo de Vehículo</label>
+                <p-dropdown id="tipoVehiculoSelect" [options]="tiposVehiculo" optionLabel="detalle"
+                    optionValue="idTipoVehiculo" [(ngModel)]="vehiculo.idTipoVehiculo" placeholder="Seleccione un tipo"
+                    appendTo="body"></p-dropdown>
+            </div>
+        </div>
+
+
+        <!-- Sección de información adicional -->
+        <div class="section-title">
+            <i class="pi pi-file"></i>
+            <span>Información Adicional</span>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="ultimoAnioMatriculacionVehiculo" class="form-label">Último Año matriculación</label>
+                <p-dropdown id="ultimoAnioMatriculacionVehiculo" [options]="listaAnios"
+                    [(ngModel)]="vehiculo.ultimoAnioMatriculacion" placeholder="Seleccione año" appendTo="body">
+                    <ng-template pTemplate="header">
+                        <div class="text-center font-bold">Seleccione año</div>
+                    </ng-template>
+                </p-dropdown>
+            </div>
+            <div class="form-group">
+                <label for="ultimoAnioRTVVehiculo" class="form-label">Último Año RTV</label>
+                <p-dropdown id="ultimoAnioRTVVehiculo" [options]="listaAnios" [(ngModel)]="vehiculo.ultimoAnioRTV"
+                    placeholder="Seleccione año" appendTo="body">
+                    <ng-template pTemplate="header">
+                        <div class="text-center font-bold">Seleccione año</div>
+                    </ng-template>
+                </p-dropdown>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="dialog-footer">
+        <button pButton type="button" label="Cancelar" icon="pi pi-times" class="p-button-text"
+            (click)="cerrarDialogo()"></button>
+        <button pButton type="button" label="Registrar" icon="pi pi-save" [disabled]="cargandoRegistro || !puedeRegistrarVehiculo"
+            (click)="registrarVehiculo()">
+            <span *ngIf="cargandoRegistro" class="loading-text">
+                <i class="pi pi-spinner pi-spin"></i> Registrando...
+            </span>
+        </button>
+    </div>
+</p-dialog>

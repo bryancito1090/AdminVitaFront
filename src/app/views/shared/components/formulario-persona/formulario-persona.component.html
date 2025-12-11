@@ -2,28 +2,39 @@
     <div class="w-full">
         <div class="flex gap-2 mt-2">
             <p-floatlabel variant="on" class="w-full">
-                <input 
-                pInputText 
-                formControlName="documento" 
-                class="w-full" 
-                [ngClass]="{'ng-invalid ng-dirty': form_persona.get('documento')?.invalid && form_persona.get('documento')?.touched}">
-                <label>CI/RUC/Pasaporte*</label>
-            </p-floatlabel>
-            <p-button [icon]="iconValidarDocumento" aria-label="Validar documento" [disabled]="form_persona.get('documento')?.invalid" (onClick)="validarDocumento()">
-                <p-progress-spinner *ngIf="iconValidarDocumento === ''" ariaLabel="loading" [style]="{ width: '15px', height: '15px' }"/>
-            </p-button>
+            <input 
+            pInputText 
+            formControlName="documento" 
+            class="w-full" 
+            [ngClass]="{'ng-invalid ng-dirty': form_persona.get('documento')?.invalid && form_persona.get('documento')?.touched}">
+            <label>CI/RUC/Pasaporte*</label>
+        </p-floatlabel>
+        <!-- Botón de validar documento - Solo mostrar si NO está en modo edición -->
+        <p-button 
+            *ngIf="!modoEdicion"
+            [icon]="iconValidarDocumento" 
+            aria-label="Validar documento" 
+            [disabled]="form_persona.get('documento')?.invalid" 
+            (onClick)="personaVariante === 'mec' ? validarMecanico() : 
+                    personaVariante === 'prov' ? validarProveedor() : 
+                    personaVariante === 'user' ? validarUsuario() :
+                    validarDocumento()">
+            <p-progress-spinner *ngIf="iconValidarDocumento === ''" ariaLabel="loading" [style]="{ width: '15px', height: '15px' }"/>
+        </p-button>
         </div>
         <div *ngIf="form_persona.get('documento')?.invalid && form_persona.get('documento')?.touched" class="text-red-500 text-sm mt-2">
             <span *ngIf="form_persona.get('documento')?.errors?.['required']">El documento es obligatorio</span>
             <span *ngIf="form_persona.get('documento')?.errors?.['minlength']">Debe tener al menos 10 caracteres.</span>
             <span *ngIf="form_persona.get('documento')?.errors?.['maxlength']">Debe tener máximo 16 caracteres.</span>
         </div>
-        <ng-container *ngIf="validarExistePersona">
+        
+        <!-- Cambiar la condición aquí: mostrar si está validado O si está en modo edición -->
+        <ng-container *ngIf="validarExistePersona || modoEdicion">
             <div class="mb-2 mt-4">
                 <label>Tipo Persona</label>
                 <div class="flex gap-4">
                     <div *ngFor="let tipo of tipoPersona" class="field-checkbox">
-                        <p-radiobutton [inputId]="tipo.key" [value]="tipo" formControlName="tipoPersona" />
+                        <p-radiobutton [inputId]="tipo.key" [value]="tipo" formControlName="tipoPersona" [disabled]="personaExiste || modoEdicion" />
                         <label [for]="tipo.key" class="ml-2">{{ tipo.name }}</label>
                     </div>
                 </div>
@@ -111,17 +122,108 @@
                     <label>Obligada a Contabilidad</label>
                     <div class="flex flex-wrap gap-4">
                         <div *ngFor="let bool of booleanRadio" class="field-checkbox">
-                            <p-radiobutton [inputId]="bool.key" [value]="bool" formControlName="obligadaContabilidad" />
+                            <p-radiobutton [inputId]="bool.key" [value]="bool.key==1 ? true:false" formControlName="obligadaContabilidad" />
                             <label [for]="bool.key" class="ml-2">{{ bool.name }}</label>
                         </div>
                     </div>
                 </div>
-                <div class="flex justify-between max-h-12 gap-4">
-                    <p-button pButton fluid label="Cancelar" severity="secondary" (onClick)="closeDialog()"/>
-                    <p-button type="submit" pButton fluid label="Crear" [disabled]="form_persona.invalid" (click)="crearPersonaHandler()"/>
+            </div>
+            <!-- Sección de mecánico mejorada -->
+            <ng-container *ngIf="personaVariante === 'mec' && form_persona.get('tipoPersona')?.value?.key !== null">
+                <p-divider/>
+                <div class="mb-2 mt-4">
+                    <label class="text-base font-medium">Información del Mecánico</label>
                 </div>
+                <div class="flex flex-col gap-2">
+                    <div class="flex gap-2">
+                        <p-floatlabel variant="on" class="w-full">
+                            <input 
+                                pInputText 
+                                formControlName="pin" 
+                                class="w-full"
+                                [disabled]="shouldDisableMecanicoFields"
+                                [ngClass]="{'ng-invalid ng-dirty': form_persona.get('pin')?.invalid && form_persona.get('pin')?.touched}">
+                            <label>PIN *</label>
+                        </p-floatlabel>
+                        <!-- ✅ MOSTRAR el botón de validación tanto en creación como en edición -->
+                        <p-button 
+                            [icon]="iconValidarPin" 
+                            aria-label="Validar PIN" 
+                            [disabled]="form_persona.get('pin')?.invalid || shouldDisableMecanicoFields" 
+                            (onClick)="validarPinUnico()">
+                            <p-progress-spinner 
+                                *ngIf="iconValidarPin === ''" 
+                                ariaLabel="loading" 
+                                [style]="{ width: '15px', height: '15px' }"/>
+                        </p-button>
+                    </div>
+                    <div *ngIf="form_persona.get('pin')?.invalid && form_persona.get('pin')?.touched" class="text-red-500 text-sm mt-2">
+                        <span *ngIf="form_persona.get('pin')?.errors?.['required']">El PIN es obligatorio</span>
+                        <span *ngIf="form_persona.get('pin')?.errors?.['notUnique']">El PIN ya está en uso</span>
+                    </div>
+                    
+                    <p-floatlabel variant="on" class="w-full">
+                        <input 
+                            pInputText 
+                            formControlName="especialidad" 
+                            class="w-full"
+                            [disabled]="shouldDisableMecanicoFields"
+                            [ngClass]="{'ng-invalid ng-dirty': form_persona.get('especialidad')?.invalid && form_persona.get('especialidad')?.touched}">
+                        <label>Especialidad *</label>
+                    </p-floatlabel>
+                    <div *ngIf="form_persona.get('especialidad')?.invalid && form_persona.get('especialidad')?.touched" class="text-red-500 text-sm mt-2">
+                        <span *ngIf="form_persona.get('especialidad')?.errors?.['required']">La especialidad es obligatoria</span>
+                    </div>
+                    
+                    <div class="my-2">
+                        <label>Es Supervisor</label>
+                        <div class="flex gap-4">
+                            <div *ngFor="let option of booleanRadio" class="field-checkbox">
+                                <p-radiobutton 
+                                    [inputId]="'supervisor_' + option.key" 
+                                    [value]="option" 
+                                    formControlName="esSupervisor" 
+                                    [disabled]="shouldDisableMecanicoFields" />
+                                <label [for]="'supervisor_' + option.key" class="ml-2">{{ option.name }}</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </ng-container>
+            <!-- Sección de usuario -->
+            <ng-container *ngIf="personaVariante === 'user' && form_persona.get('tipoPersona')?.value?.key !== null">
+                <p-divider/>
+                <div class="mb-2 mt-4">
+                    <label class="text-base font-medium">Información del Usuario</label>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <p-floatlabel variant="on" class="w-full">
+                        <input 
+                            pInputText 
+                            type="password"
+                            formControlName="contrasenia" 
+                            class="w-full"
+                            [disabled]="shouldDisableUserFields"
+                            [ngClass]="{'ng-invalid ng-dirty': form_persona.get('contrasenia')?.invalid && form_persona.get('contrasenia')?.touched}">
+                        <label>Contraseña *</label>
+                    </p-floatlabel>
+                    <div *ngIf="form_persona.get('contrasenia')?.invalid && form_persona.get('contrasenia')?.touched" class="text-red-500 text-sm mt-2">
+                        <span *ngIf="form_persona.get('contrasenia')?.errors?.['required']">La contraseña es obligatoria</span>
+                        <span *ngIf="form_persona.get('contrasenia')?.errors?.['minlength']">La contraseña debe tener al menos 6 caracteres</span>
+                    </div>
+                </div>
+            </ng-container>
+            <!-- Botones -->
+           <div class="flex justify-between max-h-12 gap-4 mt-4">
+                <p-button pButton fluid label="Cancelar" severity="secondary" (onClick)="closeDialog()"/>
+                <p-button type="submit" pButton fluid 
+                        [label]="modoEdicion ? 'Actualizar' : 'Crear'" 
+                        [disabled]="!esFormularioValido" 
+                        (click)="crearPersonaHandler()"/>
             </div>
         </ng-container>
-        <p-button *ngIf="!validarExistePersona" class="mt-4 max-h-12" pButton fluid label="Cancelar" severity="secondary" (onClick)="closeDialog()"/>
+        
+        <!-- Solo mostrar cancelar si NO está en modo edición Y no ha validado -->
+        <p-button *ngIf="!validarExistePersona && !modoEdicion" class="mt-4 max-h-12" pButton fluid label="Cancelar" severity="secondary" (onClick)="closeDialog()"/>
     </div>
 </form>

@@ -1,95 +1,505 @@
-<app-themed-layout [isDarkMode]="isDarkModeEnabled">
-    <!-- Sección del PickList para mecánicos -->
-    <div class="card mb-3">
-        <h5>Filtrar por Mecánicos</h5>
-        <p-pickList 
-            [source]="todosMecanicos" 
-            [target]="mecanicosFiltrados" 
-            sourceHeader="Mecánicos Disponibles" 
-            targetHeader="Mecánicos Seleccionados"
-            [responsive]="true"
-            filterBy="nombre"
-            (onMoveToTarget)="onMecanicosChange($event)"
-            (onMoveToSource)="onMecanicosChange($event)"
-            (onMoveAllToTarget)="onMecanicosChange($event)"
-            (onMoveAllToSource)="onMecanicosChange($event)"
-            [sourceStyle]="{'height':'250px'}" 
-            [targetStyle]="{'height':'250px'}">
-            <ng-template let-mecanico pTemplate="item">
-                <div>{{mecanico.nombre}} {{mecanico.apellidos}}</div>
+<p-toast [style]="{ marginTop: '80px' }" />
+
+<div class="card pt-4">
+  <div class="table-wrapper">
+    <p-table
+      #dt1
+      [columns]="cols"
+      [value]="ordenes"
+      [paginator]="true"
+      [rows]="5"
+      [loading]="loading"
+      [tableStyle]="{ 'min-width': '50rem' }"
+      [rowsPerPageOptions]="[5, 10, 20]"
+      stripedRows
+    >
+      <ng-template pTemplate="caption">
+        <div class="table-caption">
+          <div class="chip-section">
+            <p-divider align="left" class="m-0!"><b class="font-normal">Mecanicos</b></p-divider>
+            <div class="chip-strip">
+              <ng-container *ngFor="let mec of todosMecanicos">
+                <button (click)="filterMecHandler(mec)" type="button" class="filter-pill">
+                  <i class="pi pi-user-plus"></i>
+                  <span>{{ mec.nombre }}</span>
+                </button>
+              </ng-container>
+            </div>
+          </div>
+          <div class="chip-section" *ngIf="mecanicosFiltrados.length > 0">
+            <p-divider align="left"><b class="font-normal">Mecanicos filtrados</b></p-divider>
+            <div class="chip-strip">
+              <ng-container *ngFor="let mec of mecanicosFiltrados">
+                <button (click)="filterMecHandler(mec)" type="button" class="filter-pill filter-pill--active">
+                  <i class="pi pi-user-minus"></i>
+                  <span>{{ mec.nombre }}</span>
+                </button>
+              </ng-container>
+            </div>
+          </div>
+          <div class="caption-actions">
+            <p-iconfield iconPosition="left" class="caption-search">
+              <p-inputicon>
+                <i class="pi pi-search"></i>
+              </p-inputicon>
+              <input pInputText fluid type="text" class="w-full" (input)="filterGlobal($event, dt1)" placeholder="Busca por palabra clave" />
+            </p-iconfield>
+            <div class="caption-buttons">
+              <p-button label="Limpiar" severity="secondary" icon="pi pi-filter-slash" (click)="clear(dt1)" />
+              <p-button class="w-full md:w-auto" fluid icon="pi pi-plus" label="Crear OT" (onClick)="irANuevaOrden()" />
+            </div>
+          </div>
+        </div>
+      </ng-template>
+
+      <ng-template pTemplate="header" let-columns>
+        <tr>
+          <th [ngStyle]="col.sort ? { 'min-width': '15rem' } : null" [pSortableColumn]="col.field" *ngFor="let col of columns">
+            <div class="flex items-center">
+              {{ col.header }}
+              <p-columnFilter [type]="col.type" *ngIf="col.sort === true" [field]="col.field" display="menu" />
+
+              <p-columnFilter field="estado" *ngIf="col.field === 'estado'" matchMode="equals" display="menu">
+                <ng-template pTemplate="filter" let-filter="filterCallback">
+                  <p-dropdown [(ngModel)]="selectedEstadoFilter" [options]="estado" (onChange)="filter(selectedEstadoFilter)" placeholder="Seleccione un estado" optionLabel="name" optionValue="code">
+                    <ng-template let-option pTemplate="item">
+                      <p-tag [value]="option.name" [severity]="getSeverityEstado(option.code)" />
+                    </ng-template>
+                  </p-dropdown>
+                </ng-template>
+              </p-columnFilter>
+
+              <p-columnFilter field="prioridad" *ngIf="col.field === 'prioridad'" matchMode="equals" display="menu">
+                <ng-template pTemplate="filter" let-filter="filterCallback">
+                  <p-dropdown [(ngModel)]="selectedPrioridadFilter" [options]="prioridad" (onChange)="filter(selectedPrioridadFilter)" placeholder="Seleccione una prioridad" optionLabel="name" optionValue="code">
+                    <ng-template let-option pTemplate="item">
+                      <p-tag [value]="option.name" [severity]="getSeverityPrioridad(option.code)" />
+                    </ng-template>
+                  </p-dropdown>
+                </ng-template>
+              </p-columnFilter>
+            </div>
+          </th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-rowData let-columns="columns">
+        <tr>
+          <td *ngFor="let col of columns">
+            <ng-container *ngIf="col.field === 'estado' || col.field === 'prioridad'; else normalData">
+              <p-tag *ngIf="col.field === 'estado'" [value]="GetEstado(rowData[col.field])" [severity]="getSeverityEstado(rowData[col.field])"></p-tag>
+              <p-tag *ngIf="col.field === 'prioridad'" [value]="GetPrioridad(rowData[col.field])" [severity]="getSeverityPrioridad(rowData[col.field])"></p-tag>
+            </ng-container>
+
+            <ng-template #normalData>
+              {{ rowData[col.field] }}
             </ng-template>
-        </p-pickList>
+            <div *ngIf="col.field == 'actions'" class="flex justify-start w-full gap-2">
+              <p-button
+                icon="pi pi-pen-to-square"
+                (onClick)="validarYEditarOT(rowData['codigo'])"
+                pTooltip="Editar Orden de Trabajo"
+                tooltipPosition="top"
+              />
+
+              <p-button
+                icon="pi pi-expand"
+                (onClick)="abrirDialogoOrdenTrabajo(rowData['codigo'])"
+                pTooltip="Ver detalles"
+                tooltipPosition="top"
+              />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td [attr.colspan]="cols.length" class="text-center">No se encontraron ordenes de trabajo.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<p-dialog
+  [header]="'Orden de trabajo codigo ' + codeExpandDialog"
+  closeOnEscape="false"
+  [modal]="true"
+  [(visible)]="visibleExpand"
+  [style]="{ width: '90vw', maxWidth: '75rem' }"
+  [breakpoints]="{ '1199px': '95vw', '768px': '98vw', '575px': '100vw' }"
+  styleClass="responsive-dialog"
+>
+  <app-skeleton-expand-info *ngIf="loadingExpandDialog" />
+
+  <ng-container *ngIf="!loadingExpandDialog">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 border border-surface-200 rounded-lg bg-surface-0">
+      <div class="col-span-1">
+        <p-divider align="left" type="solid"><b>Descripcion</b></p-divider>
+        <div class="space-y-2">
+          <div class="flex flex-col sm:flex-row sm:items-center gap-1">
+            <span class="font-bold text-sm">Detalle:</span>
+            <span class="text-sm">{{ ExpandItem.detalle }}</span>
+          </div>
+          <div class="flex flex-col sm:flex-row sm:items-center gap-1">
+            <span class="font-bold text-sm">Prioridad:</span>
+            <p-tag [severity]="getSeverityPrioridad(ExpandItem.prioridad)" class="text-xs">{{ GetPrioridad(ExpandItem.prioridad) }}</p-tag>
+          </div>
+          <div class="flex flex-col sm:flex-row sm:items-center gap-1">
+            <span class="font-bold text-sm">Estado:</span>
+            <p-tag [severity]="getSeverityEstado(ExpandItem.estado)" class="text-xs">{{ GetEstado(ExpandItem.estado) }}</p-tag>
+          </div>
+          <div class="flex flex-col gap-1 text-xs">
+            <span><b>Fecha inicio:</b> {{ formatDate(ExpandItem.fechaCreada ? ExpandItem.fechaCreada.toString() : 'Vacio') }}</span>
+            <span><b>Fecha programada:</b> {{ formatDate(ExpandItem.fechaProgramada ? ExpandItem.fechaProgramada.toString() : 'Vacio') }}</span>
+            <span><b>Fecha fin:</b> {{ formatDate(ExpandItem.fechaFinalizacion ? ExpandItem.fechaFinalizacion.toString() : 'Vacio') }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-span-1">
+        <p-divider align="left" type="solid"><b>Vehiculo</b></p-divider>
+        <div class="space-y-1 text-sm">
+          <div><b>Codigo:</b> {{ ExpandItem.codigoVehiculo }}</div>
+          <div><b>Placa:</b> {{ ExpandItem.placa }}</div>
+          <div><b>Kilometraje:</b> {{ ExpandItem.kilometraje }} km</div>
+          <div><b>Anio:</b> {{ ExpandItem.anio }}</div>
+          <div><b>Estado:</b> {{ getEstadoVehiculo(ExpandItem.estadoVehiculo) }}</div>
+          <div><b>Propietario:</b> {{ ExpandItem.propietario }}</div>
+        </div>
+      </div>
+
+      <div class="col-span-1">
+        <p-divider align="left" type="solid"><b>Cliente</b></p-divider>
+        <div class="space-y-1 text-sm">
+          <div><b>Nombre:</b> {{ ExpandItem.nombreCliente }}</div>
+          <div><b>Celular:</b> {{ ExpandItem.celular }}</div>
+          <div><b>Correo:</b> {{ ExpandItem.correo }}</div>
+          <div><b>Direccion:</b> {{ ExpandItem.direccion }}</div>
+        </div>
+        <p-divider class="my-2"></p-divider>
+        <div class="text-sm"><b>Supervisor:</b> {{ ExpandItem.supervisor }}</div>
+      </div>
     </div>
 
-    <!-- Tabla de Órdenes de Trabajo -->
-    <div class="card" style="margin-bottom: 0;">
-        <p-table 
-            #dt1
-            [columns]="cols" 
-            [value]="ordenes" 
-            [paginator]="true"
-            [rows]="5"
-            [loading]="loading"
-            [tableStyle]="{ 'min-width': '50rem' }"
-            [rowsPerPageOptions]="[5, 10, 20]"
-            stripedRows
+    <div class="mb-4 px-2">
+      <div class="hidden md:flex justify-center">
+        <p-selectbutton
+          [options]="ExpandOptions"
+          [(ngModel)]="ExpandOptionsValue"
+          (click)="tablesOptionHandler()"
+          optionLabel="name"
+          optionValue="name"
+          styleClass="responsive-select-button"
         >
-            <ng-template pTemplate="header" let-columns>
-                <tr>
-                    <th [class]="{'min-width:15rem':col.sort}" [pSortableColumn]="col.field" *ngFor="let col of columns">
-                        <div class="flex items-center">
-                            {{ col.header }}
-                            <p-sortIcon *ngIf="col.sort" [field]="col.field"></p-sortIcon>
-                            <p-columnFilter [type]="col.type" *ngIf="col.sort === true" [field]="col.field" display="menu" />
-    
-                            <p-columnFilter field="estado" *ngIf="col.field === 'estado'" matchMode="equals" display="menu">
-                                <ng-template pTemplate="filter" let-filter="filterCallback">
-                                    <p-dropdown [(ngModel)]="selectedEstadoFilter" [options]="estado" (onChange)="filter(selectedEstadoFilter)" placeholder="Seleccione un estado" optionLabel="name" optionValue="code">
-                                        <ng-template let-option pTemplate="item">
-                                            <p-tag [value]="option.name" [severity]="getSeverityEstado(option.code)"/>
-                                        </ng-template>
-                                    </p-dropdown>
-                                </ng-template>
-                            </p-columnFilter>
-    
-                            <p-columnFilter field="prioridad" *ngIf="col.field === 'prioridad'" matchMode="equals" display="menu">
-                                <ng-template pTemplate="filter" let-filter="filterCallback">
-                                    <p-dropdown [(ngModel)]="selectedPrioridadFilter" [options]="prioridad" (onChange)="filter(selectedPrioridadFilter)" placeholder="Seleccione una prioridad" optionLabel="name" optionValue="code">
-                                        <ng-template let-option pTemplate="item">
-                                            <p-tag [value]="option.name" [severity]="getSeverityPrioridad(option.code)"/>
-                                        </ng-template>
-                                    </p-dropdown>
-                                </ng-template>
-                            </p-columnFilter>
-                        </div>
-                    </th>
-                </tr>
-            </ng-template>
-            
-            <ng-template pTemplate="body" let-rowData let-columns="columns">
-                <tr>
-                    <td *ngFor="let col of columns">
-                        <ng-container *ngIf="col.field === 'estado' || col.field === 'prioridad'; else normalData">
-                            <p-tag *ngIf="col.field === 'estado'" [value]="GetEstado(rowData[col.field])" [severity]="getSeverityEstado(rowData[col.field])"></p-tag>
-                            <p-tag *ngIf="col.field === 'prioridad'" [value]="GetPrioridad(rowData[col.field])" [severity]="getSeverityPrioridad(rowData[col.field])"></p-tag>
-                        </ng-container>
-    
-                        <ng-template #normalData>
-                            {{ rowData[col.field] }}
-                        </ng-template>
-                        <div *ngIf="col.field =='actions'" class="flex justify-start w-full gap-2"> 
-                            <p-button icon="pi pi-pen-to-square"  />
-                            <p-button icon="pi pi-expand" />
-                        </div>
-                    </td>
-                </tr>
-            </ng-template>
-            
-            <ng-template pTemplate="emptymessage">
-                <tr>
-                    <td [attr.colspan]="cols.length" class="text-center">No se encontraron órdenes de trabajo.</td>
-                </tr>
-            </ng-template>
-        </p-table>
+          <ng-template let-option pTemplate="item">
+            <div class="flex flex-col items-center gap-1 p-2">
+              <span class="text-xs font-medium">{{ option.name }}</span>
+              <p-badge [value]="option.code" size="small" />
+            </div>
+          </ng-template>
+        </p-selectbutton>
+      </div>
+
+      <div class="block md:hidden">
+        <div class="option-grid">
+          <button
+            *ngFor="let option of ExpandOptions"
+            (click)="ExpandOptionsValue = option.name; tablesOptionHandler()"
+            [class]="'option-tile ' + (ExpandOptionsValue === option.name ? 'is-active' : '')"
+            type="button"
+          >
+            <span class="option-label">{{ option.name }}</span>
+            <span class="option-badge">{{ option.code }}</span>
+          </button>
+        </div>
+      </div>
     </div>
-</app-themed-layout>
+
+    <div class="data-container">
+      <div class="hidden md:block">
+        <p-table
+          showGridlines
+          [columns]="expandCols"
+          [value]="expandDataTables"
+          [tableStyle]="{ 'min-width': '50rem' }"
+          styleClass="responsive-table"
+        >
+          <ng-template pTemplate="header" let-columns>
+            <tr>
+              <th *ngFor="let col of columns" class="text-sm">
+                {{ col.header }}
+              </th>
+            </tr>
+          </ng-template>
+
+          <ng-template pTemplate="body" let-rowData let-columns="columns">
+            <tr [ngClass]="rowData['codigoTarea'] == selectedCodeObservacion ? '!bg-secondary !text-primary-contrast' : ''">
+              <td *ngFor="let col of columns" class="text-sm">
+                <ng-container
+                  *ngIf="
+                    col.field === 'mecanicos' ||
+                    col.field === 'requiereServicioExterno' ||
+                    col.field === 'requiereRepuesto' ||
+                    col.field === 'observaciones' ||
+                    col.field === 'esSupervisor' ||
+                    col.field === 'requiereAutorizacion' ||
+                    col.field === 'estado' ||
+                    col.field === 'duracion' ||
+                    col.field === 'codigoTarea' ||
+                    col.field === 'cantidad' ||
+                    col.field === 'precio' ||
+                    col.field === 'idAdjunto' ||
+                    col.field === 'aprobado' ||
+                    col.field === 'fechaRegistro' ||
+                    col.field === 'fechaAprobacion' ||
+                    col.field === 'actions';
+                    else normalData
+                  "
+                >
+                  <div class="w-full flex align-center justify-center">
+                    <ng-container *ngIf="col.field === 'mecanicos'">
+                      <p *ngFor="let mecanico of rowData[col.field]" class="text-xs">{{ mecanico.nombreCompleto }}</p>
+                    </ng-container>
+
+                    <ng-container *ngIf="col.field === 'idAdjunto'">
+                      <p-button
+                        (onClick)="showExpandImage(); getAdjuntoNameById(rowData[col.field]);"
+                        size="small"
+                        variant="text"
+                        [raised]="true"
+                        label="Ver"
+                      />
+                    </ng-container>
+
+                    <ng-container *ngIf="col.field === 'aprobado'">
+                      <p-tag [value]="getEstadoAprobacion(rowData[col.field])" [severity]="getSeverityAprobacion(rowData[col.field])" size="small" />
+                    </ng-container>
+
+                    <ng-container *ngIf="col.field === 'fechaRegistro' || col.field === 'fechaAprobacion'">
+                      <span class="text-xs">{{ rowData[col.field] ? (rowData[col.field] | date: 'dd/MM/yyyy HH:mm') : 'N/A' }}</span>
+                    </ng-container>
+
+                    <ng-container *ngIf="col.field === 'actions' && ExpandOptionsValue === 'Solicitudes'">
+                      <div class="flex gap-1 justify-center"></div>
+                    </ng-container>
+
+                    <p-tag
+                      *ngIf="
+                        col.field === 'requiereServicioExterno' ||
+                        col.field === 'requiereRepuesto' ||
+                        col.field === 'esSupervisor' ||
+                        col.field === 'requiereAutorizacion'
+                      "
+                      size="small"
+                      [value]="rowData[col.field] ? 'Si' : 'No'"
+                      [severity]="rowData[col.field] ? 'success' : 'danger'"
+                    />
+
+                    <p-tag
+                      *ngIf="col.field === 'estado' && ExpandOptionsValue === 'Tareas'"
+                      size="small"
+                      [value]="getEstadoTareaTexto(rowData[col.field])"
+                      [severity]="getEstadoTareaSeverity(rowData[col.field])"
+                    />
+
+                    <p-tag
+                      *ngIf="(col.field === 'duracion' || col.field === 'codigoTarea' || col.field === 'cantidad') || (col.field === 'estado' && ExpandOptionsValue !== 'Tareas')"
+                      size="small"
+                      severity="secondary"
+                      [value]="rowData[col.field]"
+                    />
+
+                    <p-tag
+                      *ngIf="col.field === 'precio'"
+                      severity="secondary"
+                      size="small"
+                      [value]="(formatCurrency(rowData[col.field]) | currency: 'USD':'symbol-narrow') || ''"
+                    />
+                    <p-tag
+                      *ngIf="col.field === 'observaciones'"
+                      size="small"
+                      (click)="redirectObservaciones(rowData['codigo'])"
+                      icon="pi pi-arrow-circle-right"
+                      [value]="rowData[col.field].length != 0 ? 'Si' : 'No'"
+                      [severity]="rowData[col.field].length != 0 ? 'secondary' : 'danger'"
+                      class="cursor-pointer"
+                    />
+                  </div>
+                </ng-container>
+
+                <ng-template #normalData>
+                  <div class="text-xs">{{ rowData[col.field] }}</div>
+                </ng-template>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+      <div class="block md:hidden">
+        <div class="space-y-3" *ngIf="expandDataTables.length > 0">
+          <div
+            *ngFor="let item of expandDataTables; let i = index"
+            class="border border-surface-200 rounded-lg p-3 bg-surface-0 shadow-sm"
+            [ngClass]="item['codigoTarea'] == selectedCodeObservacion ? 'bg-primary-50 border-primary-200' : ''"
+          >
+            <div class="flex justify-between items-start mb-3 pb-2 border-b border-surface-100">
+              <div class="flex-1">
+                <h6 class="font-semibold text-sm text-primary-600 mb-1">
+                  Item #{{ i + 1 }}
+                  <span *ngIf="item['codigo']" class="text-xs text-surface-500 font-normal">
+                    - {{ item['codigo'] }}
+                  </span>
+                </h6>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <div *ngFor="let col of expandCols" class="item-row">
+                <span class="item-label">
+                  {{ col.header }}:
+                </span>
+
+                <div class="item-value">
+                  <ng-container *ngIf="col.field === 'mecanicos'">
+                    <div *ngFor="let mecanico of item[col.field]" class="text-xs">
+                      {{ mecanico.nombreCompleto }}
+                    </div>
+                  </ng-container>
+
+                  <ng-container *ngIf="col.field === 'idAdjunto'">
+                    <p-button
+                      (onClick)="showExpandImage(); getAdjuntoNameById(item[col.field]);"
+                      size="small"
+                      severity="secondary"
+                      variant="text"
+                      label="Ver"
+                      icon="pi pi-eye"
+                    />
+                  </ng-container>
+
+                  <ng-container *ngIf="col.field === 'aprobado'">
+                    <p-tag [value]="getEstadoAprobacion(item[col.field])" [severity]="getSeverityAprobacion(item[col.field])" size="small" />
+                  </ng-container>
+
+                  <ng-container *ngIf="col.field === 'fechaRegistro' || col.field === 'fechaAprobacion'">
+                    <span class="text-xs">
+                      {{ item[col.field] ? (item[col.field] | date: 'dd/MM/yyyy HH:mm') : 'N/A' }}
+                    </span>
+                  </ng-container>
+
+                  <p-tag
+                    *ngIf="
+                      col.field === 'requiereServicioExterno' ||
+                      col.field === 'requiereRepuesto' ||
+                      col.field === 'esSupervisor' ||
+                      col.field === 'requiereAutorizacion'
+                    "
+                    size="small"
+                    [value]="item[col.field] ? 'Si' : 'No'"
+                    [severity]="item[col.field] ? 'success' : 'danger'"
+                  />
+
+                  <p-tag
+                    *ngIf="col.field === 'estado' && ExpandOptionsValue === 'Tareas'"
+                    size="small"
+                    [value]="getEstadoTareaTexto(item[col.field])"
+                    [severity]="getEstadoTareaSeverity(item[col.field])"
+                  />
+
+                  <p-tag
+                    *ngIf="(col.field === 'duracion' || col.field === 'codigoTarea' || col.field === 'cantidad') || (col.field === 'estado' && ExpandOptionsValue !== 'Tareas')"
+                    size="small"
+                    severity="secondary"
+                    [value]="item[col.field]"
+                  />
+
+                  <p-tag
+                    *ngIf="col.field === 'precio'"
+                    severity="secondary"
+                    size="small"
+                    [value]="(formatCurrency(item[col.field]) | currency: 'USD':'symbol-narrow') || ''"
+                  />
+                  <p-button
+                    *ngIf="col.field === 'observaciones'"
+                    size="small"
+                    severity="secondary"
+                    variant="text"
+                    (click)="redirectObservaciones(item['codigo'])"
+                    icon="pi pi-arrow-right"
+                    [label]="item[col.field].length != 0 ? 'Ver' : 'Sin obs.'"
+                    class="text-xs"
+                  />
+
+                  <span
+                    *ngIf="
+                      ![
+                        'mecanicos',
+                        'requiereServicioExterno',
+                        'requiereRepuesto',
+                        'observaciones',
+                        'esSupervisor',
+                        'requiereAutorizacion',
+                        'estado',
+                        'duracion',
+                        'codigoTarea',
+                        'cantidad',
+                        'precio',
+                        'idAdjunto',
+                        'aprobado',
+                        'fechaRegistro',
+                        'fechaAprobacion',
+                        'actions'
+                      ].includes(col.field ?? '')
+                    "
+                    class="text-xs"
+                  >
+                    {{ col.field ? item[col.field] : '' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-center py-8" *ngIf="expandDataTables.length == 0 && expandCols.length > 0 && ExpandOptionsValue">
+        <div class="text-center">
+          <i class="pi pi-info-circle text-3xl text-surface-400 mb-3"></i>
+          <p class="text-surface-600 mb-1">No se encontraron {{ ExpandOptionsValue.toLowerCase() }}</p>
+          <p class="text-xs text-surface-400">Codigo OT: {{ codeExpandDialog }}</p>
+        </div>
+      </div>
+
+      <div class="text-center py-8" *ngIf="!ExpandOptionsValue && !loadingExpandDialog">
+        <p class="text-surface-500">Selecciona una categoria para ver los datos.</p>
+      </div>
+    </div>
+  </ng-container>
+</p-dialog>
+
+<p-dialog
+  [(visible)]="displayImage"
+  [modal]="true"
+  [style]="{ width: '90vw', maxWidth: '50rem' }"
+  [breakpoints]="{ '1199px': '95vw', '575px': '98vw' }"
+  styleClass="image-dialog"
+>
+  <ng-container *ngIf="archivoUrl">
+    <img
+      *ngIf="tipoArchivo === 'imagen'"
+      [src]="archivoUrl"
+      style="width: 100%; height: auto; max-height: 70vh; object-fit: contain;"
+      alt="Imagen adjunta"
+    />
+
+    <iframe
+      *ngIf="tipoArchivo === 'pdf'"
+      [src]="archivoUrl"
+      style="width: 100%; height: 60vh; min-height: 400px;"
+      frameborder="0"
+    ></iframe>
+  </ng-container>
+</p-dialog>

@@ -51,6 +51,7 @@ export class AdquisicionComponent implements OnInit {
     this.cols = HeadersTables.AdquisicionesList;
     this.comprasService.getComprasList().subscribe({
       next: (response) => {
+        console.log(response);
         this.compras = response.compras;
         this.loading = false;
       },error: (err) => {
@@ -178,8 +179,12 @@ OnExportButton() {
     console.error('Error al exportar datos:', error);
   }
 }
-  showDialogAdd(){}
-  redirectEditPage(factura: string) {
-    this.router.navigate([`panel/Adquisiciones/editar/${factura}`]);
+redirectEditPage(factura: string) {
+  const compra = this.compras.find(c => c.numeroFactura === factura);
+  if (compra && compra.cerrado) {
+    this.toastr.warning('No se puede editar una adquisición que ya está cerrada', 'Adquisición cerrada');
+    return; 
   }
+  this.router.navigate([`panel/Adquisiciones/editar/${factura}`]);
+}
 }

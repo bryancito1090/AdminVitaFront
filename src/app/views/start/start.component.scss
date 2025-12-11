@@ -1,0 +1,20 @@
+#bg-principal {
+    background-image: url("../../../assets/img/bg_istpet.jpg");
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+.contenedor-main{
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+}
+.contenedor-form{
+    width: 100%;
+    min-width: 25rem;
+    border-radius: 25px;
+    @media (max-width: 480px) { 
+        max-width: 20rem;
+    }
+}
+

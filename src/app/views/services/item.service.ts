@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../../../environments/environment.development';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { AuthService } from '../auth/service/auth.service';
 import { Observable } from 'rxjs';
 import { Item } from '../../../domain/response/Item.model';
@@ -19,11 +19,31 @@ export class ItemService {
     const headers = this.auth.getAuthHeaders();
     return this.http.get<Item[]>(`${this.apiURL}/GetListaItems`, { headers });
   }
+  getItemsTipoRespuesto(tipoItemId: number = 1): Observable<any> {
+    const headers = this.auth.getAuthHeaders();
+    const params = new HttpParams().set('IdTipoItem', tipoItemId.toString());
+    return this.http.get<any>(`${this.apiURL}/GetListaItems`, { headers, params });
+  }
+  getItemsTipoRespuestoMec(tipoItemId: number = 1): Observable<any> {
+    const headers = this.auth.getMecanicoAuthHeaders();
+    const params = new HttpParams().set('IdTipoItem', tipoItemId.toString());
+    return this.http.get<any>(`${this.apiURL}/GetListaItems`, { headers, params });
+  }
+  getItemsTipoInsumoMec(tipoItemId: number = 2): Observable<any> {
+    const headers = this.auth.getMecanicoAuthHeaders();
+    const params = new HttpParams().set('IdTipoItem', tipoItemId.toString());
+    return this.http.get<any>(`${this.apiURL}/GetListaItems`, { headers, params });
+  }
   getMovimientosXItems(id: number): Observable<any>{
     const headers = this.auth.getAuthHeaders();
     return this.http.get<any>(`${this.apiURL}/GetMovimientoItem/${id}`, { headers });
   }
   createUpdateItem(item: CreateUpdateItemRequest): Observable<any> {
-    return this.http.post<any>(`${this.apiURL}/CreateUpdateItem`, item);
+    const headers = this.auth.getAuthHeaders();
+    return this.http.post<any>(`${this.apiURL}/CreateUpdateItem`, item, { headers });
+  }
+  getItemsByTarea(idTares: number): Observable<Item[]> {
+    const headers = this.auth.getAuthHeaders();
+    return this.http.get<Item[]>(`${environment.domain}${environment.apiEndpoint}/Repuestos/RepuestosPorTarea/${idTares}`, { headers });
   }
 }

@@ -3,8 +3,7 @@ export interface Column {
     header?: string;
     sort?: boolean;
     type?: string;
-  }
-
+}
 export const HeadersTables = {
   OrdenesTrabajoList: [
     { field: 'codigo', header: 'Código', sort: false, type: '' },
@@ -34,7 +33,7 @@ export const HeadersTables = {
     {field: 'detalle', header: 'Detalle'},
     {field: 'estado', header: 'Estado'},
     {field: 'mecanicos', header: 'Mecánicos'},
-    {field: 'duracion', header: 'Duración (Unidades de Tiempo)'},
+    {field: 'duracion', header: 'Duración (1 Unidad = 20 minutos)'},
     {field: 'requiereServicioExterno', header: 'Servicio Externo'},
     {field: 'requiereRepuesto', header: 'Requiere Repuesto/s'},
     {field: 'observaciones', header: 'Observaciones'}
@@ -71,15 +70,18 @@ export const HeadersTables = {
     {field: 'detalle', header: 'Detalle'},
     {field: 'fechaRegistro', header: 'Fecha de Registro'},
   ],
-  SolicitudTareaList: [
-    {field: 'codigo', header: 'Código Solicitud'},
-    {field: 'detalle', header: 'Detalle'},
-    {field: 'solicitante', header: 'Solicitante'},
-    {field: 'codigoTarea', header: 'Código Tarea'},
-    {field: 'fechaRegistro', header: 'Fecha de Registro'},
-    {field: 'fechaAprobacion', header: 'Fecha de Aprobación'},
-    {field: 'idAdjunto', header: 'Adjunto'},
-  ],
+ // En tu archivo HeadersTables, actualiza SolicitudTareaList para incluir acciones
+SolicitudTareaList: [
+  { field: 'codigo', header: 'Código', sort: false, type: 'text' },
+  { field: 'codigoTarea', header: 'Código Tarea', sort: false, type: 'text' },
+  { field: 'detalle', header: 'Detalle', sort: false, type: 'text' },
+  { field: 'solicitante', header: 'Solicitante', sort: false, type: 'text' },
+  { field: 'fechaRegistro', header: 'Fecha Registro', sort: false, type: 'date' },
+  { field: 'fechaAprobacion', header: 'Fecha Aprobación', sort: false, type: 'date' },
+  { field: 'aprobado', header: 'Estado', sort: false, type: 'text' },
+  { field: 'idAdjunto', header: 'Evidencia', sort: false, type: 'text' },
+  { field: 'actions', header: 'Acciones', sort: false, type: 'text' }
+],
   AdquisicionesList: [
     { field: 'numeroFactura', header: '# Factura' },
     { field: 'fechaRegistro', header: 'Fecha de Registro' },
@@ -126,4 +128,31 @@ export const HeadersTables = {
     { field: 'stock', header: 'Stock'},
     { field: 'nombreMagnitud', header: 'Magnitud'}
   ]
+}
+export const HeadersTablesPersons = {
+  PersonasList: [
+    { field: 'codigo', header: 'Código'},
+    { field: 'nombre', header: 'Nombre Completo'},
+    { field: 'razonSocial', header: 'Razón Social'},
+    { field: 'tipoPersona', header: 'Persona'},
+    { field: 'documento', header: 'Documento'},
+    { field: 'email', header: 'Email'},
+    { field: 'celular', header: 'Celular'},
+    { field: 'telefono', header: 'Teléfono'},
+    { field: 'direccion', header: 'Dirección'},
+    { field: 'actions', header: 'Acciones'}
+  ],
+}
+export const HeadersTablesMecanico = {
+  Tareas: [
+    { field: 'codigo', header: 'Código', type: 'text', sort: true },
+    { field: 'detalle', header: 'Detalle', sort: true},
+    { field: 'duracion', header: 'Duración', sort: true},
+    { field: 'estado', header: 'Estado',},
+    { field: 'mecanicos', header: 'Mecanicos', sort: true},
+    { field: 'requiereServicioExterno', header: 'Trabajo Externo'},
+    { field: 'requiereRepuesto', header: 'Requiere Repuesto'},
+    { field: 'observaciones', header: 'Observaciones',sort: true},
+    { field: 'actions', header: 'Acciones'}
+  ],
 }

@@ -26,4 +26,11 @@ export class DetalleCompraService {
       { headers }
     );
   }
+  eliminarDetalleCompra(id: number): Observable<any> {
+    const headers = this.auth.getAuthHeaders();
+    return this.http.delete<any>(
+      `${this.apiURL}/EliminarDetalleCompra/${id}`, 
+      { headers }
+    );
+  }
 }

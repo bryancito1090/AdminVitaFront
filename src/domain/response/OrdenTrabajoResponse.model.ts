@@ -31,7 +31,8 @@ export interface OrdenTrabajo {
     celular: string;
     correo: string;
     direccion: string;
-    supervisor: number;
+    supervisor: string;
+    idSupervisor: number;
 }
 export interface ExpandInfoOT {
     totalTareas: number;

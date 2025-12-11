@@ -12,11 +12,14 @@ export interface TareaDetalle {
     observaciones: ObservacionT[];
 }
 export interface TrabajoExternoDetalle {
+    idTareaOt: number;
     codigo: string;
+    estado: number;
     solicitante: string;
     detalle: string;
     requiereServicioExterno: boolean;
     requiereAutorizacion: boolean;
+    observaciones: ObservacionT[];
 }
 export interface ObservacionesOTDetalle {
     idObservacion: number;

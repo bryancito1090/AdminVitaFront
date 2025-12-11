@@ -1,0 +1,634 @@
+/* ===== ESTILOS GENERALES DEL DIÁLOGO ===== */
+.vehiculo-dialog {
+  border-radius: 16px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  border: none !important;
+  overflow: hidden !important;
+  max-height: 90vh !important;
+}
+
+.vehiculo-dialog .p-dialog-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  padding: 1.5rem 2rem !important;
+  border-bottom: none !important;
+  font-weight: 600 !important;
+  font-size: 1.125rem !important;
+}
+
+.vehiculo-dialog .p-dialog-header .p-dialog-title {
+  color: white !important;
+}
+
+.vehiculo-dialog .p-dialog-header .p-dialog-icon {
+  color: white !important;
+}
+
+.vehiculo-dialog .p-dialog-header .p-dialog-icon:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.vehiculo-dialog .p-dialog-content {
+  padding: 0 !important;
+  background: #f8fafc !important;
+  overflow-y: auto !important;
+  max-height: calc(90vh - 140px) !important;
+}
+
+/* ===== CONTENIDO DEL DIÁLOGO ===== */
+.dialog-content {
+  padding: 2rem;
+  background: #f8fafc;
+  /* Removido min-height fijo que causaba problemas */
+}
+
+/* ===== MENSAJES DE ALERTA ===== */
+.alert {
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 500;
+  animation: slideIn 0.3s ease-out;
+}
+
+.alert-danger {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #dc2626;
+  border: 1px solid #f87171;
+}
+
+.alert-success {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #059669;
+  border: 1px solid #34d399;
+}
+
+.alert i {
+  font-size: 1.125rem;
+}
+
+/* ===== TÍTULOS DE SECCIÓN ===== */
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  margin-top: 2rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1e293b;
+  padding: 1rem 1.5rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  position: relative;
+  overflow: hidden;
+}
+
+.section-title:first-child {
+  margin-top: 0;
+}
+
+.section-title::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+}
+
+.section-title i {
+  color: #667eea;
+  font-size: 1.25rem;
+  padding: 0.5rem;
+  background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+  border-radius: 8px;
+}
+
+/* ===== SECCIÓN DE VALIDACIÓN DEL CLIENTE ===== */
+.client-validation-section {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.client-validation-section:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.cedula-validation-container {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.cedula-validation-container input {
+  flex: 1;
+  border: 2px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 0.875rem !important;
+  transition: all 0.3s ease !important;
+  background: white !important;
+}
+
+.cedula-validation-container input:focus {
+  border-color: #667eea !important;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+  outline: none !important;
+}
+
+.cedula-validation-container button {
+  border-radius: 8px !important;
+  padding: 0.75rem 1.5rem !important;
+  font-weight: 500 !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border: none !important;
+  color: white !important;
+  transition: all 0.3s ease !important;
+  white-space: nowrap;
+}
+
+.cedula-validation-container button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 15px -3px rgba(102, 126, 234, 0.4) !important;
+}
+
+.cedula-validation-container button:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+}
+
+/* ===== INFORMACIÓN DEL CLIENTE ===== */
+.info-section {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1rem;
+  animation: slideIn 0.3s ease-out;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.info-item p {
+  margin: 0;
+  color: #0f172a;
+  font-size: 0.875rem;
+}
+
+.info-item strong {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.text-success {
+  color: #059669 !important;
+  font-weight: 600;
+}
+
+.text-warning {
+  color: #d97706 !important;
+  font-weight: 600;
+}
+
+/* ===== FILAS Y GRUPOS DE FORMULARIO ===== */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.form-row:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.form-row:last-child {
+  margin-bottom: 0;
+}
+
+/* Fila de un solo campo */
+.form-row:has(.form-group:only-child) {
+  grid-template-columns: 1fr;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group.required .form-label::after {
+  content: ' *';
+  color: #dc2626;
+  font-weight: bold;
+}
+
+.form-label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* ===== CAMPOS DE ENTRADA ===== */
+.form-group input,
+.form-group .p-inputtext,
+.form-group .p-dropdown {
+  border: 2px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 0.875rem !important;
+  transition: all 0.3s ease !important;
+  background: white !important;
+  width: 100% !important;
+}
+
+.form-group input:focus,
+.form-group .p-inputtext:focus,
+.form-group .p-dropdown:focus {
+  border-color: #667eea !important;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+  outline: none !important;
+}
+
+.form-group .p-dropdown .p-dropdown-trigger {
+  color: #6b7280 !important;
+}
+
+.form-group .p-dropdown .p-dropdown-label {
+  color: #374151 !important;
+}
+
+.form-group .p-dropdown .p-dropdown-label.p-placeholder {
+  color: #9ca3af !important;
+}
+
+/* ===== DROPDOWN PERSONALIZADO ===== */
+::ng-deep .p-dropdown-panel {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  padding: 0.5rem 0 !important;
+  z-index: 9999 !important;
+  background: white !important;
+  max-height: 300px !important;
+  overflow-y: auto !important;
+}
+
+::ng-deep .p-dropdown-panel .p-dropdown-header {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+  padding: 0.75rem 1rem !important;
+  margin-bottom: 0.5rem !important;
+  border-radius: 8px !important;
+  margin: 0.5rem !important;
+  font-weight: 600 !important;
+  color: #1e293b !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+::ng-deep .p-dropdown-panel .p-dropdown-items {
+  max-height: 200px !important;
+  overflow-y: auto !important;
+}
+
+::ng-deep .p-dropdown-panel .p-dropdown-items .p-dropdown-item {
+  padding: 0.75rem 1rem !important;
+  transition: all 0.3s ease !important;
+  margin: 0 0.5rem !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-size: 0.875rem !important;
+}
+
+::ng-deep .p-dropdown-panel .p-dropdown-items .p-dropdown-item:hover {
+  background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%) !important;
+  color: #5b21b6 !important;
+  transform: translateX(4px) !important;
+}
+
+::ng-deep .p-dropdown-panel .p-dropdown-items .p-dropdown-item.p-highlight {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  font-weight: 500 !important;
+}
+
+::ng-deep .p-dropdown-panel .p-dropdown-items .p-dropdown-item.p-highlight:hover {
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%) !important;
+  transform: translateX(2px) !important;
+}
+
+/* ===== OVERLAY PARA DROPDOWN ===== */
+::ng-deep .p-dropdown-panel {
+  animation: dropdownSlideIn 0.2s ease-out !important;
+}
+
+@keyframes dropdownSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ===== SCROLLBAR PERSONALIZADO PARA DROPDOWN ===== */
+::ng-deep .p-dropdown-panel .p-dropdown-items::-webkit-scrollbar {
+  width: 6px;
+}
+
+::ng-deep .p-dropdown-panel .p-dropdown-items::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+::ng-deep .p-dropdown-panel .p-dropdown-items::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 3px;
+}
+
+::ng-deep .p-dropdown-panel .p-dropdown-items::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+}
+
+/* ===== FOOTER DEL DIÁLOGO ===== */
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+  background: white;
+  border-top: 1px solid #e2e8f0;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+}
+
+.dialog-footer button {
+  border-radius: 8px !important;
+  padding: 0.75rem 1.5rem !important;
+  font-weight: 500 !important;
+  transition: all 0.3s ease !important;
+}
+
+.dialog-footer .p-button-text {
+  color: #6b7280 !important;
+  border: 2px solid #e2e8f0 !important;
+}
+
+.dialog-footer .p-button-text:hover {
+  background: #f1f5f9 !important;
+  border-color: #d1d5db !important;
+  color: #374151 !important;
+}
+
+.dialog-footer .p-button:not(.p-button-text) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border: none !important;
+  color: white !important;
+}
+
+.dialog-footer .p-button:not(.p-button-text):hover:not(:disabled) {
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 15px -3px rgba(102, 126, 234, 0.4) !important;
+}
+
+.dialog-footer .p-button:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+}
+
+.loading-text {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.loading-text i {
+  font-size: 0.875rem;
+}
+
+/* ===== ANIMACIONES ===== */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ===== RESPONSIVIDAD ===== */
+@media (max-width: 768px) {
+  .vehiculo-dialog {
+    max-height: 95vh !important;
+  }
+  
+  .vehiculo-dialog .p-dialog-content {
+    max-height: calc(95vh - 120px) !important;
+  }
+  
+  .dialog-content {
+    padding: 1rem;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  
+  .cedula-validation-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .cedula-validation-container button {
+    width: 100%;
+  }
+  
+  .dialog-footer {
+    padding: 1rem;
+    flex-direction: column;
+    position: sticky;
+    bottom: 0;
+  }
+  
+  .dialog-footer button {
+    width: 100%;
+  }
+  
+  .section-title {
+    padding: 1rem;
+    font-size: 1rem;
+  }
+  
+  .info-item {
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .vehiculo-dialog {
+    max-height: 98vh !important;
+  }
+  
+  .vehiculo-dialog .p-dialog-content {
+    max-height: calc(98vh - 110px) !important;
+  }
+  
+  .client-validation-section,
+  .form-row {
+    padding: 1rem;
+  }
+  
+  .section-title {
+    font-size: 0.95rem;
+    padding: 0.875rem;
+  }
+  
+  .section-title i {
+    font-size: 1.125rem;
+  }
+  
+  .info-item p {
+    font-size: 0.8rem;
+  }
+  
+  .dialog-footer {
+    padding: 0.75rem;
+  }
+}
+
+/* ===== MEJORAS ADICIONALES ===== */
+.client-validation-section,
+.form-row {
+  position: relative;
+  overflow: hidden;
+}
+
+.client-validation-section::before,
+.form-row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.client-validation-section:hover::before,
+.form-row:hover::before {
+  opacity: 1;
+}
+
+/* Estados de validación */
+.form-group.error input,
+.form-group.error .p-inputtext,
+.form-group.error .p-dropdown {
+  border-color: #dc2626 !important;
+}
+
+.form-group.error input:focus,
+.form-group.error .p-inputtext:focus,
+.form-group.error .p-dropdown:focus {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1) !important;
+}
+
+.form-group.success input,
+.form-group.success .p-inputtext,
+.form-group.success .p-dropdown {
+  border-color: #059669 !important;
+}
+
+.form-group.success input:focus,
+.form-group.success .p-inputtext:focus,
+.form-group.success .p-dropdown:focus {
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1) !important;
+}
+
+/* Efecto de cristal para el diálogo */
+.vehiculo-dialog {
+  backdrop-filter: blur(10px) !important;
+}
+
+.vehiculo-dialog .p-dialog-mask {
+  background: rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(2px) !important;
+}
+
+/* ===== ESTILOS ESPECÍFICOS PARA VEHÍCULOS ===== */
+.section-title:nth-child(3) i {
+  background: linear-gradient(135deg, #ecfdf5 0%, #dcfce7 100%);
+  color: #059669;
+}
+
+.section-title:nth-child(5) i {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #d97706;
+}
+
+.form-group input[type="number"]::-webkit-outer-spin-button,
+.form-group input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Placeholder mejorado */
+.form-group input::placeholder,
+.form-group .p-inputtext::placeholder {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* Indicador de campo requerido mejorado */
+.form-group.required .form-label::after {
+  content: ' *';
+  color: #dc2626;
+  font-weight: bold;
+  font-size: 1rem;
+  margin-left: 0.25rem;
+}

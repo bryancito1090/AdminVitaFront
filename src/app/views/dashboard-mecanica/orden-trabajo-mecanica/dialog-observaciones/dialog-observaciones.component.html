@@ -1,0 +1,27 @@
+<div *ngIf="observaciones?.length; else emptyState" class="flex flex-col gap-3">
+  <div
+    class="border border-gray-200 rounded-lg p-3 bg-gray-50"
+    *ngFor="let obs of observaciones; let i = index">
+
+    <div class="flex items-center justify-between text-sm text-gray-600 mb-1">
+      <span class="font-semibold text-gray-800">Observacion {{ i + 1 }}</span>
+      <span *ngIf="obs.fechaCreacion" class="text-xs text-gray-500">
+        {{ obs.fechaCreacion | date:'short' }}
+      </span>
+    </div>
+
+    <p class="text-sm text-gray-800 whitespace-pre-line">{{ obs.detalle }}</p>
+
+    <div *ngIf="obs.usuario || obs.nombre" class="flex items-center gap-2 text-xs text-gray-500 mt-2">
+      <i class="pi pi-user text-sm"></i>
+      <span>{{ obs.usuario || obs.nombre }}</span>
+    </div>
+  </div>
+</div>
+
+<ng-template #emptyState>
+  <div class="text-center py-4 text-gray-500">
+    <i class="pi pi-info-circle text-xl mb-2 block"></i>
+    <p>Sin observaciones registradas.</p>
+  </div>
+</ng-template>

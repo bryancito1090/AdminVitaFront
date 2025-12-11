@@ -9,6 +9,7 @@ export interface CompraResponse {
     nombre: string;
     apellidos?: string | null;
     razonSocial?: string | null; // Opcional, puede ser null
+    cerrado: boolean;
   }
   
   export interface DetalleCompraResponse {

@@ -15,10 +15,16 @@ export class MagnitudService{
   constructor(private http:HttpClient, private auth: AuthService) { }
 
   getMagnitudes(): Observable<any> {
-    return this.http.get<any>(`${this.apiURL}/GetMagnitud`);
+    const headers = this.auth.getAuthHeaders();
+    return this.http.get<any>(`${this.apiURL}/GetMagnitud` , { headers });
   }
   GetMagnitudCompatibleByItem(idItem: number): Observable<any> {
-    return this.http.get<any>(`${this.apiURL}/GetMagnitudesCompatibles/${idItem}`);
+    const headers = this.auth.getAuthHeaders();
+    return this.http.get<any>(`${this.apiURL}/GetMagnitudesCompatibles/${idItem}`, {headers});
+  }
+   GetMagnitudCompatibleByItemMec(idItem: number): Observable<any> {
+    const headers = this.auth.getMecanicoAuthHeaders();
+    return this.http.get<any>(`${this.apiURL}/GetMagnitudesCompatibles/${idItem}`, {headers});
   }
   convertirUnidad(
     idMagnitudOrigen: number, 

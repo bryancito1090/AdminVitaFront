@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { LoginComponent } from './views/auth/login/login.component';
+import { LoginComponent } from './views/auth/components/login/login.component';
 import { AppLayout } from './layout/component/app.layout';
 import { HomeComponent } from './views/dashboard/home/home.component';
 import { OrdenTrabajoComponent } from './views/dashboard/orden-trabajo/orden-trabajo.component';
@@ -9,13 +9,21 @@ import { AdquisicionComponent } from './views/dashboard/adquisicion/adquisicion.
 import { NotfoundComponent } from './views/notfound/notfound.component';
 import { AgregarAdquisicionComponent } from './views/dashboard/adquisicion/agregar-adquisicion/agregar-adquisicion.component';
 import { DashboardMecanicaComponent } from './views/dashboard-mecanica/dashboard-mecanica.component';
-import { UsuarioComponent } from './views/dashboard/persona/usuario/usuario.component';
-import { MecanicoComponent } from './views/dashboard/persona/mecanico/mecanico.component';
-import { ProveedorComponent } from './views/dashboard/persona/proveedor/proveedor.component';
+import { UsuarioComponent } from './views/dashboard/persona/usuario.component';
+import { MecanicoComponent } from './views/dashboard/persona/mecanico.component';
+import { ProveedorComponent } from './views/dashboard/persona/proveedor.component';
+import { StartComponent } from './views/start/start.component';
+import { AgregarOrdenTrabajoMecanicoComponent } from './views/dashboard-mecanica/agregar-orden-trabajo-mecanica/agregar-orden-trabajo-mecanico.component';
+import { OrdenTrabajoMecanicaComponent } from './views/dashboard-mecanica/orden-trabajo-mecanica/orden-trabajo-mecanica.component';
+import { AppSimpleLayout } from './layout/component/app.simple-layout';
+import { administradorGuard } from './views/auth/guards/administrador.guard';
+import { mecanicaGuard } from './views/auth/guards/mecanica.guard';
+import { LoginMecanicaComponent } from './views/auth/components/login-mecanica/login-mecanica.component';
 
 export const appRoutes: Routes = [
-    {   path: '', component: LoginComponent },
-    {   path: 'panel', component: AppLayout,
+    {   path: '', component: StartComponent },
+    {   path: 'login', component: LoginComponent },
+    {   path: 'panel', component: AppLayout, canActivate: [administradorGuard],
         children: [
             { path: '', component: HomeComponent},
             { path: 'OrdenTrabajo', component: OrdenTrabajoComponent},
@@ -31,7 +39,13 @@ export const appRoutes: Routes = [
             {path: 'persons/Mecanico', component: MecanicoComponent},
             {path: 'persons/Proveedor', component: ProveedorComponent},
         ]},
-    {   path: 'panel-mecanica', component: DashboardMecanicaComponent},
+    {   path: 'login_mecanica', component: LoginMecanicaComponent },
+    {   path: 'mecanica', component: AppSimpleLayout,
+        children: [
+            { path: '', component: DashboardMecanicaComponent },
+            { path: 'agregar-orden', component: AgregarOrdenTrabajoMecanicoComponent, canActivate: [mecanicaGuard]},
+            { path: ':codigo', component: OrdenTrabajoMecanicaComponent}
+    ]},
     {   path: 'notFound404', component: NotfoundComponent}, 
     {   path: '**', redirectTo: 'notFound404', pathMatch: 'full'},
 ];

@@ -1,0 +1,71 @@
+<div class="card">
+    <p-table 
+    #dt2
+    [columns]="cols" 
+    [value]="personas" 
+    [paginator]="true"
+    [rows]="5"
+    [loading]="loading"
+    [tableStyle]="{ 'min-width': '50rem' }"
+    [rowsPerPageOptions]="[5, 10, 20]"
+    stripedRows
+    >
+    <ng-template #caption>
+        <div class="flex flex-col-reverse sm:flex-row sm:justify-between gap-2 !border-0 w-full">
+            <p-button label="Limpiar" severity="secondary" icon="pi pi-filter-slash" (click)="clear(dt2)" />
+            <p-iconfield iconPosition="left" class="mr-1 w-full">
+                <p-inputicon>
+                    <i class="pi pi-search"></i>
+                </p-inputicon>
+                <input pInputText type="text" fluid class="w-full" (input)="filterGlobal($event, dt2)" placeholder="Busca por una palabra clave" />
+            </p-iconfield>
+            <div class="flex flex-col ml-0 mr-auto">
+                <p-button (click)="showDialogAdd()"  fluid class="w-full sm:min-w-44" icon="pi pi-plus" label="Crear {{persona.tipo}}"></p-button>
+            </div>
+        </div>
+    </ng-template>
+    <ng-template #header let-columns>
+        <tr>
+            <th [class]="{'min-width:15rem':col.sort}" [pSortableColumn]="col.field" *ngFor="let col of columns">
+                <div class="flex items-center w-full">
+                    {{ col.header }}
+                    <p-columnFilter [type]="col.type" *ngIf="col.sort === true" [field]="col.field" display="menu" />
+                </div>
+            </th>
+        </tr>
+        
+    </ng-template>
+    <ng-template #body let-rowData let-columns="columns">
+        <tr class="text-center">
+            <td  *ngFor="let col of columns">
+                <ng-container 
+                *ngIf="col.field === 'nombre' 
+                || col.field === 'razonSocial' 
+                || col.field === 'tipoPersona';
+                else normalData">
+                    <div class="flex justify-center">
+                        <p class="text-center" *ngIf="col.field === 'nombre'">{{getFullName(rowData['codigo'])}}</p>
+                        <ng-container *ngIf="col.field === 'razonSocial'">
+                            <p-tag *ngIf="!rowData[col.field]" value="-" severity="secondary"/>
+                            <p class="text-center" *ngIf="rowData[col.field]">{{rowData[col.field]}}</p>
+                        </ng-container>
+                        <p-tag *ngIf="col.field === 'tipoPersona'" [value]="rowData[col.field]=='N' ? 'Natural':'Empresa'" [severity]="rowData[col.field]=='N' ? 'info':'secondary'"></p-tag>
+                    </div>
+                </ng-container>
+
+                <ng-template #normalData>
+                    <p class="text-center">{{ rowData[col.field] }}</p>
+                </ng-template>
+
+                <div *ngIf="col.field =='actions'" class="flex justify-start w-full gap-2"> 
+                    <p-button icon="pi pi-pen-to-square" (onClick)="showDialogEdit(rowData['documento'])" [rounded]="true" [text]="true" [raised]="true" severity="secondary" />
+                    <p-button *ngIf="rowData['activo']" icon="pi pi-trash" (onClick)="restaurarPersona(rowData['documento'])" [rounded]="true" [text]="true" [raised]="true" severity="secondary" />
+                    <p-button *ngIf="!rowData['activo']" icon="pi pi-refresh" (onClick)="restaurarPersona(rowData['documento'])" [rounded]="true" [text]="true" [raised]="true" severity="success" pTooltip="Restaurar" />
+                </div>
+            </td>
+        </tr>
+    </ng-template>
+    </p-table>
+</div>
+
+<app-crear-persona [persona]="persona.key"></app-crear-persona>

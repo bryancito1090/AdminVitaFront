@@ -1,247 +1,284 @@
-/* Estilos para Dark Mode */
-:host ::ng-deep .dark-theme {
-  /* Ajuste para todas las tarjetas */
-  .card {
-    background-color: #141f34;
-    color: #f8f9fa;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+p-divider {
+  margin: 0;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.table-caption {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-bottom: 1rem;
+}
+
+@media (min-width: 768px) {
+  .table-caption {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
   }
-  
-  /* Estilos para el PickList */
-  .p-picklist {
-    .p-picklist-header {
-      background-color: #0d182e;
-      color: #f8f9fa;
-      border-color: #383838;
-    }
-    
-    .p-picklist-list-wrapper {
-      background-color: #1a2439;
-      border-color: #383838;
-    }
-    
-    .p-picklist-list {
-      border-color: #383838;
-      
-      .p-picklist-item {
-        color: #f8f9fa;
-        
-        &:hover {
-          background-color: #2a2a2a;
-        }
-        
-        &.p-highlight {
-          background-color: #213458;
-          color: #ffffff;
-        }
-      }
-    }
-    
-    .p-picklist-filter-container {
-      .p-inputtext {
-        background-color: #2d2d2d;
-        color: #f8f9fa;
-        border-color: #383838;
-        
-        &::placeholder {
-          color: rgba(248, 249, 250, 0.6);
-        }
-      }
-      
-      .p-picklist-filter-icon {
-        color: #f8f9fa;
-      }
-    }
-    
-    .p-picklist-buttons {
-      .p-button {
-        background-color: #213458;
-        border-color: #213458;
-        color: #f8f9fa;
-        
-        &:hover {
-          background-color: #2d4a7a;
-          border-color: #2d4a7a;
-        }
-        
-        .p-button-icon {
-          color: #f8f9fa;
-        }
-      }
+}
+
+.chip-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.chip-strip {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 9999px;
+  background: var(--surface-100, #f5f5f5);
+  border: 1px solid var(--surface-200, #e5e7eb);
+  color: var(--text-color, #1f2937);
+  transition: all 0.15s ease-in-out;
+  white-space: nowrap;
+}
+
+.filter-pill:hover {
+  background: var(--surface-200, #e5e7eb);
+  color: var(--primary-color, #2563eb);
+}
+
+.filter-pill--active {
+  background: var(--primary-50, #eef2ff);
+  border-color: var(--primary-400, #818cf8);
+  color: var(--primary-800, #312e81);
+  box-shadow: 0 10px 18px -12px rgba(37, 99, 235, 0.45);
+}
+
+.caption-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .caption-actions {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+}
+
+.caption-search {
+  width: 100%;
+}
+
+.caption-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 18rem;
+}
+
+@media (min-width: 640px) {
+  .caption-buttons {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    max-width: none;
+  }
+}
+
+::ng-deep .responsive-dialog {
+  .p-dialog-content {
+    padding: 0.75rem !important;
+
+    @media (min-width: 768px) {
+      padding: 1.5rem !important;
     }
   }
 
-  /* Ajustes para la tabla en dark mode */
-  .p-datatable {
-    .p-datatable-header {
-      background-color: #0d182e;
-      color: #f8f9fa;
-      border-color: #383838;
-    }
-    
-    .p-datatable-thead > tr > th {
-      background-color: #0d182e;
-      color: #f8f9fa;
-      border-color: #383838;
-    }
-    
-    .p-datatable-tbody > tr {
-      background-color: #1a2439;
-      color: #f8f9fa;
-      border-color: #383838;
-      
-      &:nth-child(even) {
-        background-color: #242424;
-      }
-      
-      &:hover {
-        background-color: #2a2a2a;
-      }
-      
-      > td {
-        border-color: #383838;
-      }
-    }
-    
-    .p-datatable-emptymessage td {
-      background-color: #1a2439;
-      color: #f8f9fa;
-    }
-    
-    .p-paginator {
-      background-color: #1e1e1e;
-      color: #f8f9fa;
-      border-color: #383838;
-      
-      .p-paginator-element {
-        color: #f8f9fa;
-        
-        &:not(.p-highlight):hover {
-          background-color: #2d2d2d;
-        }
-        
-        &.p-highlight {
-          background-color: #213458;
-        }
-      }
-      
-      .p-dropdown {
-        .p-dropdown-label {
-          color: #f8f9fa;
-        }
-      }
-    }
-    
-    /* Ajustes para filtros y dropdowns */
-    .p-dropdown, .p-inputtext {
-      background-color: #2d2d2d;
-      color: #f8f9fa;
-      border-color: #383838;
-    }
-    
-    .p-column-filter-menu-button {
-      color: #f8f9fa;
-      
-      &:hover {
-        background-color: #2d2d2d;
-      }
-    }
-    
-    /* Iconos en dark mode */
-    .pi {
-      color: #f8f9fa;
-    }
-    
-    /* Asegurar que los tags mantienen sus colores pero son visibles */
-    .p-tag {
-      color: white !important; /* Forzar color de texto blanco para todos los tags */
-      font-weight: 500;
-      text-shadow: 0 1px 1px rgba(0,0,0,0.2);
-      
-      &.p-tag-success { 
-        background-color: #2e7d32; 
-      }
-      &.p-tag-warning { 
-        background-color: #ed6c02; 
-      }
-      &.p-tag-danger { 
-        background-color: #c62828; 
-      }
-      &.p-tag-info { 
-        background-color: #0277bd; 
-      }
-      &.p-tag-secondary { 
-        background-color: #455a64; 
+  .p-dialog-header {
+    padding: 1rem !important;
+
+    .p-dialog-title {
+      font-size: 1rem !important;
+
+      @media (min-width: 768px) {
+        font-size: 1.25rem !important;
       }
     }
   }
-  
-  /* Ajustes para el panel de filtro */
-  .p-column-filter-overlay {
-    background-color: #1e1e1e;
-    color: #f8f9fa;
-    border-color: #383838;
-    
-    .p-column-filter-row {
-      border-color: #383838;
-    }
-    
-    .p-dropdown-items {
-      .p-dropdown-item {
-        color: #f8f9fa;
-        
-        &:hover {
-          background-color: #2a2a2a;
-        }
-      }
-    }
-  }
-  
-  /* Ajustes para los botones */
-  .p-button {
-    &.p-button-text, &.p-button-outlined {
-      color: #f8f9fa;
-      
-      &:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-      }
-      
-      .p-button-icon {
-        color: #f8f9fa;
-      }
-    }
-  }
-  
-  /* Ajustes para mejorar el contraste en dropdowns */
-  .p-dropdown-panel {
-    background-color: #1e1e1e;
-    border-color: #383838;
-    
-    .p-dropdown-items {
-      .p-dropdown-item {
-        color: #f8f9fa;
-        
-        &:hover {
-          background-color: #2a2a2a;
-        }
-        
-        &.p-highlight {
-          background-color: #213458;
-          color: #ffffff;
+}
+
+::ng-deep .responsive-select-button {
+  .p-selectbutton {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+
+    .p-button {
+      @media (max-width: 768px) {
+        font-size: 0.75rem !important;
+        padding: 0.375rem 0.5rem !important;
+
+        .p-badge {
+          font-size: 0.625rem !important;
         }
       }
     }
   }
 }
 
-/* Ajuste específico para que los encabezados de PickList sean legibles */
-:host ::ng-deep .p-picklist-header {
-  padding: 0.75rem;
+::ng-deep .responsive-table {
+  .p-datatable-wrapper {
+    font-size: 0.875rem;
+  }
+
+  .p-datatable-thead > tr > th {
+    padding: 0.5rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  .p-datatable-tbody > tr > td {
+    padding: 0.5rem !important;
+    font-size: 0.75rem !important;
+  }
+}
+
+.option-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (min-width: 480px) {
+  .option-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.option-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.85rem 0.9rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--surface-300, #d1d5db);
+  background: var(--surface-0, #ffffff);
+  transition: all 0.2s ease;
+}
+
+.option-tile:hover {
+  border-color: var(--primary-400, #818cf8);
+  box-shadow: 0 12px 24px -18px rgba(37, 99, 235, 0.6);
+}
+
+.option-tile.is-active {
+  background: var(--primary-500, #3b82f6);
+  color: var(--primary-contrast, #ffffff);
+  border-color: var(--primary-500, #3b82f6);
+  box-shadow: 0 10px 20px -14px rgba(37, 99, 235, 0.75);
+}
+
+.option-label {
+  font-size: 0.85rem;
   font-weight: 600;
 }
 
-/* Ajuste específico para h5 dentro de tarjetas en dark mode */
-:host ::ng-deep .dark-theme .card h5 {
-  color: #f8f9fa;
-  margin-bottom: 1rem;
+.option-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--surface-100, #f3f4f6);
+  color: var(--text-color, #111827);
+}
+
+.option-tile.is-active .option-badge {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--primary-600, #2563eb);
+}
+
+.item-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0.35rem 0;
+  border-bottom: 1px dashed var(--surface-200, #e5e7eb);
+}
+
+.item-row:last-child {
+  border-bottom: none;
+}
+
+.item-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--surface-600, #4b5563);
+  min-width: 6rem;
+}
+
+.item-value {
+  text-align: right;
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+@media (max-width: 480px) {
+  .item-value {
+    text-align: left;
+    justify-content: flex-start;
+  }
+}
+
+.mobile-item-card {
+  transition: all 0.2s ease;
+}
+
+.mobile-item-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+::ng-deep .image-dialog {
+  .p-dialog-content {
+    padding: 0 !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .data-container {
+    .p-tag {
+      font-size: 0.625rem !important;
+    }
+
+    .p-button {
+      font-size: 0.75rem !important;
+
+      &.p-button-sm {
+        padding: 0.25rem 0.5rem !important;
+      }
+    }
+  }
 }

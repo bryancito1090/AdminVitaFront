@@ -42,6 +42,29 @@ export class ComprasService {
     );
   }
   getCompraDetallada(factura: string): Observable<any> {
-    return this.http.get<any>(`${this.apiURL}/GetCompraDetallada/${factura}`);
+    const headers = this.auth.getAuthHeaders();
+    return this.http.get<any>(`${this.apiURL}/GetCompraDetallada/${factura}`,{headers});
   }
+agregarAdjuntoCompra(idCompra: number, file: File): Observable<any> {
+  let headers = this.auth.getAuthHeaders();
+  if (headers.has('Content-Type')) {
+    headers = headers.delete('Content-Type');
+  }
+  const formData = new FormData();
+  formData.append('file', file, file.name);
+  formData.append('idCompra', idCompra.toString());  
+  return this.http.post<any>(
+    `${this.apiURL}/AgregarAdjuntoCompra`,
+    formData,
+    { headers }
+  );
+}
+cerrarCompra(idCompra: number): Observable<any> {
+  const headers = this.auth.getAuthHeaders();
+   return this.http.post<any>(
+   `${this.apiURL}/CerrarCompra`,
+   { idCompra },
+   { headers }
+ );
+}
 }

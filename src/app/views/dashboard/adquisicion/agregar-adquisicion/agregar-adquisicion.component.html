@@ -1,204 +1,328 @@
 <div class="loading flex justify-center items-center" *ngIf="loadingEdit">
-    <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
+	<i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
 </div>
 <div class="flex flex-col md:flex-row gap-2">    
-    <div class="flex flex-col w-full gap-2">
-        <p-card header="Agregar compra">
-            <p class="mt-0 mb-2">Agrege los datos necesarios para agregar la compra.</p>
-            <form [formGroup]="fb_adquisicion" >
-                <div class="flex flex-col gap-2 w-full">
-                    <div class="flex flex-col sm:flex-row w-full gap-2">
-                        <!--codigo/numero factura input start-->
-                        <div class="w-full mr-2">
-                            <p-floatlabel variant="on" class=" w-full">
-                                <input 
-                                pInputText 
-                                formControlName="codigo" 
-                                class="w-full"
-                                fluid 
-                                [ngClass]="{'ng-invalid ng-dirty': fb_adquisicion.get('codigo')?.invalid && fb_adquisicion.get('codigo')?.touched}">
-                                <label>Número de factura*</label>
-                            </p-floatlabel>
-                            <div *ngIf="fb_adquisicion.get('codigo')?.invalid && fb_adquisicion.get('codigo')?.touched" class="text-red-500 text-sm mt-2">
-                                <span *ngIf="fb_adquisicion.get('codigo')?.errors?.['required']">El número de factura es obligatorio.</span>
-                                <span *ngIf="fb_adquisicion.get('codigo')?.errors?.['minlength']">Debe tener al menos 6 caracteres.</span>
-                            </div>
-                        </div>            
-                        <!--codigo/numero factura input end-->
-                        <!--codigo/numero factura input start-->
-                        <div class="w-full">
-                            <div class="flex gap-2">
-                                <p-floatlabel variant="on" class="w-full">
-                                    <input 
-                                    pInputText 
-                                    formControlName="doc_proveedor" 
-                                    class="w-full" 
-                                    [ngClass]="{'ng-invalid ng-dirty': fb_adquisicion.get('doc_proveedor')?.invalid && fb_adquisicion.get('doc_proveedor')?.touched}">
-                                    <label>CI/RUC Proveedor*</label>
-                                </p-floatlabel>
-                                <p-button [icon]="iconValidarDocumento" aria-label="Validar documento" [disabled]="fb_adquisicion.get('doc_proveedor')?.invalid" (onClick)="validarDocumentoProveedor()">
-                                    <p-progress-spinner *ngIf="iconValidarDocumento === ''" ariaLabel="loading" [style]="{ width: '15px', height: '15px' }"/>
-                                </p-button>
-                            </div>
-                            <div *ngIf="fb_adquisicion.get('doc_proveedor')?.invalid && fb_adquisicion.get('doc_proveedor')?.touched" class="text-red-500 text-sm mt-2">
-                                <span *ngIf="fb_adquisicion.get('doc_proveedor')?.errors?.['required']">El CI/RUC es obligatorio.</span>
-                                <span *ngIf="fb_adquisicion.get('doc_proveedor')?.errors?.['minlength']">Debe tener al menos 10 caracteres.</span>
-                                <span *ngIf="fb_adquisicion.get('doc_proveedor')?.errors?.['maxlength']">Debe tener máximo 16 caracteres.</span>
-                            </div>
-                        </div>
-                    </div>
-                    <p-fileupload 
-                    class="sm:mt-2" 
-                    #fu 
-                    mode="basic" 
-                    chooseLabel="Elegir archivo" 
-                    chooseIcon="pi pi-upload" 
-                    name="file" 
-                    accept="image/*" 
-                    maxFileSize="1000000" 
-                    [auto]="false"
-                    (onSelect)="onFileSelect($event)" 
-                     />
-                </div>
-            </form>
-        </p-card>
-        <div class="flex flex-col w-full md:flex-row gap-4">
-            <div class="w-full flex flex-col gap-2">
-                <p-card header="Detalle compra" class="w-full">
-                    <form [formGroup]="fb_detalleAdquisicion" >
-                        <div class="card flex flex-col sm:flex-row gap-2 borde-contenedor p-2">
-                            <div class="flex flex-col flex-wrap sm:flex-row gap-2 w-full">
-                                <p-select 
-                                    [options]="items" 
-                                    formControlName="codigo" 
-                                    (onChange)="onItemChange($event.value)" 
-                                    optionLabel="codigo" 
-                                    optionValue="codigo" 
-                                    [filter]="true" 
-                                    filterBy="name" 
-                                    placeholder="Código" 
-                                    class="w-full sm:max-w-32">
-                                    
-                                    <ng-template #selectedItems let-selectedOption>
-                                        {{ selectedItem.codigo }}
-                                    </ng-template>
-                                    
-                                    <ng-template let-item #item>
-                                        {{ item.codigo }}
-                                    </ng-template>
-                                </p-select>
-                                <p-floatlabel variant="on" class="w-full sm:max-w-64 lg:max-w-80">
-                                <input 
-                                    type="text" 
-                                    pInputText 
-                                    formControlName="nombre" 
-                                    class="w-full"
-                                    >
-                                <label>Nombre</label>
-                                </p-floatlabel>
-                                <p-select 
-                                    [options]="magnitudes" 
-                                    formControlName="id_magnitud"
-                                    optionLabel="nombre" 
-                                    optionValue="idMagnitud" 
-                                    placeholder="Magnitud"
-                                    [showClear]="true" 
-                                    [loading]="loadingMagnitudes"
-                                    [disabled]="isMagnitudDisabled()"
-                                    class="w-full sm:max-w-36">
-                                </p-select>
-                                <p-floatlabel variant="on" class="w-full sm:max-w-28">
-                                    <input 
-                                        type="number" 
-                                        pInputText 
-                                        formControlName="cantidad" 
-                                        class="w-full" >
-                                    <label>Cantidad</label>
-                                </p-floatlabel>
-                                <p-floatlabel variant="on" class="w-full sm:max-w-24">
-                                    <p-input-number 
-                                        formControlName="valorUnitario" 
-                                        class="w-full" 
-                                        mode="currency" 
-                                        currency="USD" 
-                                        locale="en-US"
-                                        fluid
-                                        />
-                                    <label>Valor</label>    
-                                </p-floatlabel>  
-                            </div>
-                            <div class="sm:w-24">
-                                <p-button label="Crear" (onClick)="addDetalleCompra()" severity="success" fluid/>
-                            </div>
-                        </div>
-                    </form>
-                </p-card>
-                <p-card>
-                    <div *ngIf="detallesCompra.length === 0" class="flex justify-center w-full">
-                        <p> No hay detalles agregados. </p>
-                    </div>
-                    <p-table  stripedRows *ngIf="detallesCompra.length !== 0" min="0" [columns]="detalleCols" [value]="detallesCompra" >
-                        <ng-template #header let-columns>
-                            <tr>
-                                <th *ngFor="let col of columns">
-                                    {{ col.header }}
-                                </th>
-                            </tr>
-                        </ng-template>
-                        <ng-template #body let-rowData let-columns="columns">
-                            <tr>
-                                <td *ngFor="let col of columns">
-                                    <ng-container *ngIf="col.field === 'codigo'">
-                                        {{rowData[col.field]}}
-                                    </ng-container>
-                                    <ng-container *ngIf="col.field === 'description'">
-                                        {{rowData[col.field]}}
-                                    </ng-container>
-                                    <ng-container *ngIf="col.field === 'valorUnitario' || col.field === 'subtotal'">
-                                        {{ rowData[col.field] | currency: 'USD' : 'symbol' }}
-                                    </ng-container>
-                                    <ng-container *ngIf="col.field === 'magnitud' || col.field === 'cantidad'">
-                                        <div class="text-center">
-                                            {{rowData[col.field] }}
-                                        </div>
-                                    </ng-container>
-                                    <div *ngIf="col.field =='actions'" class="flex justify-center w-full gap-2"> 
-                                        <p-button icon="pi pi-trash" [rounded]="true" [text]="true" (click)="deleteDetalleCompra(rowData['codigo'])" [raised]="true" severity="danger" />
-                                    </div>
-                                </td>
-                            </tr>
-                        </ng-template>
-                    </p-table>
-                </p-card>
-            </div>
-        </div>
-    </div>
-    <p-card fluid class="w-full h-full md:max-w-60 lg:min-w-80">
-        <div class="w-full mb-8">
-            <ng-container *ngIf="fb_adquisicion.get('id_proveedor')?.value !== null">
-                <p class="mb-4"><strong>Información Proveedor</strong></p>
-                <p class="mb-2">Nombre: {{resumen.nombre}}</p>
-                <p class="mb-2" *ngIf="resumen.razonSocial !== ''">Razón Social: {{resumen.razonSocial}}</p>
-                <p class="mb-2">Email: {{resumen.email}}</p>
-                <p class="mb-2">Celular: {{resumen.celular}}</p>
-                <p class="mb-2">Telefono: {{resumen.telefono}}</p>
-                <p class="mb-2">Dirección: {{resumen.direccion}}</p>
-                <p-divider/>
-            </ng-container>
-            <p class="mb-4"><strong>Resumen</strong></p>    
-            <p class="mb-2">Sub Total: {{subtotal | currency: 'USD' : 'symbol'}}</p>
-            <p class="mb-2">Descuento: {{descuento*100}}%</p>
-            <p class="mb-2">IVA%: {{iva*100}}%</p>
-            <p class="mb-2">IVA: {{subtotal*iva | currency: 'USD' : 'symbol'}}</p>
-            <p-divider />
-            <p class="mb-2"><strong>Total: {{total | currency: 'USD' : 'symbol'}}</strong></p>
-        </div>
-        <p-button 
-        label="Agregar Compra" 
-        severity="success" 
-        fluid
-        [disabled]="fb_adquisicion.invalid || fb_adquisicion.get('id_proveedor')?.value === null"
-        (onClick)="crearCompra()"
-    />
-    </p-card>
+	<div class="flex flex-col w-full gap-2">
+		<p-card header="Agregar compra">
+			<p class="mt-0 mb-2">Agrege los datos necesarios para agregar la compra.</p>
+			<form [formGroup]="fb_adquisicion" >
+				<div class="flex flex-col gap-2 w-full">
+					<div class="flex flex-col sm:flex-row w-full gap-2">
+						<!--codigo/numero factura input start-->
+						<div class="w-full mr-2">
+							<p-floatlabel variant="on" class=" w-full">
+								<input 
+								pInputText 
+								formControlName="codigo" 
+								class="w-full"
+								fluid 
+								[ngClass]="{'ng-invalid ng-dirty': fb_adquisicion.get('codigo')?.invalid && fb_adquisicion.get('codigo')?.touched}">
+								<label>Número de factura*</label>
+							</p-floatlabel>
+							<div *ngIf="fb_adquisicion.get('codigo')?.invalid && fb_adquisicion.get('codigo')?.touched" class="text-red-500 text-sm mt-2">
+								<span *ngIf="fb_adquisicion.get('codigo')?.errors?.['required']">El número de factura es obligatorio.</span>
+								<span *ngIf="fb_adquisicion.get('codigo')?.errors?.['minlength']">Debe tener al menos 6 caracteres.</span>
+							</div>
+						</div>            
+						<!--codigo/numero factura input end-->
+						<!--codigo/numero factura input start-->
+						<div class="w-full">
+							<div class="flex gap-2">
+								<p-floatlabel variant="on" class="w-full">
+									<input 
+									pInputText 
+									formControlName="doc_proveedor" 
+									class="w-full" 
+									[ngClass]="{'ng-invalid ng-dirty': fb_adquisicion.get('doc_proveedor')?.invalid && fb_adquisicion.get('doc_proveedor')?.touched}">
+									<label>CI/RUC Proveedor*</label>
+								</p-floatlabel>
+								<p-button [icon]="iconValidarDocumento" aria-label="Validar documento" [disabled]="fb_adquisicion.get('doc_proveedor')?.invalid" (onClick)="validarDocumentoProveedor()">
+									<p-progress-spinner *ngIf="iconValidarDocumento === ''" ariaLabel="loading" [style]="{ width: '15px', height: '15px' }"/>
+								</p-button>
+							</div>
+							<div *ngIf="fb_adquisicion.get('doc_proveedor')?.invalid && fb_adquisicion.get('doc_proveedor')?.touched" class="text-red-500 text-sm mt-2">
+								<span *ngIf="fb_adquisicion.get('doc_proveedor')?.errors?.['required']">El CI/RUC es obligatorio.</span>
+								<span *ngIf="fb_adquisicion.get('doc_proveedor')?.errors?.['minlength']">Debe tener al menos 10 caracteres.</span>
+								<span *ngIf="fb_adquisicion.get('doc_proveedor')?.errors?.['maxlength']">Debe tener máximo 16 caracteres.</span>
+							</div>
+						</div>
+					</div>
+										<!-- Añade el componente diálogo para mostrar archivos -->
+					<p-dialog 
+					[(visible)]="displayImage" 
+					[modal]="true" 
+					[style]="{width: '80vw', height: '80vh'}" 
+					[draggable]="false" 
+					[resizable]="true" 
+					header="Visualización de Archivo">
+
+					<!-- Contenido según el tipo de archivo -->
+					<div *ngIf="archivoUrl" class="flex justify-content-center align-items-center w-full h-full">
+					<!-- Para imágenes -->
+					<p-image *ngIf="tipoArchivo === 'imagen'"
+						[src]="archivoUrl"
+						[preview]="true"
+						alt="Imagen adjunta"
+						class="w-full h-full"
+						imageClass="max-w-full max-h-full object-contain">
+					</p-image>
+
+					<!-- Para PDFs -->
+					<iframe *ngIf="tipoArchivo === 'pdf'"
+						[src]="archivoUrl"
+						width="100%"
+						height="100%"
+						style="border: none;">
+					</iframe>
+
+					<!-- Para otros tipos de archivo -->
+					<div *ngIf="tipoArchivo !== 'imagen' && tipoArchivo !== 'pdf'" class="text-center">
+						<i class="pi pi-file text-4xl text-blue-500"></i>
+						<p class="mt-3">Este tipo de archivo no se puede previsualizar directamente.</p>
+						<a [href]="archivoUrl" class="p-button p-button-primary" target="_blank" download>Descargar archivo</a>
+					</div>
+					</div>
+					</p-dialog>
+					<div class="card sm:mt-2">
+						<p-fileupload #fu
+						name="archivo[]"
+						[auto]="false"
+						(onUpload)="adjuntarArchivoACompra()"
+						(onSelect)="onFileSelect($event)"	
+						[multiple]="false"
+						accept="image/*,application/pdf"
+						maxFileSize="1000000"
+						mode="advanced"
+						[disabled]="existingFileInfo && isEditMode"
+						chooseLabel="Elegir archivo"
+						uploadLabel="Subir"
+						cancelLabel="Cancelar">
+						<ng-template pTemplate="empty">
+							<div *ngIf="!existingFileInfo" class="flex align-items-center justify-content-center">
+								<i class="pi pi-image mr-2" style="font-size: 2rem"></i>
+								<span>Arrastra y suelta archivos aquí</span>
+							</div>
+							<div *ngIf="existingFileInfo" class="flex align-items-center justify-content-center flex-column">
+								<i class="pi" [ngClass]="{'pi-file-pdf': existingFileInfo.tipoArchivo === 'pdf', 'pi-image': existingFileInfo.tipoArchivo !== 'pdf'}" style="font-size: 2rem"></i>
+								<span class="my-2">Archivo adjunto: {{existingFileInfo.nombre}}</span>
+								<div class="flex gap-2 mt-2">
+									<button type="button" class="p-button p-button-sm p-button-outlined" (click)="mostrarAdjunto()">
+										<i class="pi pi-eye mr-1"></i>Ver
+									</button>
+									<button type="button" class="p-button p-button-sm p-button-danger" (click)="eliminarArchivo()">
+										<i class="pi pi-trash mr-1"></i>Eliminar
+									</button>
+								</div>
+							</div>
+						</ng-template>
+						<ng-template pTemplate="content">
+							<div *ngIf="uploadedFiles.length > 0" class="py-2">
+								<div *ngFor="let file of uploadedFiles" class="flex items-center">
+									<i class="pi" [ngClass]="{'pi-file-pdf': file.type.includes('pdf'), 'pi-image': file.type.includes('image')}"></i>
+									<span class="pl-2">{{ file.name }} - {{ (file.size / 1024).toFixed(2) }} KB</span>
+								</div>
+							</div>
+							<div *ngIf="uploadedFile && !uploadedFiles.length" class="py-2">
+								<div class="flex items-center">
+									<i class="pi" [ngClass]="{'pi-file-pdf': uploadedFile.type.includes('pdf'), 'pi-image': uploadedFile.type.includes('image')}"></i>
+									<span class="pl-2">{{ uploadedFile.name }} - {{ (uploadedFile.size / 1024).toFixed(2) }} KB</span>
+								</div>
+							</div>
+						</ng-template>
+						</p-fileupload>
+					</div>
+				</div>
+			</form>
+		</p-card>
+		<div class="flex flex-col w-full md:flex-row gap-4">
+			<div class="w-full flex flex-col gap-2">
+				<p-card header="Detalle compra" class="w-full">
+					<form [formGroup]="fb_detalleAdquisicion" >
+						<div class="card flex flex-col sm:flex-row gap-2 borde-contenedor p-2">
+							<div class="flex flex-col flex-wrap sm:flex-row gap-2 w-full">
+								<p-select 
+									[options]="items" 
+									formControlName="codigo" 
+									optionLabel="nombre" 
+									optionValue="idItem"
+									(onChange)="onItemSelectionChange($event.value)" 
+									placeholder="Selecciona un ítem"
+									[filter]="true" 
+									filterBy="nombre"
+									[loading]="loadingItems"
+									class="w-full sm:max-w-32"
+									appendTo="body">
+									
+									<ng-template let-item pTemplate="item">
+										<div class="flex flex-col">
+											<span class="font-semibold">{{ item.codigo }} - {{ item.nombre }}</span>
+											<small class="text-sm italic text-gray-500">{{ item.descripcion }}</small>
+										</div>
+									</ng-template>
+									
+									<ng-template pTemplate="selectedItem">
+										<div *ngIf="selectedItem" class="flex align-items-center">
+											<span>{{ selectedItem.codigo }} - {{ selectedItem.nombre }}</span>
+										</div>
+									</ng-template>
+								</p-select>
+								<p-floatlabel variant="on" class="w-full sm:max-w-64 lg:max-w-80">
+								<input 
+									type="text" 
+									pInputText 
+									formControlName="nombre" 
+									class="w-full"
+									>
+								<label>Nombre</label>
+								</p-floatlabel>
+								<p-select 
+									[options]="magnitudes" 
+									formControlName="id_magnitud"
+									optionLabel="nombre" 
+									optionValue="idMagnitud" 
+									placeholder="Magnitud"
+									[showClear]="true" 
+									[loading]="loadingMagnitudes"
+									[disabled]="isMagnitudDisabled()"
+									class="w-full sm:max-w-36">
+								</p-select>
+								<p-floatlabel variant="on" class="w-full sm:max-w-28">
+									<input 
+										type="number" 
+										pInputText 
+										formControlName="cantidad" 
+										class="w-full"
+										min="0"
+										step="0.01"
+										[ngClass]="{'ng-invalid ng-dirty': fb_detalleAdquisicion.get('cantidad')?.invalid && fb_detalleAdquisicion.get('cantidad')?.touched}">
+									<label>Cantidad</label>
+								</p-floatlabel>
+								<p-floatlabel variant="on" class="w-full sm:max-w-24">
+									<p-input-number 
+										formControlName="valorUnitario" 
+										class="w-full" 
+										mode="currency" 
+										currency="USD" 
+										locale="en-US"
+										fluid
+										/>
+									<label>Valor</label>    
+								</p-floatlabel>  
+								<p-dropdown 
+									[options]="impuestos"
+									[(ngModel)]="impuestoSeleccionado"
+									[ngModelOptions]="{standalone: true}"
+									optionLabel="nombre"
+									placeholder="Seleccionar impuesto"
+									[showClear]="false"
+									(onChange)="onImpuestoChange($event)"
+									styleClass="w-full sm:max-w-64">
+									<ng-template pTemplate="selectedItem">
+										<div class="flex align-items-center gap-2" *ngIf="impuestoSeleccionado">
+										<div>{{ impuestoSeleccionado.nombre }} ({{ impuestoSeleccionado.porcentaje }}%)</div>
+										</div>
+									</ng-template>
+									<ng-template let-impuesto pTemplate="item">
+										<div class="flex align-items-center gap-2">
+										<div>{{ impuesto.nombre }} ({{ impuesto.porcentaje }}%)</div>
+										</div>
+									</ng-template>
+								</p-dropdown>
+							</div>
+							<div class="sm:w-24">
+								<p-button label="Crear" (onClick)="addDetalleCompra()" severity="success" fluid/>
+							</div>
+						</div>
+					</form>
+				</p-card>
+				<p-card>
+					<div *ngIf="detallesCompra.length === 0" class="flex justify-center w-full">
+						<p> No hay detalles agregados. </p>
+					</div>
+					<p-table stripedRows *ngIf="detallesCompra.length !== 0" [columns]="detalleCols" [value]="detallesCompra">
+						<ng-template pTemplate="header" let-columns>
+							<tr>
+								<th *ngFor="let col of columns">
+									{{ col.header }}
+								</th>
+							</tr>
+						</ng-template>
+						<ng-template pTemplate="body" let-rowData let-columns="columns">
+							<tr>
+								<td *ngFor="let col of columns">
+									<ng-container *ngIf="col.field === 'codigo'">
+										{{rowData[col.field]}}
+									</ng-container>
+									<ng-container *ngIf="col.field === 'description'">
+										{{rowData[col.field]}}
+									</ng-container>
+									<ng-container *ngIf="col.field === 'valorUnitario' || col.field === 'subtotal'">
+										{{ rowData[col.field] | currency: 'USD' : 'symbol' }}
+									</ng-container>
+									<ng-container *ngIf="col.field === 'magnitud' || col.field === 'cantidad'">
+										<div class="text-center">
+											{{rowData[col.field]}}
+										</div>
+									</ng-container>
+									<ng-container *ngIf="col.field === 'actions'">
+										<div class="flex justify-center w-full gap-2"> 
+											<p-button icon="pi pi-trash" 
+												[rounded]="true" 
+												[text]="true" 
+												(click)="deleteDetalleCompra(rowData)" 
+												[raised]="true" 
+												severity="danger" />
+										</div>
+									</ng-container>
+								</td>
+							</tr>
+						</ng-template>
+					</p-table>
+				</p-card>
+			</div>
+		</div>
+	</div>
+	<p-card fluid class="w-full h-full md:max-w-60 lg:min-w-80">
+		<div class="w-full mb-8">
+			<ng-container *ngIf="fb_adquisicion.get('id_proveedor')?.value !== null">
+				<p class="mb-4"><strong>Información Proveedor</strong></p>
+				<p class="mb-2">Nombre: {{resumen.nombre}}</p>
+				<p class="mb-2" *ngIf="resumen.razonSocial !== ''">Razón Social: {{resumen.razonSocial}}</p>
+				<p class="mb-2">Email: {{resumen.email}}</p>
+				<p class="mb-2">Celular: {{resumen.celular}}</p>
+				<p class="mb-2">Telefono: {{resumen.telefono}}</p>
+				<p class="mb-2">Dirección: {{resumen.direccion}}</p>
+				<p-divider/>
+			</ng-container>
+			<p class="mb-4"><strong>Resumen</strong></p>    
+			<p class="mb-2">Sub Total: {{subtotal | currency: 'USD' : 'symbol'}}</p>
+			<p class="mb-2">Descuento: {{descuento*100}}%</p>
+			<p class="mb-2">IVA%: {{(iva*100).toFixed(2)}}%</p>
+			<p class="mb-2">IVA: {{impuestoTotal | currency: 'USD' : 'symbol'}}</p>			<p class="mb-2"><strong>Total: {{total | currency: 'USD' : 'symbol'}}</strong></p>
+		</div>
+		<div class="flex flex-col gap-3 w-full">
+			<p-button 
+				[label]="isEditMode ? 'Guardar Compra' : 'Agregar Compra'" 
+				severity="success" 
+				styleClass="w-full"
+				[disabled]="fb_adquisicion.invalid || fb_adquisicion.get('id_proveedor')?.value === null"
+				(onClick)="procesarCompra()"
+			></p-button>
+			<p-button 
+				*ngIf="isEditMode"
+				label="Cerrar Compra" 
+				icon="pi pi-lock"
+				severity="danger"
+				styleClass="w-full"
+				(onClick)="cerrarCompra()"
+				[raised]="true"
+			></p-button>
+		</div>
+	</p-card>
 </div>
+<p-confirmDialog [style]="{width: '450px'}" 
+                 styleClass="custom-confirm-dialog" 
+                 [baseZIndex]="10000"
+                 rejectButtonStyleClass="p-button-text p-button-secondary"
+                 acceptButtonStyleClass="p-button-danger">
+</p-confirmDialog>

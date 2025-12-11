@@ -1,8 +1,9 @@
 export const environment = {
     production: 'false',
-    domain: 'https://localhost:7267',
+    //domain: 'https://localhost:7267',
+    domain: 'https://servicios.istpet.edu.ec/apiVita',
     apiEndpoint: '/api',
-    authentication: '/Autenticate/login',
+    authentication: '/Autenticate',
     ordenesTrabajo: '/OrdenesTrabajo',
     mecanico: '/MecanicosController',
     validacion: '/Validacion',
@@ -22,9 +23,9 @@ export const environment = {
     conversionUnidades: '/ConversionUnidades',
     cliente: '/Clientes',
     reporte: '/Reportes',
+    usuarios: '/Usuarios',
     ordenMecanico: '/OrdenMecanico',
+    impuesto: '/Impuesto',
+    persona: '/Persona',
 };
 
-export const ivaCalculo = {
-    IVA: 0.15
-}

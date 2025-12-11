@@ -28,6 +28,10 @@ export class AdjuntoService {
     return this.http.get<Adjunto[]>(`${this.apiUrl}/GetByIdVehiculo/${idVehiculo}`, { headers });
   }
   
+   getAdjuntosByVehiculoMec(idVehiculo: number): Observable<Adjunto[]> {
+    const headers = this.auth.getMecanicoAuthHeaders();
+    return this.http.get<Adjunto[]>(`${this.apiUrl}/GetByIdVehiculo/${idVehiculo}`, { headers });
+  }
   /**
    * Construye la URL completa para acceder a la imagen a partir de la ruta relativa
    * @param ruta La ruta relativa recibida del backend (ej: /Uploads/imagen.jpg)
@@ -73,5 +77,17 @@ export class AdjuntoService {
   // Mantener el método original getImagenUrl para compatibilidad
   getImagenUrl(ruta: string): string {
     return this.getArchivoUrl(ruta);
+  }
+  eliminarAdjuntoCompleto(idAdjunto: number): Observable<boolean> {
+    return this.http.delete<boolean>(`${this.apiUrl}/DeleteAdjuntoAndUpdateCompra/${idAdjunto}`);
+  }
+  createAdjunto(file: File, idVehiculo: number): Observable<any> {
+    const formData = new FormData();
+    formData.append('File', file, file.name);
+    formData.append('IdVehiculo', idVehiculo.toString());
+
+    // No es necesario establecer el Content-Type en los headers cuando se usa FormData
+    // Angular/HttpClient lo establecerá automáticamente como multipart/form-data con el boundary correcto
+    return this.http.post<any>(`${this.apiUrl}/CreateAdjunto`, formData);
   }
 }

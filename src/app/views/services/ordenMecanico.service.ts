@@ -29,4 +29,31 @@ getOrdenesByMecanicos(idMecanicos?: number[]): Observable<any[] | any> {
       { headers, params }
     );
   }
+  actualizarEstadoOrdenTrabajo(codigoOrden: string, nuevoEstado: number): Observable<any> {
+    const headers = this.auth.getMecanicoAuthHeaders();
+    const body = {
+      CodigoOrden: codigoOrden,
+      nuevoEstado: nuevoEstado
+    };
+    
+    return this.http.put<any>(
+      `${this.apiUrl}/actualizar-estado`, 
+      body, 
+      { headers }
+    );
+  }
+  actualizarTareaOT(codigoOrden: string, nuevoEstado: number, nuevaDuracion: number): Observable<any> {
+    const headers = this.auth.getMecanicoAuthHeaders();
+    const body = {
+      idTareaOt: codigoOrden,
+      estado: nuevoEstado,
+      duracion: nuevaDuracion
+    };
+    
+    return this.http.put<any>(
+      `${this.apiUrl}/actualizar-tarea`, 
+      body, 
+      { headers }
+    );
+  }
 }

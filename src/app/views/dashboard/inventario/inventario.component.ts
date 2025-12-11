@@ -15,13 +15,18 @@ import { ChipModule } from 'primeng/chip';
 import { TooltipModule } from 'primeng/tooltip';
 import { CalendarModule } from 'primeng/calendar';
 import { MagnitudService } from '../../services/magnitud.service';
-import { RadioButton } from 'primeng/radiobutton';
+import { RadioButton, RadioButtonModule } from 'primeng/radiobutton';
 import { Select } from 'primeng/select';
-import { Divider } from 'primeng/divider';
-import { FloatLabel } from 'primeng/floatlabel';
-import { InputNumber } from 'primeng/inputnumber';
+import { Divider, DividerModule } from 'primeng/divider';
+import { FloatLabel, FloatLabelModule } from 'primeng/floatlabel';
+import { InputNumber, InputNumberModule } from 'primeng/inputnumber';
 import { MovimientoItem } from '../../../../domain/response/Movimiento.model';
 import { CreateUpdateItemRequest } from '../../../../domain/request/Item.model';
+import { TextareaModule } from 'primeng/textarea';
+import { DropdownModule } from 'primeng/dropdown';
+import { MessageModule } from 'primeng/message';
+import { ToastrService } from 'ngx-toastr';
+import { TagModule } from 'primeng/tag';
 interface Month {
   value: string;
   label: string;
@@ -61,10 +66,20 @@ interface MonthData {
     TooltipModule,
     CalendarModule,
     RadioButton,
-    Select,
     Divider,
     FloatLabel,
-    InputNumber
+    InputNumber,
+    TextareaModule,
+    DropdownModule,
+    MessageModule,
+    InputNumberModule,
+    FloatLabelModule,
+    DividerModule,
+    RadioButtonModule,
+    ButtonModule,
+    DialogModule,
+    TagModule,
+    ChipModule,
   ],
   templateUrl: './inventario.component.html',
   styleUrl: './inventario.component.scss'
@@ -104,25 +119,62 @@ export class InventarioComponent implements OnInit {
   selectedDate: Date | null = null;
   selectedDayMovimientos: MovimientoItem[] = [];
 
+  mostrarMagnitud : boolean = false;
+  mostrarValorUnitario : boolean = false;
+
   constructor( 
     private itemService: ItemService,
     private datePipe: DatePipe,
     private magnitudService: MagnitudService,
+    private toastr: ToastrService,
   ){}
 
   ngOnInit(): void {
     this.initData();
     this.configurarMesActual();
   }
-  getItems(){
-    this.itemService.getItemsList().subscribe({
-      next: (response) => {
-        this.Items = response;
+ getItems(){
+  this.itemService.getItemsList().subscribe({
+    next: (response) => {
+      // ✅ Verificar que response sea un array válido
+      this.Items = Array.isArray(response) ? response : [];
+      this.loading = false;
+      
+      // ✅ Mostrar mensaje informativo si no hay items
+      if (this.Items.length === 0) {
+        console.log('No se encontraron items en el inventario');
+        // Opcional: mostrar un toast informativo
+        // this.toastr.info('No hay items en el inventario. Puedes agregar el primero.', 'Inventario vacío');
+      }
+    },
+    error: (err) => {
+      console.error('Error al cargar items:', err);
+      
+      // ✅ Manejar diferentes tipos de errores
+      if (err.status === 500) {
+        // Error del servidor (probablemente base de datos vacía)
+        console.log('El servidor no pudo cargar los items. Iniciando con inventario vacío.');
+        this.Items = []; // Array vacío
         this.loading = false;
-      },
-      error: (err) => console.error(err)
-    })
-  }
+        
+        // ✅ Mostrar mensaje al usuario
+        this.toastr.info('El inventario está vacío. Puedes agregar tu primer item.', 'Inventario vacío');
+      } else if (err.status === 404) {
+        // No encontrado
+        console.log('No se encontraron items en el inventario.');
+        this.Items = [];
+        this.loading = false;
+        this.toastr.info('No hay items en el inventario.', 'Inventario vacío');
+      } else {
+        // Otros errores
+        console.error('Error inesperado:', err);
+        this.Items = [];
+        this.loading = false;
+        this.toastr.error('Error al cargar el inventario. Inténtalo de nuevo.', 'Error');
+      }
+    }
+  });
+}
   initData(){
     this.cols = HeadersTables.InventarioList; 
     this.colsMovimientos = HeadersTables.MovimientosItemList;
@@ -143,15 +195,62 @@ export class InventarioComponent implements OnInit {
       idMagnitud: new FormControl<number | null>(null),
       nombre: new FormControl<string | null>(null, [Validators.required]),
       descripcion: new FormControl<string | null>(null),
-      valorUnitario: new FormControl<number | null>(null, [Validators.required]),
+      valorUnitario: new FormControl<number | null>(null), // ✅ Remover required por defecto
       stockMin: new FormControl<number | null>(null, [Validators.required]),
       stockIdeal: new FormControl<number | null>(null, [Validators.required]),
     });    
+
     this.fb_item.get('idTipoItem')?.valueChanges.subscribe((value) => {
       this.resetForm();
-      this.isToolRequired(value);
+      this.configurarCamposPorTipo(value);
     })
   }
+
+configurarCamposPorTipo(value: any) {
+  if (!value) return;
+  
+  const tipoItem = value.key || null;
+  
+  // Resetear validadores
+  this.fb_item.get('valorUnitario')?.clearValidators();
+  this.fb_item.get('idMagnitud')?.clearValidators();
+  
+  switch (tipoItem) {
+    case 1: // Repuesto
+      this.mostrarMagnitud = false;
+      this.mostrarValorUnitario = false;
+      this.isntTool = true; // Mantener stocks visibles
+      break;
+      
+    case 2: // Insumo
+      this.mostrarMagnitud = true;
+      this.mostrarValorUnitario = false;
+      this.isntTool = true; // Mantener stocks visibles
+      // ✅ AGREGAR VALIDACIÓN REQUERIDA PARA MAGNITUD EN INSUMOS
+      this.fb_item.get('idMagnitud')?.setValidators([Validators.required]);
+      break;
+      
+    case 3: // Herramienta
+      this.mostrarMagnitud = false; // ✅ CAMBIAR A false - Las herramientas NO tienen magnitud
+      this.mostrarValorUnitario = false;
+      this.isntTool = false; // Ocultar stocks
+      // Para herramientas, establecer stocks en 0
+      this.fb_item.get('stockMin')?.setValue(0);
+      this.fb_item.get('stockIdeal')?.setValue(0);
+      break;
+      
+    default:
+      this.mostrarMagnitud = false;
+      this.mostrarValorUnitario = false;
+      this.isntTool = true;
+      break;
+  }
+  
+  // Actualizar validadores
+  this.fb_item.get('valorUnitario')?.updateValueAndValidity();
+  this.fb_item.get('idMagnitud')?.updateValueAndValidity();
+}
+
   showMovimientosItem(codigo: number) {
     this.visibleMovimientos = true;
     this.loadingMovimientosDialog = true;
@@ -187,15 +286,9 @@ export class InventarioComponent implements OnInit {
   closeDialogCrearItem(){
     this.visibleCrearItem = false;
     this.fb_item.reset();
-  }
-  isToolRequired(value:any) {
-    if(!value) return;
-    const tipoItem = value.key || null;
-    this.isntTool = tipoItem == 1 || tipoItem == 2; // Repuesto o Insumo    
-    if (!this.isntTool) {
-      this.fb_item.get('stockMin')?.setValue(0);
-      this.fb_item.get('stockIdeal')?.setValue(0);
-    }
+    this.mostrarMagnitud = false;
+    this.mostrarValorUnitario = false;
+    this.isntTool = true;
   }
   resetForm(){
     this.fb_item.get('idMagnitud')?.setValue(null);
@@ -204,34 +297,45 @@ export class InventarioComponent implements OnInit {
     this.fb_item.get('valorUnitario')?.setValue(null);
     this.fb_item.get('stockMin')?.setValue(null);
     this.fb_item.get('stockIdeal')?.setValue(null);
+    this.mostrarMagnitud = false;
+    this.mostrarValorUnitario = false;
   }
-  crearteItem(){
-    const item: CreateUpdateItemRequest = {
-      idItem: 0,
-      idTipoItem: this.fb_item.value.idTipoItem.key,
-      idMagnitud: this.fb_item.value.idMagnitud,
-      nombre: this.fb_item.value.nombre,
-      descripcion: this.fb_item.value.descripcion,
-      valorUnitario: this.fb_item.value.valorUnitario,
-      stockMin: this.fb_item.value.stockMin || 0,
-      stockIdeal: this.fb_item.value.stockIdeal || 0, 
-    }
+ crearteItem() {
+  const item: CreateUpdateItemRequest = {
+    idItem: 0, 
+    idTipoItem: this.fb_item.value.idTipoItem.key,
+    idMagnitud: this.fb_item.value.idMagnitud || null, 
+    nombre: this.fb_item.value.nombre,
+    descripcion: this.fb_item.value.descripcion,
+    valorUnitario: this.fb_item.value.valorUnitario,
+    stockMin: this.fb_item.value.stockMin || 0,
+    stockIdeal: this.fb_item.value.stockIdeal || 0, 
+  }
 
-    this.itemService.createUpdateItem(item).subscribe({
-      next: (response) => {
-        console.log('Item creado/actualizado:', response);
-        this.visibleCrearItem = false;
-        this.fb_item.reset();
-        this.getItems();
-      }, 
-      error: (err) => {
-        console.error('Error al crear item:', err);
-        this.visibleCrearItem = false;
-        this.fb_item.reset();
+  this.itemService.createUpdateItem(item).subscribe({
+    next: (response) => {
+      this.visibleCrearItem = false;
+      this.toastr.success('Item Creado Exitosamente', 'Éxito!');
+      this.fb_item.reset();
+      this.getItems();
+      // this.messageService.add({severity:'success', summary:'Éxito', detail:'Item creado correctamente'});
+    }, 
+    error: (err) => {
+      console.error('Error al crear item:', err);
+      let errorMessage = 'Error desconocido';
+      if (err.error?.message) {
+        errorMessage = err.error.message;
+      } else if (err.message) {
+        errorMessage = err.message;
       }
-    });
-    
-  }
+      console.error('Mensaje de error:', errorMessage);
+      
+      // this.messageService.add({severity:'error', summary:'Error', detail: errorMessage});
+      this.visibleCrearItem = false;
+      this.fb_item.reset();
+    }
+  });
+}
   exportCSV() {
     if (!this.dt5) {
       console.error('La tabla no está lista para exportar. Intente nuevamente en unos segundos.');
@@ -360,14 +464,7 @@ export class InventarioComponent implements OnInit {
     if (count <= 5) return '#91baff';
     return '#4285f4';
   }
-  handleMonthChange(monthValue: string): void {
-    if (this.selectedMonths.includes(monthValue)) {
-      this.selectedMonths = this.selectedMonths.filter(m => m !== monthValue);
-    } else {
-      this.selectedMonths = [...this.selectedMonths, monthValue];
-    }
-    this.processCalendarData();
-  }
+
   handleSelectAll(select: boolean): void {
     if (select) {
       this.selectedMonths = this.availableMonths.map(m => m.value);
@@ -379,39 +476,63 @@ export class InventarioComponent implements OnInit {
   generateEmptySpaces(length: number): number[] {
     return Array(length).fill(0).map((_, i) => i);
   }
-  configurarMesActual() {
-    const fechaActual = new Date();
-    this.fechaSeleccionada = new Date(fechaActual);
-    this.seleccionarMes();
+configurarMesActual() {
+  const fechaActual = new Date();
+  // Configurar al primer día del mes actual para evitar problemas con fechas
+  this.fechaSeleccionada = new Date(fechaActual.getFullYear(), fechaActual.getMonth(), 1);
+  this.seleccionarMes();
+}
+
+seleccionarMes() {
+  if (!this.fechaSeleccionada) return;
+  
+  const año = this.fechaSeleccionada.getFullYear();
+  const mes = this.fechaSeleccionada.getMonth();
+  
+  // Establecer fechas de inicio y fin del mes completo
+  this.fechaInicio = new Date(año, mes, 1);
+  this.fechaFin = new Date(año, mes + 1, 0);
+}
+
+aplicarFiltroMes() {
+  if (!this.fechaSeleccionada) return;
+  
+  this.mostrandoTodosLosMeses = false;
+  
+  const año = this.fechaSeleccionada.getFullYear();
+  const mes = this.fechaSeleccionada.getMonth() + 1; // JavaScript meses son 0-11
+  const mesValor = `${año}-${mes.toString().padStart(2, '0')}`;
+  
+  this.selectedMonths = [mesValor];
+  
+  this.processCalendarData();
+}
+
+limpiarFiltroMes() {
+  
+  this.configurarMesActual();
+  
+  const fechaActual = new Date();
+  const año = fechaActual.getFullYear();
+  const mes = fechaActual.getMonth() + 1; // JavaScript meses son 0-11
+  const mesActualValor = `${año}-${mes.toString().padStart(2, '0')}`;
+  
+  console.log('Configurando mes actual:', mesActualValor);
+  
+  this.selectedMonths = [mesActualValor];
+  this.mostrandoTodosLosMeses = false;
+  
+  this.processCalendarData();
+}
+
+handleMonthChange(monthValue: string): void {
+  if (this.selectedMonths.includes(monthValue)) {
+    this.selectedMonths = this.selectedMonths.filter(m => m !== monthValue);
+  } else {
+    this.selectedMonths = [...this.selectedMonths, monthValue];
   }
-  seleccionarMes() {
-    if (!this.fechaSeleccionada) return;
-    const año = this.fechaSeleccionada.getFullYear();
-    const mes = this.fechaSeleccionada.getMonth();
-    this.fechaInicio = new Date(año, mes, 1);
-    this.fechaFin = new Date(año, mes + 1, 0);
-  }
-  aplicarFiltroMes() {
-    if (!this.fechaSeleccionada) return;
-    this.mostrandoTodosLosMeses = false;
-    const año = this.fechaSeleccionada.getFullYear();
-    const mes = this.fechaSeleccionada.getMonth() + 1; // JavaScript meses son 0-11
-    const mesValor = `${año}-${mes.toString().padStart(2, '0')}`;
-    this.selectedMonths = [mesValor];
-    this.processCalendarData();
-  }
-  limpiarFiltroMes() {
-    console.log('Limpiando filtro y mostrando solo el mes actual');
-    this.configurarMesActual();
-    const fechaActual = new Date();
-    const año = fechaActual.getFullYear();
-    const mes = fechaActual.getMonth() + 1; // JavaScript meses son 0-11
-    const mesActualValor = `${año}-${mes.toString().padStart(2, '0')}`;
-    console.log('Filtrando por mes actual:', mesActualValor);
-    this.selectedMonths = [mesActualValor];
-    this.mostrandoTodosLosMeses = false;
-    this.processCalendarData();
-  }
+  this.processCalendarData();
+}
   getTooltipContent(day: Day): string {
     if (!day.movimientos || day.movimientos.length === 0) {
       return `<div class="tooltip-title">${this.datePipe.transform(day.date, 'dd/MM/yyyy')}</div>

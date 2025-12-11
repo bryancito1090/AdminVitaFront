@@ -1,0 +1,35 @@
+#bg-principal {
+    background-image: url("../../../../../assets/img/bg_istpet.jpg");
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+.contenedor-main{
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+}
+.contenedor-form{
+    width: 100%;
+    max-width: 25rem;
+    border-radius: 15px;
+
+    @media (max-width: 480px) { 
+        max-width: 20rem;
+    }
+}
+.containter-portal {
+    background-color: #1F295B;
+    padding:  .5rem .5rem 0;
+    border-radius: 10px;
+    width: 100%;
+    position: relative;
+    top: -2.5rem;  
+}
+.input-text{
+    border: 1px solid #dfdfdf;
+    
+    &:focus {
+        border: 1px solid #1F295B !important;
+    };
+}
