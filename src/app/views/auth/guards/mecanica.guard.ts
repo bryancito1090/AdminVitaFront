@@ -2,21 +2,29 @@ import { CanActivateFn } from '@angular/router';
 import { inject } from '@angular/core';
 import { AuthService } from '../service/auth.service';
 import { Router } from '@angular/router';
-export const mecanicaGuard: CanActivateFn = (route, state) => {
+import { JwtHelperService } from '@auth0/angular-jwt';
+
+export const mecanicaGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
+  const jwtHelper = new JwtHelperService();
 
   const token = authService.getToken();
 
-  if(token == "NotFoundToken") {
-    router.navigate(['/mecanica']);
+  let isExpired = true;
+  if (token && token !== 'NotFoundToken') {
+    try {
+      isExpired = jwtHelper.isTokenExpired(token);
+    } catch {
+      isExpired = true;
+    }
+  }
+
+  if (!token || token === 'NotFoundToken' || isExpired) {
+    authService.logoutMecanico();
+    router.navigate(['/login_mecanica']);
     return false;
   }
 
-  if (token) {
-    return true;
-  } else {
-    router.navigate(['/mecanica']);
-    return false;
-  }
+  return true;
 };

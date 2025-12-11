@@ -70,7 +70,7 @@ export class CrudTareaMecanicaComponent implements OnInit{
   duracionEstimada: number | null = null;
 
   displayEditMecanico: boolean = false;
-  editingMecanico: { idMecanico: number; duracion: number } = { idMecanico: 0, duracion: 0 };
+  editingMecanico: { idMecanico: number; duracionEstimada: number } = { idMecanico: 0, duracionEstimada: 0 };
 
   //header dialog
   header_dialog: string = '';
@@ -208,20 +208,21 @@ onItemSelectionChange(itemId: number) {
 }
 agregarTarea() {
     // Validación básica del detalle (obligatorio para ambos tipos)
-    if (!this.detalleTarea || !this.detalleTarea.trim()) {
-      this.toastr.error('El campo Detalle de Tarea es obligatorio.', 'Error de validación');
+    const detalle = this.detalleTarea?.trim() || '';
+
+    if (!detalle || detalle.length < 5) {
+      this.toastr.error('Agrega un detalle de al menos 5 caracteres.', 'Datos incompletos');
       return;
     }
 
-    // Validaciones específicas para tareas internas
     if (this.tipo_tarea === 'interna') {
-      if (this.duracion_tarea <= 0) {
-        this.toastr.error('La duración es obligatoria para tareas internas.', 'Error de validación');
+      if (!this.duracion_tarea || this.duracion_tarea <= 0) {
+        this.toastr.error('La duracion es obligatoria para tareas internas.', 'Datos incompletos');
         return;
       }
 
       if (this.list_mecanicos.length === 0) {
-        this.toastr.error('Debe asignar al menos un mecánico a la tarea interna.', 'Error de validación');
+        this.toastr.error('Asigna por lo menos un mecanico a la tarea interna.', 'Datos incompletos');
         return;
       }
     }
@@ -547,7 +548,6 @@ async crearSolicitudRepuesto(idTareaOt: string | number) {
 
 
  resetForm() {
-  this.codigoOT = '';
   this.detalleTarea = '';
   this.estado_tarea = EstadoTarea[0].code;
   this.requ_repuestos = true;
@@ -712,13 +712,13 @@ limpiarFormularioAlCerrar() {
 
   agregarMecanico() {
     if (!this.selectedMecanicoId || !this.duracionEstimada || this.duracionEstimada <= 0) {
-      alert('Selecciona un mecánico y una duración válida.');
+      this.toastr.warning('Selecciona un mecanico y una duracion valida.', 'Datos incompletos');
       return;
     }
 
     const yaExiste = this.list_mecanicos.some(m => m.idMecanico === this.selectedMecanicoId);
     if (yaExiste) {
-      alert('Este mecánico ya está asignado.');
+      this.toastr.info('Este mecanico ya esta asignado a la tarea.', 'Sin cambios');
       return;
     }
 
@@ -732,15 +732,15 @@ limpiarFormularioAlCerrar() {
     this.displayDialogMecanicos = false;
   }
 
-  abrirEditarMecanico(mec: { idMecanico: number; duracion: number }) {
+  abrirEditarMecanico(mec: { idMecanico: number; duracionEstimada: number }) {
     this.editingMecanico = { ...mec };
     this.displayEditMecanico = true;
   }
 
   guardarDuracionMecanico() {
     const index = this.list_mecanicos.findIndex(m => m.idMecanico === this.editingMecanico.idMecanico);
-    if (index !== -1) {
-      this.list_mecanicos[index].duracionEstimada = this.editingMecanico.duracion;
+    if (index !== -1 && this.editingMecanico.duracionEstimada > 0) {
+      this.list_mecanicos[index].duracionEstimada = this.editingMecanico.duracionEstimada;
     }
     this.displayEditMecanico = false;
   }

@@ -122,6 +122,46 @@ export class RegistroClienteComponent {
   cambiarTipoDocumento(tipo: string): void {
     this.tipoDocumento = tipo;
   }
+
+  private campoLleno(valor: any): boolean {
+    return valor !== undefined && valor !== null && String(valor).trim() !== '';
+  }
+
+  get seccionBasicaNaturalCompleta(): boolean {
+    return this.campoLleno(this.datosPersonaNatural.documento) &&
+           this.campoLleno(this.datosPersonaNatural.nombres) &&
+           this.campoLleno(this.datosPersonaNatural.apellidos);
+  }
+
+  get seccionContactoNaturalCompleta(): boolean {
+    return this.campoLleno(this.datosPersonaNatural.email) &&
+           this.campoLleno(this.datosPersonaNatural.direccion) &&
+           this.campoLleno(this.datosPersonaNatural.genero);
+  }
+
+  get seccionBasicaEmpresaCompleta(): boolean {
+    return this.campoLleno(this.datosEmpresa.documento) &&
+           this.campoLleno(this.datosEmpresa.nombre) &&
+           this.campoLleno(this.datosEmpresa.razonSocial) &&
+           this.campoLleno(this.datosEmpresa.representanteLegal);
+  }
+
+  get seccionContactoEmpresaCompleta(): boolean {
+    return this.campoLleno(this.datosEmpresa.email) &&
+           this.campoLleno(this.datosEmpresa.direccion);
+  }
+
+  get seccionAdicionalEmpresaCompleta(): boolean {
+    return typeof this.datosEmpresa.obligadaContabilidad === 'boolean';
+  }
+
+  get puedeRegistrarCliente(): boolean {
+    if (this.cargando) return false;
+
+    return this.isPersonaNatural
+      ? this.seccionBasicaNaturalCompleta && this.seccionContactoNaturalCompleta
+      : this.seccionBasicaEmpresaCompleta && this.seccionContactoEmpresaCompleta && this.seccionAdicionalEmpresaCompleta;
+  }
   
   resetearFormulario(): void {
     this.isPersonaNatural = true;

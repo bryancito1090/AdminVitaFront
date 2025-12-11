@@ -98,9 +98,9 @@ export class DashboardMecanicaComponent implements OnInit {
   permisosRequeridos: string[] = []; 
   rutaPendiente: string = ''; 
   
-  //Dialgo Dinamic
+  // Dialogo dinamico
   dialogRef: DynamicDialogRef | undefined;
-// Variables para el diálogo
+  // Variables para el dialogo
   visibleExpand: boolean = false;
   loadingExpandDialog: boolean = true;
   codeExpandDialog: string = '';
@@ -168,10 +168,10 @@ export class DashboardMecanicaComponent implements OnInit {
     { name: 'En Progreso', code: 2 },
     { name: 'Cancelado', code: 3 },
     { name: 'Finalizado', code: 4 },
-    { name: 'Finalizado sin éxito', code: 5 },
+    { name: 'Finalizado sin Exito', code: 5 },
     { name: 'Espera Repuesto', code: 6 },
-    { name: 'Espera Mecánico', code: 7 },
-    { name: 'Espera Aprobación', code: 8 }
+    { name: 'Espera Mecanico', code: 7 },
+    { name: 'Espera Aprobacion', code: 8 }
   ];
   constructor(
     private datePipe: DatePipe,
@@ -290,7 +290,7 @@ export class DashboardMecanicaComponent implements OnInit {
 
   validarYEditarOT(codigo: any) {
     this.dialogRef = this.dialogService.open(AuthMecanicaComponent, {
-        header: 'Código de Autenticación',
+        header: 'Codigo de Autenticacion',
         width: '400px',
         modal: true,
         dismissableMask: false, 
@@ -305,7 +305,7 @@ export class DashboardMecanicaComponent implements OnInit {
         this.codigoOTPendiente = codigo;
         this.onValidacionExitosa(result.token);
       } else {
-        this.toastr.error('Código incorrecto', 'Error');
+        this.toastr.error('Codigo incorrecto', 'Error');
       }
     });
   }
@@ -340,7 +340,7 @@ export class DashboardMecanicaComponent implements OnInit {
     this.messageService.add({
       severity: 'error',
       summary: 'Acceso Denegado',
-      detail: `${mecanicoAuth.name} no tiene permisos para esta acción`,
+      detail: `${mecanicoAuth.name} no tiene permisos para esta accion`,
       life: 5000
     });
     this.codigoOTPendiente = '';
@@ -356,7 +356,7 @@ export class DashboardMecanicaComponent implements OnInit {
     }
   irANuevaOrden() {
     this.dialogRef = this.dialogService.open(AuthMecanicaComponent, {
-      header: 'Código de Autenticación',
+      header: 'Codigo de Autenticacion',
       width: '400px',
       modal: true,
       dismissableMask: false, 
@@ -373,8 +373,8 @@ export class DashboardMecanicaComponent implements OnInit {
       else{
         this.messageService.add({
           severity: 'error',
-          summary: 'Código incorrecto',
-          detail: 'No se pudo autenticar el acceso a esta página',
+          summary: 'Codigo incorrecto',
+          detail: 'No se pudo autenticar el acceso a esta pagina',
           life: 5000
         });
       }
@@ -427,10 +427,11 @@ export class DashboardMecanicaComponent implements OnInit {
     });
   }
 
-  // Copia todos los métodos necesarios del componente original
+  // Utilidades de formato
   formatDate(dateString: string): string {
-    if(dateString === 'Vacío') return 'Vacío';
+    if (!dateString || dateString === 'Vacio') return 'Vacio';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Vacio';
     const day = date.getDate().toString().padStart(2, '0');
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const year = date.getFullYear();
@@ -534,7 +535,7 @@ export class DashboardMecanicaComponent implements OnInit {
         this.solicitudService.getSolicitudRepuestoTablaExpandOT(this.codeExpandDialog).subscribe({
           next: (response) => {
             this.expandDataTables = response;
-            // ✅ Filtrar las columnas para excluir el campo 'actions'
+            // Filtrar las columnas para excluir el campo 'actions'
             this.expandCols = HeadersTables.SolicitudTareaList.filter(col => col.field !== 'actions');
           },
           error: (err) => {
@@ -608,10 +609,10 @@ export class DashboardMecanicaComponent implements OnInit {
       case 2: return 'En Progreso';
       case 3: return 'Cancelado';
       case 4: return 'Finalizado';
-      case 5: return 'Finalizado sin éxito';
+      case 5: return 'Finalizado sin Exito';
       case 6: return 'Espera Repuesto';
-      case 7: return 'Espera Mecánico';
-      case 8: return 'Espera Aprobación';
+      case 7: return 'Espera Mecanico';
+      case 8: return 'Espera Aprobacion';
       default: return 'Sin definir';
     }
   }
@@ -640,5 +641,4 @@ export class DashboardMecanicaComponent implements OnInit {
   }
   return typeof value === 'number' ? value : parseFloat(value) || 0;
 }
-
 }

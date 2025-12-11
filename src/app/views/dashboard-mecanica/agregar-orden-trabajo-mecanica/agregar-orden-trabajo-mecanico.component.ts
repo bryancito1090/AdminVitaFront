@@ -1,32 +1,33 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ClienteService } from '../../../services/cliente.service';
+import { ClienteService } from '../../services/cliente.service';
 import { ToastrService } from 'ngx-toastr';
-import { ValidacionService } from '../../../services/validacion.service';
-import { AgendarOrdenMecanicoRequest } from '../../../../../domain/request/OrdenTrabajoRequest.model';
-import { MecanicoService } from '../../../services/mecanico.service';
-import { OrdenTrabajoService } from '../../../services/orden-trabajo.service';
-import { AdjuntoService } from '../../../services/adjunto.service';
+import { ValidacionService } from '../../services/validacion.service';
+import { AgendarOrdenMecanicoRequest } from '../../../../domain/request/OrdenTrabajoRequest.model';
+import { MecanicoService } from '../../services/mecanico.service';
+import { OrdenTrabajoService } from '../../services/orden-trabajo.service';
+import { AdjuntoService } from '../../services/adjunto.service';
 import { firstValueFrom, lastValueFrom } from 'rxjs';
-import { Dialog } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { Cliente } from '../../../../../domain/request/Cliente.model';
-import { TipoVehiculoService } from '../../../services/tipo-vehiculo.service';
+import { TipoVehiculoService } from '../../services/tipo-vehiculo.service';
 import { DropdownModule } from 'primeng/dropdown';
 import { CalendarModule } from 'primeng/calendar';
-import { AddVehicleNoInstitucional } from '../../../../../domain/request/Vehiculo.model';
-import { VehiculoService } from '../../../services/vehiculo.service';
-import { ArchivosService } from '../../../services/archivos.service';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { AddVehicleNoInstitucional } from '../../../../domain/request/Vehiculo.model';
+import { VehiculoService } from '../../services/vehiculo.service';
+import { ArchivosService } from '../../services/archivos.service';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { DialogModule } from 'primeng/dialog';
+import { TagModule } from 'primeng/tag';
 import { ConfirmationService } from 'primeng/api';
-import { AuthService } from '../../../auth/service/auth.service';
-import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
-import { AuthMecanicaComponent } from '../../../auth/components/auth-mecanica/auth-mecanica.component';
-import { RegistroClienteComponent } from '../../../shared/components/registro-cliente/registro-cliente.component';
-import { RegistroVehiculoComponent } from '../../../shared/components/registro-vehiculo/registro-vehiculo.component';
+import { AuthService } from '../../auth/service/auth.service';
+import { DialogService, DynamicDialogRef, DynamicDialogModule } from 'primeng/dynamicdialog';
+import { AuthMecanicaComponent } from '../../auth/components/auth-mecanica/auth-mecanica.component';
+import { RegistroClienteComponent } from '../../shared/components/registro-cliente/registro-cliente.component';
+import { RegistroVehiculoComponent } from '../../shared/components/registro-vehiculo/registro-vehiculo.component';
 
 @Component({
   selector: 'app-agregar-orden-trabajo-mecanico',
@@ -38,7 +39,11 @@ import { RegistroVehiculoComponent } from '../../../shared/components/registro-v
     InputTextModule,
     DropdownModule,
     CalendarModule,
+    InputNumberModule,
+    DialogModule,
+    TagModule,
     ConfirmDialogModule,
+    DynamicDialogModule,
     RegistroClienteComponent,
     RegistroVehiculoComponent
   ],
@@ -52,6 +57,12 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
   @Output() visibleChange = new EventEmitter<boolean>();
   NameIdentifier: any;
 
+  clienteForm!: FormGroup;
+  vehiculoForm!: FormGroup;
+  ordenForm!: FormGroup;
+  formSubmitted = false;
+  resumenVisible = false;
+
   nombreUsuario: string = '';
   documento: string = '';
   clienteActual: any | null = null;
@@ -63,9 +74,15 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
   mostrarInfoVehiculo: boolean = false;
   cargandoVehiculo: boolean = false;
 
-  // Mecanicos disponibles
   mecanicos: any[] = [];
   cargandoMecanicos: boolean = false;
+  prioridades = [
+    { label: 'Crítico', value: 0, severity: 'danger' },
+    { label: 'Emergencia', value: 1, severity: 'warning' },
+    { label: 'Advertencia', value: 2, severity: 'info' },
+    { label: 'Notificación', value: 3, severity: 'success' },
+    { label: 'Baja prioridad', value: 4, severity: 'success' }
+  ];
 
   // Estado de la creación de orden
   creandoOrden: boolean = false;
@@ -158,6 +175,7 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
   mensajeExito: any;
 
   constructor(
+    private fb: FormBuilder,
     private router: Router,
     private validacionService: ValidacionService,
     private toastr: ToastrService,
@@ -174,11 +192,30 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
   ) { }
 
   ngOnInit() {
+    this.buildForms();
     this.obtenerNombreUsuario();
     this.cargarSupervisores();
     this.GetTipoVehiculo();
     this.NameIdentifier = this.authService.getNameIdentifier();
     this.obtenerIdUsuarioDelToken();
+  }
+  private buildForms(): void {
+    this.clienteForm = this.fb.group({
+      documento: ['', [Validators.required, Validators.pattern(/^[0-9]{6,15}$/)]]
+    });
+
+    this.vehiculoForm = this.fb.group({
+      placa: ['', [Validators.required, Validators.pattern(/^[A-Za-z0-9-]{5,8}$/)]]
+    });
+
+    this.ordenForm = this.fb.group({
+      detalle: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(600)]],
+      observacion: ['', [Validators.maxLength(600)]],
+      kilometraje: [null, [Validators.required, Validators.min(1), Validators.max(2000000)]],
+      fechaProgramada: [new Date(), Validators.required],
+      idMecanico: [null, Validators.required],
+      prioridad: [null, Validators.required]
+    });
   }
   obtenerIdUsuarioDelToken() {
     try {
@@ -242,20 +279,26 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
   }
 
   validarCliente() {
-    if (!this.documento || this.documento.trim() === '') {
-      this.toastr.warning('Por favor ingrese un documento válido', 'Advertencia');
+    this.clienteForm.markAllAsTouched();
+    const documentoControl = this.clienteForm.get('documento');
+    const documentoValor = documentoControl?.value ? String(documentoControl.value).trim() : '';
+
+    if (!documentoControl || documentoControl.invalid || !documentoValor) {
+      this.toastr.warning('Ingrese un documento válido para continuar', 'Advertencia');
       return;
     }
+
+    this.documento = documentoValor;
+    this.clienteForm.patchValue({ documento: documentoValor });
     this.cargandoCliente = true;
     this.mostrarInfoCliente = false;
-    this.validacionService.validarClienteXDocMec(this.documento)
+    this.validacionService.validarClienteXDocMec(documentoValor)
       .subscribe({
         next: (respuesta) => {
           this.clienteActual = respuesta;
           this.mostrarInfoCliente = true;
           this.cargandoCliente = false;
 
-          // Asignar idCliente a ordenData
           this.ordenData.idCliente = this.clienteActual.idPersona;
 
           if (this.clienteActual.esClienteActivo) {
@@ -267,6 +310,7 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
         error: (error: any) => {
           console.error('Error al validar el cliente:', error);
           this.cargandoCliente = false;
+          this.clienteActual = null;
           if (error.status === 404) {
             this.toastr.warning('Cliente no encontrado', 'No existe');
           } else {
@@ -277,27 +321,31 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
   }
 
   validarVehiculo() {
-    if (!this.placa || this.placa.trim() === '') {
+    this.vehiculoForm.markAllAsTouched();
+    const placaControl = this.vehiculoForm.get('placa');
+    const placaValor = placaControl?.value ? String(placaControl.value).trim().toUpperCase() : '';
+
+    if (!placaControl || placaControl.invalid || !placaValor) {
       this.toastr.warning('Por favor ingrese una placa válida', 'Advertencia');
       return;
     }
 
+    this.placa = placaValor;
+    this.vehiculoForm.patchValue({ placa: placaValor });
+
     this.cargandoVehiculo = true;
     this.mostrarInfoVehiculo = false;
 
-    // Limpiar previews de imágenes existentes
     this.limpiarPrevisualizaciones();
 
-    this.validacionService.validarVehiculoXPlacaMec(this.placa)
+    this.validacionService.validarVehiculoXPlacaMec(placaValor)
       .subscribe({
         next: (respuesta) => {
           this.vehiculoActual = respuesta;
           this.mostrarInfoVehiculo = true;
 
-          // Asignar idVehiculo a ordenData
           this.ordenData.idVehiculo = this.vehiculoActual.idVehiculo;
 
-          // Cargar las imágenes del vehículo si tiene un ID válido
           if (this.vehiculoActual.idVehiculo) {
             this.cargarImagenesVehiculo(this.vehiculoActual.idVehiculo);
           }
@@ -315,6 +363,7 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
         error: (error) => {
           console.error('Error al validar el vehículo:', error);
           this.cargandoVehiculo = false;
+          this.vehiculoActual = null;
 
           if (error.status === 404) {
             this.toastr.warning('Vehículo no encontrado', 'No existe');
@@ -328,34 +377,123 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
     this.router.navigate(['/panel/mecanica/nuevo-vehiculo']);
   }
   validarDatosOrden(): boolean {
-    if (!this.clienteActual || !this.vehiculoActual) {
-      this.toastr.warning('Debe seleccionar un cliente y un vehículo antes de crear la orden', 'Datos incompletos');
+    if (!this.clienteActual) {
+      this.toastr.warning('Valida o registra un cliente antes de continuar', 'Datos incompletos');
       return false;
     }
-    if (!this.ordenData.idMecanico) {
-      this.toastr.warning('Debe seleccionar un mecánico', 'Datos incompletos');
+    if (!this.vehiculoActual) {
+      this.toastr.warning('Valida o registra un vehículo antes de continuar', 'Datos incompletos');
       return false;
     }
-    if (!this.ordenData.detalle || this.ordenData.detalle.trim() === '') {
-      this.toastr.warning('Debe ingresar una descripción del mantenimiento', 'Datos incompletos');
+
+    if (this.ordenForm.invalid) {
+      this.ordenForm.markAllAsTouched();
+      this.toastr.warning('Revisa los campos obligatorios de la orden', 'Datos incompletos');
       return false;
     }
-    if (!this.ordenData.kilometraje || this.ordenData.kilometraje <= 0) {
-      this.toastr.warning('Debe ingresar un kilometraje válido', 'Datos incompletos');
+
+    const kilometraje = this.ordenForm.get('kilometraje')?.value;
+    if (kilometraje && kilometraje > 5000000) {
+      this.toastr.warning('Kilometraje demasiado alto, verifica el dato', 'Validación');
       return false;
     }
-    if (!this.ordenData.fechaProgramada) {
-      this.toastr.warning('Debe seleccionar una fecha programada', 'Datos incompletos');
-      return false;
-    }
+
     return true;
   }
-  async crearOrdenTrabajo() {
-    if (!this.validarDatosOrden()) return;
+  mostrarResumenOrden(): void {
+    this.formSubmitted = true;
+    if (!this.validarDatosOrden()) {
+      return;
+    }
+    this.prepararOrdenData();
+    this.resumenVisible = true;
+  }
 
-    // ✅ Verificación mejorada con más detalles
+  private prepararOrdenData(): void {
+    const valores = this.ordenForm.value;
+
+    this.ordenData.detalle = (valores.detalle || '').trim();
+    this.ordenData.observacion = (valores.observacion || '').trim();
+    this.ordenData.kilometraje = Number(valores.kilometraje || 0);
+    this.ordenData.fechaProgramada = this.formatearFecha(valores.fechaProgramada);
+    this.ordenData.idMecanico = Number(valores.idMecanico || 0);
+    this.ordenData.prioridad = Number(valores.prioridad ?? 0);
+
+    if (this.clienteActual?.idPersona) {
+      this.ordenData.idCliente = this.clienteActual.idPersona;
+    }
+    if (this.vehiculoActual?.idVehiculo) {
+      this.ordenData.idVehiculo = this.vehiculoActual.idVehiculo;
+    }
+  }
+
+  formatearFecha(valor: any): string {
+    if (!valor) return '';
+    if (valor instanceof Date) {
+      const year = valor.getFullYear();
+      const month = String(valor.getMonth() + 1).padStart(2, '0');
+      const day = String(valor.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    return valor.toString().split('T')[0];
+  }
+
+  obtenerPrioridadLabel(valor: number | null | undefined): string {
+    const prioridad = this.prioridades.find(p => p.value === valor);
+    return prioridad?.label || 'Sin asignar';
+  }
+
+  obtenerMecanicoSeleccionado(): string {
+    const mecanico = this.mecanicos.find(m => m.idMecanico === this.ordenForm.get('idMecanico')?.value);
+    return mecanico?.nombre || 'Sin asignar';
+  }
+
+  getError(control: AbstractControl | null, label: string): string | null {
+    if (!control || !(control.touched || this.formSubmitted)) {
+      return null;
+    }
+
+    if (control.hasError('required')) {
+      return `${label} es obligatorio`;
+    }
+    if (control.hasError('pattern')) {
+      return `${label} tiene un formato inválido`;
+    }
+    if (control.hasError('min')) {
+      return `${label} debe ser mayor a ${control.getError('min').min - 1}`;
+    }
+    if (control.hasError('max')) {
+      return `${label} supera el límite permitido`;
+    }
+    if (control.hasError('minlength')) {
+      return `${label} debe tener al menos ${control.getError('minlength').requiredLength} caracteres`;
+    }
+    if (control.hasError('maxlength')) {
+      return `${label} debe tener menos de ${control.getError('maxlength').requiredLength} caracteres`;
+    }
+
+    return null;
+  }
+
+  cantidadImagenesSeleccionadas(): number {
+    return [
+      this.previewFrontal,
+      this.previewLateralIzquierda,
+      this.previewLateralDerecha,
+      this.previewTrasera
+    ].filter(Boolean).length;
+  }
+  async crearOrdenTrabajo() {
+    if (!this.validarDatosOrden()) {
+      this.resumenVisible = false;
+      return;
+    }
+
+    this.prepararOrdenData();
+    this.resumenVisible = false;
+
     if (!this.ordenData.idUsuario || this.ordenData.idUsuario === 0) {
-      console.error('❌ idUsuario no válido:', this.ordenData.idUsuario);
+      console.error('idUsuario no válido:', this.ordenData.idUsuario);
       this.toastr.error('No se pudo obtener la información del usuario. Por favor, inicie sesión nuevamente.', 'Error de autenticación');
       return;
     }
@@ -382,10 +520,12 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
             await this.subirImagenes();
           }
 
-          this.creandoOrden = false;
-          this.router.navigate([`/mecanica/${response.codigo}`]);
+          if (response?.codigo) {
+            this.router.navigate([`/mecanica/${response.codigo}`]);
+          }
         } catch (error) {
           this.toastr.error('No se pudo crear la orden de trabajo', 'Error');
+        } finally {
           this.creandoOrden = false;
         }
       } else {
@@ -883,6 +1023,7 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
         this.vehiculoActual = null;
         this.mostrarInfoVehiculo = false;
         this.placa = '';
+        this.vehiculoForm.reset();
 
         // Limpiar imágenes
         this.limpiarPrevisualizaciones();
@@ -901,6 +1042,8 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
 
   onClienteRegistrado(evento: { documento: string, cliente: any }) {
     this.documento = evento.documento;
+    this.clienteForm.patchValue({ documento: evento.documento });
+    this.formSubmitted = false;
 
     // Dar un delay para que el backend procese el registro
     setTimeout(() => {
@@ -913,6 +1056,8 @@ export class AgregarOrdenTrabajoMecanicoComponent implements OnInit {
   }
   onVehiculoRegistrado(placa: string) {
     this.placa = placa;
+    this.vehiculoForm.patchValue({ placa });
+    this.formSubmitted = false;
     this.validarVehiculo();
   }
 }

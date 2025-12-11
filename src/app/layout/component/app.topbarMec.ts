@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { StyleClassModule } from 'primeng/styleclass';
+import { AuthService } from '../../views/auth/service/auth.service';
 
 
 @Component({
@@ -16,11 +17,120 @@ import { StyleClassModule } from 'primeng/styleclass';
                 <span>VITA</span>
             </a>
         </div>
+        <div class="layout-topbar-actions">
+            <div class="layout-config-menu user-menu">
+                <button type="button" class="layout-topbar-action" (click)="toggleUserMenu()">
+                    <i class="pi pi-user"></i>
+                    <span>{{ userName || 'Usuario' }}</span>
+                </button>
+                <div class="user-menu__panel" *ngIf="showUserMenu">
+                    <div class="user-menu__header">
+                        <div class="user-menu__avatar">{{ avatarLetter }}</div>
+                        <div class="user-menu__info">
+                            <div class="user-menu__name">{{ userName || 'Usuario' }}</div>
+                            <div class="user-menu__email">{{ userEmail || 'Correo no disponible' }}</div>
+                        </div>
+                    </div>
+                    <button type="button" class="user-menu__action" (click)="goToStart()">
+                        <i class="pi pi-sign-out"></i>
+                        <span>Ir a inicio</span>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>`,
     styles: [`
     svg {
         height: 40px !important;
     }
+    .user-menu { position: relative; }
+    .user-menu__panel {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 8px);
+        min-width: 220px;
+        background: var(--surface-card, #fff);
+        border: 1px solid var(--surface-border, #e5e7eb);
+        border-radius: 8px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        padding: 12px;
+        z-index: 1000;
+    }
+    .user-menu__header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .user-menu__avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #c4a857, #8c7430);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+    .user-menu__info { display: flex; flex-direction: column; gap: 2px; }
+    .user-menu__name { font-weight: 600; }
+    .user-menu__email { font-size: 0.85rem; color: var(--text-color-secondary, #6b7280); }
+    .user-menu__action {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        background: var(--surface-ground, #f9fafb);
+        border: 1px solid var(--surface-border, #e5e7eb);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+    .user-menu__action:hover { background: var(--surface-hover, #f3f4f6); }
     `]
 })
-export class AppTopbarMec {}
+export class AppTopbarMec {
+    showUserMenu = false;
+    userName = '';
+    userEmail = '';
+    avatarLetter = '';
+
+    constructor(private authService: AuthService, private router: Router) {
+        this.loadUserData();
+    }
+
+    toggleUserMenu(): void {
+        this.loadUserData();
+        this.showUserMenu = !this.showUserMenu;
+    }
+
+    private loadUserData(): void {
+        const mecanico = this.authService.getMecanicoProfile();
+        if (mecanico) {
+            this.userName = mecanico.nombre || '';
+            this.userEmail = mecanico.email || '';
+            this.avatarLetter = this.getInitial(this.userName);
+            return;
+        }
+
+        const usuario = this.authService.getUsuarioData();
+        if (usuario) {
+            this.userName = usuario.nombre || '';
+            this.userEmail = usuario.email || '';
+            this.avatarLetter = this.getInitial(this.userName);
+            return;
+        }
+
+        this.avatarLetter = this.getInitial(this.userName);
+    }
+
+    goToStart(): void {
+        this.showUserMenu = false;
+        this.authService.logoutMecanico();
+        this.authService.deleteToken();
+        this.router.navigate(['/']);
+    }
+
+    private getInitial(name: string): string {
+        if (!name) return 'U';
+        return name.trim().charAt(0).toUpperCase() || 'U';
+    }
+}

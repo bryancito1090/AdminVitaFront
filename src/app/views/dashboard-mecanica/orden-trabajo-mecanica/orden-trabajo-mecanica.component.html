@@ -120,9 +120,11 @@
   </div>
 </div>
 
-<div class="card m-0 ">
-  <p-table #dt2 [columns]="cols" [value]="TareasOT" [paginator]="true" [rows]="5" [loading]="loadingTable"
-    [tableStyle]="{ 'min-width': '50rem' }" [rowsPerPageOptions]="[5, 10, 20]" stripedRows>
+<div class="card m-0 table-card">
+  <div class="table-responsive">
+    <p-table #dt2 [columns]="cols" [value]="TareasOT" [paginator]="true" [rows]="5" [loading]="loadingTable"
+      [rowsPerPageOptions]="[5, 10, 20]" stripedRows [responsiveLayout]="'stack'" [breakpoint]="'960px'"
+      styleClass="ot-table">
     <ng-template #header let-columns>
       <tr>
         <th [pSortableColumn]="col.field" *ngFor="let col of columns">
@@ -261,7 +263,8 @@
         </td>
       </tr>
     </ng-template>
-  </p-table>
+    </p-table>
+  </div>
 </div>
 
 <!-- Diálogo para editar datos generales -->
@@ -301,27 +304,31 @@
           <p-select formControlName="estado" [options]="estado" optionValue="code" optionLabel="name" class="w-full" />
           <label>Estado</label>
         </p-floatlabel>
+        <small class="text-red-500 text-xs" *ngIf="fb_editOt.get('estado')?.invalid && fb_editOt.get('estado')?.touched">Selecciona un estado.</small>
 
         <p-floatlabel variant="on" class="my-1 w-full">
           <p-select formControlName="prioridad" [options]="prioridad" optionValue="code" optionLabel="name"
             class="w-full" />
           <label>Nivel de prioridad</label>
         </p-floatlabel>
+        <small class="text-red-500 text-xs" *ngIf="fb_editOt.get('prioridad')?.invalid && fb_editOt.get('prioridad')?.touched">Selecciona la prioridad.</small>
 
         <p-floatlabel variant="on" class="my-1 w-full">
           <p-select formControlName="supervisor" [options]="supervisor" optionValue="code" optionLabel="name"
             class="w-full" />
           <label>Supervisor</label>
         </p-floatlabel>
+        <small class="text-red-500 text-xs" *ngIf="fb_editOt.get('supervisor')?.invalid && fb_editOt.get('supervisor')?.touched">Selecciona un supervisor.</small>
 
         <p-floatlabel variant="on" class="my-1 w-full">
           <p-calendar formControlName="fechaProgramada" dateFormat="dd/mm/yy" [showIcon]="true" [readonlyInput]="true"
-            [showButtonBar]="true" class="w-full" [showTime]="false" [touchUI]="false">
+            [showButtonBar]="true" class="w-full" [showTime]="false" [touchUI]="false" [minDate]="minDate">
           </p-calendar>
-          <label>Fecha programa de inicio OT</label>
+          <label>Fecha programada de inicio OT</label>
         </p-floatlabel>
-        <label class="block font-medium mt-2">Observación *</label>
-        <textarea formControlName="observacion" placeholder="Agrega una observación para la OT..." rows="3"
+        <small class="text-red-500 text-xs" *ngIf="fb_editOt.get('fechaProgramada')?.invalid && fb_editOt.get('fechaProgramada')?.touched">Ingresa una fecha valida.</small>
+        <label class="block font-medium mt-2">Observacion (opcional)</label>
+        <textarea formControlName="observacion" placeholder="Agrega una observacion para la OT..." rows="3"
           class="w-full p-2 border border-gray-300 rounded-md resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
       </div>
     </ng-container>
@@ -333,9 +340,6 @@
 </p-dialog>
 <!-- Diálogo de confirmación para anular OT -->
 <p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
-<!--Dialog de confirmacion para finalizar OT-->
-<p-confirmDialog [style]="{width: '450px'}"></p-confirmDialog>
-
 <!-- Dialog para editar tarea -->
 <!-- Dialog para editar tarea -->
 <p-dialog [(visible)]="displayModal" [modal]="true" [style]="{width: '500px'}">

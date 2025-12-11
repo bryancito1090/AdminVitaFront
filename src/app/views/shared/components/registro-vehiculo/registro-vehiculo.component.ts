@@ -87,6 +87,21 @@ export class RegistroVehiculoComponent implements OnInit {
     this.listaAnios = Array.from({ length: anioActual - anioInicio + 1 }, (_, i) => anioActual - i);
   }
 
+  private campoLleno(valor: any): boolean {
+    return valor !== undefined && valor !== null && String(valor).trim() !== '';
+  }
+
+  get puedeRegistrarVehiculo(): boolean {
+    return !this.cargandoRegistro &&
+           !this.cargandoCliente &&
+           !!this.clienteActual &&
+           this.campoLleno(this.vehiculo.marca) &&
+           this.campoLleno(this.vehiculo.modelo) &&
+           this.campoLleno(this.vehiculo.color) &&
+           !!this.vehiculo.anio &&
+           !!this.vehiculo.idTipoVehiculo;
+  }
+
   cargarTiposVehiculo(): void {
     this.tipoVehiculoService.getTiposVehiculo().subscribe({
       next: (data: any[]) => {
@@ -153,6 +168,10 @@ export class RegistroVehiculoComponent implements OnInit {
     return true;
   }
   registrarVehiculo(): void {
+    if (!this.validarFormulario()) {
+      return;
+    }
+
     const dialogRef = this.dialogService.open(AuthMecanicaComponent, {
               header: 'Código de Autenticación',
               width: '400px',
@@ -163,6 +182,11 @@ export class RegistroVehiculoComponent implements OnInit {
             });
       
     dialogRef.onClose.subscribe((result: { acceso: boolean }) => {
+      if (!result?.acceso) {
+        this.toastr.error('CA3digo incorrecto o cancelado', 'Error');
+        return;
+      }
+
       this.cargandoRegistro = true;
       this.mensajeError = '';
       this.mensajeExito = '';
@@ -270,9 +294,6 @@ export class RegistroVehiculoComponent implements OnInit {
         }
       });
     });
-    if (!this.validarFormulario()) {
-      return;
-    }
   }
   
   mostrarDialogo(documento?: string): void {

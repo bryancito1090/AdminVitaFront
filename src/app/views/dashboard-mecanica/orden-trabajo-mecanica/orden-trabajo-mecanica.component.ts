@@ -171,7 +171,27 @@ export class OrdenTrabajoMecanicaComponent implements OnInit {
     });
   }
 
+  private startOfToday(): Date {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  }
+
+  private normalizeDate(value: any): Date | null {
+    if (!value) {
+      return null;
+    }
+
+    const parsed = new Date(value);
+    if (isNaN(parsed.getTime())) {
+      return null;
+    }
+
+    return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+  }
+
   ngOnInit() {
+    this.minDate = this.startOfToday();
     this.initData();
     this.cargarSupervisores();
     this.mecanicoService.getMecanicos().subscribe({
@@ -590,8 +610,35 @@ private cargarMagnitudesCompatibles(item: any) {
     this.loadingEditDialog = false;
   }
   updateOT() {
+    if (this.loadingEditDialog) {
+      return;
+    }
+
+    this.fb_editOt.markAllAsTouched();
+    const fechaProgramada = this.normalizeDate(this.fb_editOt.value.fechaProgramada);
+
+    if (!fechaProgramada) {
+      this.toastr.warning('Selecciona una fecha programada valida.', 'Fecha requerida');
+      this.fb_editOt.get('fechaProgramada')?.setErrors({ invalid: true });
+      return;
+    }
+
+    if (fechaProgramada < this.startOfToday()) {
+      this.toastr.warning('La fecha programada no puede ser anterior a hoy.', 'Fecha invalida');
+      this.fb_editOt.get('fechaProgramada')?.setErrors({ pastDate: true });
+      return;
+    }
+
+    if (this.fb_editOt.invalid) {
+      Object.keys(this.fb_editOt.controls).forEach(key => {
+        this.fb_editOt.get(key)?.markAsTouched();
+      });
+      this.toastr.warning('Completa los campos obligatorios antes de guardar.', 'Formulario incompleto');
+      return;
+    }
+
     const dialogRef = this.dialogService.open(AuthMecanicaComponent, {
-      header: 'Código de Autenticación',
+      header: 'Codigo de Autenticacion',
       width: '400px',
       modal: true,
       dismissableMask: false,
@@ -604,53 +651,41 @@ private cargarMagnitudesCompatibles(item: any) {
     dialogRef.onClose.subscribe((result: { acceso: boolean, token: any }) => {
       this.modalActivo = false;
       if (result?.acceso) {
-        if (this.fb_editOt.valid) {
-          this.loadingEditDialog = true;
-          // Crear el objeto con solo los campos que necesitas enviar
-          const datosActualizados = {
-            codigo: this.codigo!,
-            estado: this.fb_editOt.value.estado,
-            prioridad: this.fb_editOt.value.prioridad,
-            idMecanico: this.fb_editOt.value.supervisor, // Asumiendo que 'supervisor' corresponde a 'idMecanico'
-            fechaProgramada: this.fb_editOt.value.fechaProgramada,
-            observacion: this.fb_editOt.value.observacion || ''
-          };
+        this.loadingEditDialog = true;
+        const datosActualizados = {
+          codigo: this.codigo!,
+          estado: this.fb_editOt.value.estado,
+          prioridad: this.fb_editOt.value.prioridad,
+          idMecanico: this.fb_editOt.value.supervisor,
+          fechaProgramada,
+          observacion: (this.fb_editOt.value.observacion || '').trim()
+        };
 
-          this.ordenTrabajoService.updateOrdenTrabajo(datosActualizados).subscribe({
-            next: (response) => {
-              this.toastr.success('Orden de trabajo actualizada con éxito', 'Éxito');
-              this.visibleEdit = false;
-              this.loadingEditDialog = false;
-              this.getOrdenTrabajo();
-            },
-            error: (error) => {
-              console.error('Error al actualizar la orden de trabajo', error);
-              this.toastr.error('No se pudo actualizar la orden de trabajo', 'Error');
-              this.loadingEditDialog = false;
-            }
-          });
-        } else {
-          // Mostrar errores del formulario
-          Object.keys(this.fb_editOt.controls).forEach(key => {
-            const control = this.fb_editOt.get(key);
-            if (control?.invalid) {
-              control.markAsTouched();
-            }
-          });
-          this.toastr.warning('Por favor complete correctamente todos los campos requeridos', 'Formulario inválido');
-        }
+        this.ordenTrabajoService.updateOrdenTrabajo(datosActualizados).subscribe({
+          next: () => {
+            this.toastr.success('Orden de trabajo actualizada correctamente', 'Exito');
+            this.visibleEdit = false;
+            this.loadingEditDialog = false;
+            this.getOrdenTrabajo();
+          },
+          error: (error) => {
+            console.error('Error al actualizar la orden de trabajo', error);
+            this.toastr.error('No se pudo actualizar la orden de trabajo', 'Error');
+            this.loadingEditDialog = false;
+          }
+        });
       } else {
-        this.toastr.error('Código incorrecto o cancelado', 'Error');
+        this.toastr.error('Codigo incorrecto o cancelado', 'Error');
       }
     });
   }
-  // Método para confirmar anulación de OT
+  // Metodo para confirmar anulacion de OT
   confirmarAnularOT() {
     if (this.modalActivo) return;
     this.modalActivo = true;
 
     const dialogRef = this.dialogService.open(AuthMecanicaComponent, {
-      header: 'Código de Autenticación',
+      header: 'Codigo de Autenticacion',
       width: '400px',
       modal: true,
       dismissableMask: false,
@@ -665,17 +700,17 @@ private cargarMagnitudesCompatibles(item: any) {
 
       if (result?.acceso) {
         this.confirmationService.confirm({
-          message: 'Esta acción no se puede deshacer. ¿Desea anular esta orden de trabajo?',
-          header: 'Confirmación para anular orden de trabajo',
+          message: 'Esta accion no se puede deshacer. Desea anular esta orden de trabajo?',
+          header: 'Confirmacion para anular orden de trabajo',
           icon: 'pi pi-exclamation-triangle',
-          acceptLabel: 'Sí, anular orden',
+          acceptLabel: 'Si, anular orden',
           rejectLabel: 'Cancelar',
           accept: () => {
             this.anularOT(result.token);
           }
         });
       } else {
-        this.toastr.error('Código incorrecto o cancelado', 'Error');
+        this.toastr.error('Codigo incorrecto o cancelado', 'Error');
       }
     });
   }
@@ -701,7 +736,7 @@ private cargarMagnitudesCompatibles(item: any) {
     this.modalActivo = true;
 
     const dialogRef = this.dialogService.open(AuthMecanicaComponent, {
-      header: 'Código de Autenticación',
+      header: 'Codigo de Autenticacion',
       width: '400px',
       modal: true,
       dismissableMask: false,
@@ -716,17 +751,17 @@ private cargarMagnitudesCompatibles(item: any) {
 
       if (result?.acceso) {
         this.confirmationService.confirm({
-          message: '¿Está seguro de finalizar esta orden de trabajo? Esta acción no se puede revertir.',
-          header: 'Confirmación para finalizar orden de trabajo',
+          message: 'Estas seguro de finalizar esta orden de trabajo? Esta accion no se puede revertir.',
+          header: 'Confirmacion para finalizar orden de trabajo',
           icon: 'pi pi-check-circle',
-          acceptLabel: 'Sí, finalizar orden',
+          acceptLabel: 'Si, finalizar orden',
           rejectLabel: 'Cancelar',
           accept: () => {
             this.finalizarOT(result.token);
           }
         });
       } else {
-        this.toastr.error('Código incorrecto o cancelado', 'Error');
+        this.toastr.error('Codigo incorrecto o cancelado', 'Error');
       }
     });
   }

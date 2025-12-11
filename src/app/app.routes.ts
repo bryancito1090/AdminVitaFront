@@ -13,7 +13,7 @@ import { UsuarioComponent } from './views/dashboard/persona/usuario.component';
 import { MecanicoComponent } from './views/dashboard/persona/mecanico.component';
 import { ProveedorComponent } from './views/dashboard/persona/proveedor.component';
 import { StartComponent } from './views/start/start.component';
-import { AgregarOrdenTrabajoMecanicoComponent } from './views/dashboard-mecanica/OrdenTrabajoMecanico/agregar-orden-trabajo-mecanico/agregar-orden-trabajo-mecanico.component';
+import { AgregarOrdenTrabajoMecanicoComponent } from './views/dashboard-mecanica/agregar-orden-trabajo-mecanica/agregar-orden-trabajo-mecanico.component';
 import { OrdenTrabajoMecanicaComponent } from './views/dashboard-mecanica/orden-trabajo-mecanica/orden-trabajo-mecanica.component';
 import { AppSimpleLayout } from './layout/component/app.simple-layout';
 import { administradorGuard } from './views/auth/guards/administrador.guard';

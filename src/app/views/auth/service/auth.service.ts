@@ -1,10 +1,11 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment.development';
 import { jwtDecode, JwtPayload } from "jwt-decode";
 import { MecanicoAuth } from '../../../../domain/response/Auth.model';
+import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root'
@@ -14,8 +15,9 @@ export class AuthService {
   
   private currentMecanicoSubject = new BehaviorSubject<MecanicoAuth | null>(null);
   public currentMecanico$ = this.currentMecanicoSubject.asObservable();
+  private mecanicoTokenTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private router: Router, private ngZone: NgZone) {
     this.checkStoredMecanicoToken();
   }
 
@@ -121,6 +123,7 @@ loginMecanico(pin: string): Observable<MecanicoAuth> {
         
         // Actualizar subject
         this.currentMecanicoSubject.next(mecanicoData);
+        this.startMecanicoTokenTimer(mecanicoData.exp);
         
         return mecanicoData;
       })
@@ -162,11 +165,12 @@ loginMecanico(pin: string): Observable<MecanicoAuth> {
         // Verificar si el token no ha expirado
         if (mecanicoData.exp * 1000 > Date.now()) {
           this.currentMecanicoSubject.next(mecanicoData);
+          this.startMecanicoTokenTimer(mecanicoData.exp);
         } else {
-          this.logoutMecanico();
+          this.handleMecanicoTokenExpiration();
         }
       } catch (error) {
-        this.logoutMecanico();
+        this.handleMecanicoTokenExpiration();
       }
     }
   }
@@ -206,6 +210,7 @@ loginMecanico(pin: string): Observable<MecanicoAuth> {
 
   // Logout específico para mecánico
   logoutMecanico(): void {
+    this.clearMecanicoTokenTimer();
     localStorage.removeItem('mecanico-token');
     this.currentMecanicoSubject.next(null);
   }
@@ -233,10 +238,10 @@ getUsuarioData(): any {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       return {
-        id: payload.nameid || payload.sub || payload.id || payload.userId,
-        idUsuario: payload.nameid || payload.sub || payload.id || payload.userId,
-        nombre: payload.name || payload.nombre || payload.unique_name,
-        email: payload.email || payload.emailaddress
+        id: payload.nameid || payload.sub || payload.id || payload.userId || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'],
+        idUsuario: payload.nameid || payload.sub || payload.id || payload.userId || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'],
+        nombre: payload.name || payload.nombre || payload.unique_name || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'],
+        email: payload.email || payload.emailaddress || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress']
       };
     } catch (error) {
       console.error('Error al decodificar token:', error);
@@ -245,4 +250,52 @@ getUsuarioData(): any {
   }
   return null;
 }
+
+getMecanicoProfile(): { nombre: string; email?: string } | null {
+  const mecanico = this.currentMecanicoSubject.value;
+  if (mecanico) {
+    return { nombre: mecanico.name, email: mecanico.email };
+  }
+
+  const token = localStorage.getItem('mecanico-token');
+  if (!token) return null;
+
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return {
+      nombre: payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || payload.name,
+      email: payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] || payload.email
+    };
+  } catch (error) {
+    console.error('Error al decodificar token de mecánico:', error);
+    return null;
+  }
+}
+
+  private startMecanicoTokenTimer(exp?: number): void {
+    this.clearMecanicoTokenTimer();
+    if (!exp) return;
+
+    const expiresInMs = exp * 1000 - Date.now();
+    if (expiresInMs <= 0) {
+      this.handleMecanicoTokenExpiration();
+      return;
+    }
+
+    this.mecanicoTokenTimer = setTimeout(() => {
+      this.handleMecanicoTokenExpiration();
+    }, expiresInMs);
+  }
+
+  private clearMecanicoTokenTimer(): void {
+    if (this.mecanicoTokenTimer) {
+      clearTimeout(this.mecanicoTokenTimer);
+      this.mecanicoTokenTimer = null;
+    }
+  }
+
+  private handleMecanicoTokenExpiration(): void {
+    this.logoutMecanico();
+    this.ngZone.run(() => this.router.navigate(['/login_mecanica']));
+  }
 }

@@ -723,3 +723,23 @@ p-card {
     }
   }
 }
+
+/* Responsividad para tabla de tareas */
+.table-card .table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+::ng-deep .ot-table.p-datatable .p-datatable-wrapper {
+  overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+  .table-card .p-datatable {
+    font-size: 0.92rem;
+  }
+  .table-card .p-datatable-thead > tr > th,
+  .table-card .p-datatable-tbody > tr > td {
+    padding: 0.5rem 0.4rem;
+  }
+}

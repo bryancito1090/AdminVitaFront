@@ -1,22 +1,117 @@
 p-divider {
   margin: 0;
 }
-/* Estilos para el diálogo responsive */
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.table-caption {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-bottom: 1rem;
+}
+
+@media (min-width: 768px) {
+  .table-caption {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+}
+
+.chip-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.chip-strip {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 9999px;
+  background: var(--surface-100, #f5f5f5);
+  border: 1px solid var(--surface-200, #e5e7eb);
+  color: var(--text-color, #1f2937);
+  transition: all 0.15s ease-in-out;
+  white-space: nowrap;
+}
+
+.filter-pill:hover {
+  background: var(--surface-200, #e5e7eb);
+  color: var(--primary-color, #2563eb);
+}
+
+.filter-pill--active {
+  background: var(--primary-50, #eef2ff);
+  border-color: var(--primary-400, #818cf8);
+  color: var(--primary-800, #312e81);
+  box-shadow: 0 10px 18px -12px rgba(37, 99, 235, 0.45);
+}
+
+.caption-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .caption-actions {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+}
+
+.caption-search {
+  width: 100%;
+}
+
+.caption-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 18rem;
+}
+
+@media (min-width: 640px) {
+  .caption-buttons {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    max-width: none;
+  }
+}
+
 ::ng-deep .responsive-dialog {
   .p-dialog-content {
     padding: 0.75rem !important;
-    
+
     @media (min-width: 768px) {
       padding: 1.5rem !important;
     }
   }
-  
+
   .p-dialog-header {
     padding: 1rem !important;
-    
+
     .p-dialog-title {
       font-size: 1rem !important;
-      
+
       @media (min-width: 768px) {
         font-size: 1.25rem !important;
       }
@@ -24,19 +119,18 @@ p-divider {
   }
 }
 
-/* Select button responsive mejorado */
 ::ng-deep .responsive-select-button {
   .p-selectbutton {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     gap: 0.5rem;
-    
+
     .p-button {
       @media (max-width: 768px) {
         font-size: 0.75rem !important;
         padding: 0.375rem 0.5rem !important;
-        
+
         .p-badge {
           font-size: 0.625rem !important;
         }
@@ -45,34 +139,125 @@ p-divider {
   }
 }
 
-/* Tabla responsive */
 ::ng-deep .responsive-table {
   .p-datatable-wrapper {
     font-size: 0.875rem;
   }
-  
+
   .p-datatable-thead > tr > th {
     padding: 0.5rem !important;
     font-size: 0.75rem !important;
   }
-  
+
   .p-datatable-tbody > tr > td {
     padding: 0.5rem !important;
     font-size: 0.75rem !important;
   }
 }
 
-/* Cards móviles */
-.mobile-item-card {
-  transition: all 0.2s ease;
-  
-  &:hover {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    transform: translateY(-1px);
+.option-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (min-width: 480px) {
+  .option-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-/* Diálogo de imagen responsive */
+.option-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.85rem 0.9rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--surface-300, #d1d5db);
+  background: var(--surface-0, #ffffff);
+  transition: all 0.2s ease;
+}
+
+.option-tile:hover {
+  border-color: var(--primary-400, #818cf8);
+  box-shadow: 0 12px 24px -18px rgba(37, 99, 235, 0.6);
+}
+
+.option-tile.is-active {
+  background: var(--primary-500, #3b82f6);
+  color: var(--primary-contrast, #ffffff);
+  border-color: var(--primary-500, #3b82f6);
+  box-shadow: 0 10px 20px -14px rgba(37, 99, 235, 0.75);
+}
+
+.option-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.option-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--surface-100, #f3f4f6);
+  color: var(--text-color, #111827);
+}
+
+.option-tile.is-active .option-badge {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--primary-600, #2563eb);
+}
+
+.item-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0.35rem 0;
+  border-bottom: 1px dashed var(--surface-200, #e5e7eb);
+}
+
+.item-row:last-child {
+  border-bottom: none;
+}
+
+.item-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--surface-600, #4b5563);
+  min-width: 6rem;
+}
+
+.item-value {
+  text-align: right;
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+@media (max-width: 480px) {
+  .item-value {
+    text-align: left;
+    justify-content: flex-start;
+  }
+}
+
+.mobile-item-card {
+  transition: all 0.2s ease;
+}
+
+.mobile-item-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
 ::ng-deep .image-dialog {
   .p-dialog-content {
     padding: 0 !important;
@@ -82,77 +267,17 @@ p-divider {
   }
 }
 
-/* Utilidades responsive */
 @media (max-width: 768px) {
   .data-container {
     .p-tag {
       font-size: 0.625rem !important;
     }
-    
+
     .p-button {
       font-size: 0.75rem !important;
-      
+
       &.p-button-sm {
         padding: 0.25rem 0.5rem !important;
-      }
-    }
-  }
-}
-/* Botones móviles personalizados */
-.mobile-select-button {
-  min-height: 4rem;
-  transition: all 0.2s ease-in-out;
-  
-  &:active {
-    transform: scale(0.98);
-  }
-  
-  &.selected {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  }
-}
-
-/* Responsive grid mejorado */
-@media (max-width: 640px) {
-  .mobile-category-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem;
-    
-    /* Si hay muchas opciones, usar 2 columnas en vertical */
-    &.many-options {
-      grid-template-columns: 1fr;
-      
-      .mobile-select-button {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.75rem;
-        text-align: left;
-        
-        .option-name {
-          flex: 1;
-        }
-        
-        .option-badge {
-          margin-left: 0.5rem;
-        }
-      }
-    }
-  }
-}
-
-/* Para muy pocas opciones, usar diseño horizontal */
-@media (max-width: 480px) {
-  .few-options {
-    .mobile-category-grid {
-      grid-template-columns: 1fr;
-      gap: 0.5rem;
-      
-      .mobile-select-button {
-        padding: 0.75rem;
-        min-height: 3rem;
       }
     }
   }

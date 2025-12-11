@@ -186,19 +186,19 @@
                 <p-table [value]="list_mecanicos" [tableStyle]="{ 'min-width': '100%' }">
                     <ng-template pTemplate="header">
                         <tr>
-                            <th>Mecánico</th>
-                            <th class="text-center">Duración (min)</th>
+                            <th>Mecanico</th>
+                            <th class="text-center">Duracion (min)</th>
                             <th class="text-center">Acciones</th>
                         </tr>
                     </ng-template>
                     <ng-template pTemplate="body" let-mec>
                         <tr>
                             <td>{{ getMecanico(mec.idMecanico)?.nombre }} {{ getMecanico(mec.idMecanico)?.apellidos }}</td>
-                            <td class="text-center">{{ mec.duracion }}</td>
+                            <td class="text-center">{{ mec.duracionEstimada }}</td>
                             <td class="text-center">
                                 <div class="flex justify-center gap-2">
-                                    <button pButton icon="pi pi-pencil" class="p-button-sm p-button-text" (click)="abrirEditarMecanico(mec)" title="Editar duración"></button>
-                                    <button pButton icon="pi pi-trash" class="p-button-sm p-button-danger p-button-text" (click)="eliminarMecanico(mec.idMecanico)" title="Eliminar asignación"></button>
+                                    <button pButton icon="pi pi-pencil" class="p-button-sm p-button-text" (click)="abrirEditarMecanico(mec)" title="Editar duracion"></button>
+                                    <button pButton icon="pi pi-trash" class="p-button-sm p-button-danger p-button-text" (click)="eliminarMecanico(mec.idMecanico)" title="Eliminar asignacion"></button>
                                 </div>
                             </td>
                         </tr>
@@ -509,9 +509,9 @@
     </div>
 </p-dialog>
 
-<!-- Dialog para Editar Mecánico -->
+<!-- Dialog para Editar Mecanico -->
 <p-dialog 
-    header="Editar Duración" 
+    header="Editar duracion" 
     [(visible)]="displayEditMecanico" 
     [modal]="true" 
     [style]="{ width: '25rem' }"
@@ -527,13 +527,13 @@
         </div>
         
         <div class="flex flex-col gap-2">
-            <label class="font-medium text-gray-700">Duración (minutos):</label>
+            <label class="font-medium text-gray-700">Duracion (minutos):</label>
             <input 
                 type="number" 
                 min="1" 
-                [(ngModel)]="editingMecanico.duracion" 
+                [(ngModel)]="editingMecanico.duracionEstimada" 
                 class="p-inputtext p-component w-full" 
-                placeholder="Nueva duración" />
+                placeholder="Nueva duracion" />
         </div>
         
         <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">

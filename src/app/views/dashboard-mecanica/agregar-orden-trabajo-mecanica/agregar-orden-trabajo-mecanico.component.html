@@ -1,0 +1,393 @@
+<div class="page">
+  <header class="page-header">
+    <button type="button" class="home-button" (click)="navegarInicio()">
+      <i class="pi pi-home"></i>
+    </button>
+    <div class="user-chip">
+      <span class="label">Usuario</span>
+      <span class="value">{{ NameIdentifier }}</span>
+    </div>
+  </header>
+
+  <div class="cards-grid">
+    <section class="card-block">
+      <div class="card-head">
+        <div>
+          <p class="eyebrow">Cliente</p>
+          <h2>Agrega o valida un cliente</h2>
+          <p class="muted">Busca por documento y, si no existe, regístralo en línea.</p>
+        </div>
+        <button pButton type="button" label="Nuevo cliente" icon="pi pi-user-plus" class="p-button-text p-button-plain" (click)="registroCliente.mostrarDialogo()"></button>
+      </div>
+
+      <form [formGroup]="clienteForm" class="inline-form">
+        <div class="p-inputgroup">
+          <span class="p-inputgroup-addon"><i class="pi pi-id-card"></i></span>
+          <input pInputText formControlName="documento" placeholder="Documento / cédula" autocomplete="off">
+          <button pButton type="button" label="Validar" icon="pi pi-search" [loading]="cargandoCliente" (click)="validarCliente()"></button>
+        </div>
+        <small class="field-error" *ngIf="getError(clienteForm.get('documento'), 'Documento') as error">
+          <i class="pi pi-exclamation-circle"></i> {{ error }}
+        </small>
+      </form>
+
+      <div class="info-block" *ngIf="mostrarInfoCliente && clienteActual">
+        <div class="info-row">
+          <div>
+            <p class="title">{{ clienteActual.nombreCompleto }}</p>
+            <p class="muted">{{ clienteActual.documento }}</p>
+          </div>
+          <p-tag [severity]="clienteActual.esClienteActivo ? 'success' : 'warning'" [value]="clienteActual.esClienteActivo ? 'Activo' : 'Inactivo'"></p-tag>
+        </div>
+        <div class="info-grid">
+          <div>
+            <span class="muted">Correo</span>
+            <p>{{ clienteActual.email || 'N/D' }}</p>
+          </div>
+          <div>
+            <span class="muted">Teléfono</span>
+            <p>{{ clienteActual.telefono || clienteActual.celular || 'N/D' }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card-block">
+      <div class="card-head">
+        <div>
+          <p class="eyebrow">Vehículo</p>
+          <h2>Selecciona o registra un vehículo</h2>
+          <p class="muted">Valida la placa y revisa su estado antes de crear la orden.</p>
+        </div>
+        <div class="card-actions">
+          <button pButton type="button" label="Nuevo vehículo" icon="pi pi-car" class="p-button-text p-button-plain" (click)="registroVehiculo.mostrarDialogo()"></button>
+          <button pButton type="button" label="Retirar" icon="pi pi-times" class="p-button-text p-button-danger" [disabled]="!vehiculoActual" (click)="retirarVehiculo()"></button>
+        </div>
+      </div>
+
+      <form [formGroup]="vehiculoForm" class="inline-form">
+        <div class="p-inputgroup">
+          <span class="p-inputgroup-addon"><i class="pi pi-hashtag"></i></span>
+          <input pInputText formControlName="placa" placeholder="Placa" autocomplete="off">
+          <button pButton type="button" label="Validar" icon="pi pi-search" [loading]="cargandoVehiculo" (click)="validarVehiculo()"></button>
+        </div>
+        <small class="field-error" *ngIf="getError(vehiculoForm.get('placa'), 'Placa') as error">
+          <i class="pi pi-exclamation-circle"></i> {{ error }}
+        </small>
+      </form>
+
+      <div class="info-block" *ngIf="mostrarInfoVehiculo && vehiculoActual">
+        <div class="info-row">
+          <div>
+            <p class="title">{{ vehiculoActual.placa }}</p>
+            <p class="muted">{{ vehiculoActual.marca }} - {{ vehiculoActual.modelo }}</p>
+          </div>
+          <p-tag [severity]="vehiculoActual.estado === 0 ? 'success' : vehiculoActual.estado === 1 ? 'warning' : 'danger'"
+                 [value]="vehiculoActual.estado === 0 ? 'Operativo' : vehiculoActual.estado === 1 ? 'En mantenimiento' : 'De baja'"></p-tag>
+        </div>
+        <div class="info-grid">
+          <div>
+            <span class="muted">Última matriculación</span>
+            <p>{{ vehiculoActual.ultimoAnioMatriculacion || 'N/D' }}</p>
+          </div>
+          <div>
+            <span class="muted">Último RTV</span>
+            <p>{{ vehiculoActual.ultimoAnioRTV || 'N/D' }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="card-block">
+    <div class="card-head">
+      <div>
+        <p class="eyebrow">Orden</p>
+        <h2>Información del servicio</h2>
+        <p class="muted">Define el alcance, kilometraje, fecha y responsable.</p>
+      </div>
+    </div>
+
+    <form [formGroup]="ordenForm" class="order-form">
+      <div class="order-grid">
+        <div class="field span-2">
+          <label for="detalle">Descripción del mantenimiento *</label>
+          <textarea id="detalle" pInputTextarea formControlName="detalle" rows="3" autoResize="true" placeholder="Describe el mantenimiento a realizar"></textarea>
+          <small class="field-error" *ngIf="getError(ordenForm.get('detalle'), 'Descripción') as error">
+            <i class="pi pi-exclamation-circle"></i> {{ error }}
+          </small>
+        </div>
+
+        <div class="field span-2">
+          <label for="observacion">Observación general (opcional)</label>
+          <textarea id="observacion" pInputTextarea formControlName="observacion" rows="2" autoResize="true" placeholder="Notas adicionales para el equipo"></textarea>
+          <small class="field-error" *ngIf="getError(ordenForm.get('observacion'), 'Observación') as error">
+            <i class="pi pi-exclamation-circle"></i> {{ error }}
+          </small>
+        </div>
+
+        <div class="field">
+          <label for="kilometraje">Kilometraje actual *</label>
+          <p-inputNumber inputId="kilometraje" formControlName="kilometraje" mode="decimal" [useGrouping]="false" [min]="1" [max]="5000000" placeholder="Ej: 15000"></p-inputNumber>
+          <small class="field-hint">Ingresa solo números, sin separadores.</small>
+          <small class="field-error" *ngIf="getError(ordenForm.get('kilometraje'), 'Kilometraje') as error">
+            <i class="pi pi-exclamation-circle"></i> {{ error }}
+          </small>
+        </div>
+
+        <div class="field">
+          <label for="fechaProgramada">Fecha programada *</label>
+          <p-calendar inputId="fechaProgramada"
+                      formControlName="fechaProgramada"
+                      [showIcon]="true"
+                      [iconDisplay]="'input'"
+                      dateFormat="yy-mm-dd"
+                      [touchUI]="true"></p-calendar>
+          <small class="field-error" *ngIf="getError(ordenForm.get('fechaProgramada'), 'Fecha programada') as error">
+            <i class="pi pi-exclamation-circle"></i> {{ error }}
+          </small>
+        </div>
+
+        <div class="field">
+          <label for="mecanico">Mecánico asignado *</label>
+          <p-dropdown inputId="mecanico"
+                      formControlName="idMecanico"
+                      [options]="mecanicos"
+                      optionLabel="nombre"
+                      optionValue="idMecanico"
+                      placeholder="Selecciona un mecánico"
+                      [loading]="cargandoMecanicos"
+                      [showClear]="true"></p-dropdown>
+          <small class="field-error" *ngIf="getError(ordenForm.get('idMecanico'), 'Mecánico') as error">
+            <i class="pi pi-exclamation-circle"></i> {{ error }}
+          </small>
+        </div>
+
+        <div class="field">
+          <label for="prioridad">Prioridad *</label>
+          <p-dropdown inputId="prioridad"
+                      formControlName="prioridad"
+                      [options]="prioridades"
+                      optionLabel="label"
+                      optionValue="value"
+                      placeholder="Selecciona la prioridad"
+                      [showClear]="true"></p-dropdown>
+          <small class="field-error" *ngIf="getError(ordenForm.get('prioridad'), 'Prioridad') as error">
+            <i class="pi pi-exclamation-circle"></i> {{ error }}
+          </small>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <section class="card-block">
+    <div class="card-head">
+      <div>
+        <p class="eyebrow">Recepción</p>
+        <h2>Fotografías del vehículo</h2>
+        <p class="muted">Adjunta hasta cuatro vistas. Se subirán después de crear la orden.</p>
+      </div>
+    </div>
+
+    <div class="image-grid">
+      <div class="image-upload-box"
+           [class.with-image]="previewFrontal"
+           [class.dragover]="dragOverFrontal"
+           (dragover)="onDragOver($event); dragOverFrontal = true"
+           (dragleave)="dragOverFrontal = false"
+           (drop)="onDrop($event, 'frontal'); dragOverFrontal = false">
+        <div class="image-header">
+          <h4>Frontal</h4>
+          <button *ngIf="previewFrontal" type="button" pButton icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" (click)="eliminarImagen('frontal')"></button>
+        </div>
+
+        <div class="image-preview" *ngIf="previewFrontal">
+          <img [src]="previewFrontal" alt="Vista previa frontal">
+        </div>
+        <div class="upload-placeholder" *ngIf="!previewFrontal">
+          <i class="pi pi-images"></i>
+          <p>Arrastra o selecciona</p>
+          <div class="action-buttons">
+            <label class="browse-button">
+              <span>Seleccionar</span>
+              <input type="file" accept="image/*" (change)="onFileSelected($event, 'frontal')" hidden>
+            </label>
+            <label class="camera-button">
+              <span>Cámara</span>
+              <input type="file" accept="image/*" capture="environment" (change)="onFileSelected($event, 'frontal')" hidden>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="image-upload-box"
+           [class.with-image]="previewLateralIzquierda"
+           [class.dragover]="dragOverLateralIzquierda"
+           (dragover)="onDragOver($event); dragOverLateralIzquierda = true"
+           (dragleave)="dragOverLateralIzquierda = false"
+           (drop)="onDrop($event, 'lateralIzquierda'); dragOverLateralIzquierda = false">
+        <div class="image-header">
+          <h4>Lateral izquierda</h4>
+          <button *ngIf="previewLateralIzquierda" type="button" pButton icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" (click)="eliminarImagen('lateralIzquierda')"></button>
+        </div>
+
+        <div class="image-preview" *ngIf="previewLateralIzquierda">
+          <img [src]="previewLateralIzquierda" alt="Vista previa lateral izquierda">
+        </div>
+        <div class="upload-placeholder" *ngIf="!previewLateralIzquierda">
+          <i class="pi pi-images"></i>
+          <p>Arrastra o selecciona</p>
+          <div class="action-buttons">
+            <label class="browse-button">
+              <span>Seleccionar</span>
+              <input type="file" accept="image/*" (change)="onFileSelected($event, 'lateralIzquierda')" hidden>
+            </label>
+            <label class="camera-button">
+              <span>Cámara</span>
+              <input type="file" accept="image/*" capture="environment" (change)="onFileSelected($event, 'lateralIzquierda')" hidden>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="image-upload-box"
+           [class.with-image]="previewLateralDerecha"
+           [class.dragover]="dragOverLateralDerecha"
+           (dragover)="onDragOver($event); dragOverLateralDerecha = true"
+           (dragleave)="dragOverLateralDerecha = false"
+           (drop)="onDrop($event, 'lateralDerecha'); dragOverLateralDerecha = false">
+        <div class="image-header">
+          <h4>Lateral derecha</h4>
+          <button *ngIf="previewLateralDerecha" type="button" pButton icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" (click)="eliminarImagen('lateralDerecha')"></button>
+        </div>
+
+        <div class="image-preview" *ngIf="previewLateralDerecha">
+          <img [src]="previewLateralDerecha" alt="Vista previa lateral derecha">
+        </div>
+        <div class="upload-placeholder" *ngIf="!previewLateralDerecha">
+          <i class="pi pi-images"></i>
+          <p>Arrastra o selecciona</p>
+          <div class="action-buttons">
+            <label class="browse-button">
+              <span>Seleccionar</span>
+              <input type="file" accept="image/*" (change)="onFileSelected($event, 'lateralDerecha')" hidden>
+            </label>
+            <label class="camera-button">
+              <span>Cámara</span>
+              <input type="file" accept="image/*" capture="environment" (change)="onFileSelected($event, 'lateralDerecha')" hidden>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="image-upload-box"
+           [class.with-image]="previewTrasera"
+           [class.dragover]="dragOverTrasera"
+           (dragover)="onDragOver($event); dragOverTrasera = true"
+           (dragleave)="dragOverTrasera = false"
+           (drop)="onDrop($event, 'trasera'); dragOverTrasera = false">
+        <div class="image-header">
+          <h4>Trasera</h4>
+          <button *ngIf="previewTrasera" type="button" pButton icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" (click)="eliminarImagen('trasera')"></button>
+        </div>
+
+        <div class="image-preview" *ngIf="previewTrasera">
+          <img [src]="previewTrasera" alt="Vista previa trasera">
+        </div>
+        <div class="upload-placeholder" *ngIf="!previewTrasera">
+          <i class="pi pi-images"></i>
+          <p>Arrastra o selecciona</p>
+          <div class="action-buttons">
+            <label class="browse-button">
+              <span>Seleccionar</span>
+              <input type="file" accept="image/*" (change)="onFileSelected($event, 'trasera')" hidden>
+            </label>
+            <label class="camera-button">
+              <span>Cámara</span>
+              <input type="file" accept="image/*" capture="environment" (change)="onFileSelected($event, 'trasera')" hidden>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="upload-status" *ngIf="cargandoImagenes">
+      <div class="progress-bar">
+        <div class="progress" [style.width.%]="(imagenesSubidas / totalImagenes) * 100"></div>
+      </div>
+      <p>Subiendo imágenes: {{imagenesSubidas}} de {{totalImagenes}}</p>
+    </div>
+  </section>
+
+  <div class="actions-bar">
+    <button pButton type="button" label="Cancelar" icon="pi pi-arrow-left" class="p-button-text" (click)="navegarInicio()" [disabled]="creandoOrden || cargandoImagenes"></button>
+    <button pButton type="button" label="Revisar y crear" icon="pi pi-check-circle" (click)="mostrarResumenOrden()" [disabled]="cargandoImagenes" [loading]="creandoOrden"></button>
+  </div>
+</div>
+
+<p-dialog [(visible)]="resumenVisible"
+          [modal]="true"
+          [draggable]="false"
+          [resizable]="false"
+          [style]="{width: '520px'}"
+          header="Revisar orden">
+  <div class="resumen">
+    <div class="resumen-row">
+      <span class="muted">Cliente</span>
+      <strong>{{ clienteActual?.nombreCompleto || 'Sin asignar' }}</strong>
+    </div>
+    <div class="resumen-row">
+      <span class="muted">Vehículo</span>
+      <strong>{{ vehiculoActual?.placa || 'Sin asignar' }} - {{ vehiculoActual?.marca || '' }} {{ vehiculoActual?.modelo || '' }}</strong>
+    </div>
+    <div class="resumen-row">
+      <span class="muted">Mecánico</span>
+      <strong>{{ obtenerMecanicoSeleccionado() }}</strong>
+    </div>
+    <div class="resumen-row">
+      <span class="muted">Prioridad</span>
+      <strong>{{ obtenerPrioridadLabel(ordenForm.get('prioridad')?.value) }}</strong>
+    </div>
+    <div class="resumen-row">
+      <span class="muted">Fecha programada</span>
+      <strong>{{ formatearFecha(ordenForm.get('fechaProgramada')?.value) }}</strong>
+    </div>
+    <div class="resumen-row">
+      <span class="muted">Kilometraje</span>
+      <strong>{{ ordenForm.get('kilometraje')?.value || '-' }} km</strong>
+    </div>
+    <div class="resumen-row">
+      <span class="muted">Detalle</span>
+      <strong>{{ ordenForm.get('detalle')?.value }}</strong>
+    </div>
+    <div class="resumen-row">
+      <span class="muted">Observación</span>
+      <strong>{{ ordenForm.get('observacion')?.value || 'Sin observaciones' }}</strong>
+    </div>
+    <div class="resumen-row">
+      <span class="muted">Imágenes listas</span>
+      <strong>{{ cantidadImagenesSeleccionadas() }}</strong>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <button pButton type="button" label="Volver" class="p-button-text" (click)="resumenVisible = false" [disabled]="creandoOrden"></button>
+    <button pButton type="button" label="Confirmar y crear" icon="pi pi-send" (click)="crearOrdenTrabajo()" [loading]="creandoOrden"></button>
+  </ng-template>
+</p-dialog>
+
+<app-registro-cliente 
+  #registroCliente
+  (clienteRegistrado)="onClienteRegistrado($event)">
+</app-registro-cliente>
+
+<app-registro-vehiculo 
+  #registroVehiculo
+  (vehiculoRegistrado)="onVehiculoRegistrado($event)">
+</app-registro-vehiculo>
+
+<p-confirmDialog [style]="{width: '450px'}" 
+                 styleClass="custom-confirm-dialog" 
+                 [baseZIndex]="10000"
+                 rejectButtonStyleClass="p-button-text p-button-secondary"
+                 acceptButtonStyleClass="p-button-danger">
+</p-confirmDialog>

@@ -147,7 +147,7 @@
     <div class="dialog-footer">
         <button pButton type="button" label="Cancelar" icon="pi pi-times" class="p-button-text"
             (click)="cerrarDialogo()"></button>
-        <button pButton type="button" label="Registrar" icon="pi pi-save" [disabled]="cargandoRegistro"
+        <button pButton type="button" label="Registrar" icon="pi pi-save" [disabled]="cargandoRegistro || !puedeRegistrarVehiculo"
             (click)="registrarVehiculo()">
             <span *ngIf="cargandoRegistro" class="loading-text">
                 <i class="pi pi-spinner pi-spin"></i> Registrando...
